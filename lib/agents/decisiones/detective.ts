@@ -35,16 +35,15 @@ export interface Hallazgos {
   ciclos?: ResultadoCiclos;
 }
 
-export interface OpcionesPlan {
-  /** El monto de la operación está dentro de la banda cercana al umbral de reporte. */
-  montoCercaUmbral?: boolean;
-}
-
 /**
  * Siguiente tanda de tools. Devuelve `[]` cuando el plan terminó: es la
  * condición de parada (máx. 2 pasos, sin loops agénticos).
+ *
+ * `estructuracion` corre siempre en el paso 2: mira si la CUENTA DESTINO recibe
+ * muchas operaciones justo bajo el umbral de reporte, algo que no depende del
+ * monto de esta transferencia. Es una tool determinista: no gasta IA.
  */
-export function siguientesTools(h: Hallazgos, op: OpcionesPlan = {}): ToolDetective[] {
+export function siguientesTools(h: Hallazgos): ToolDetective[] {
   // PASO 1 — todo en paralelo, siempre
   if (!h.perfil || !h.listas || !h.fan_in || !h.reenvio) {
     return (['perfil_cuenta', 'listas_riesgo', 'fan_in', 'reenvio_rapido'] as const).filter(
@@ -57,10 +56,10 @@ export function siguientesTools(h: Hallazgos, op: OpcionesPlan = {}): ToolDetect
   }
   // En lista de riesgo: ya es alto, no hace falta más
   if (h.listas.en_lista) return [];
-  // PASO 2 — condicional
+  // PASO 2
   const paso2: ToolDetective[] = [];
   if (h.reenvio.marcado && !h.ciclos) paso2.push('ciclos');
-  if (op.montoCercaUmbral && !h.estructuracion) paso2.push('estructuracion');
+  if (!h.estructuracion) paso2.push('estructuracion');
   return paso2;
 }
 

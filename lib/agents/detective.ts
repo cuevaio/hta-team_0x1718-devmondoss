@@ -21,11 +21,6 @@ import { USO_CERO, evidenciaDelCaso, llamarTool, sumarUso, type DepsAgentes, typ
 
 const MAX_PASOS = 3; // guarda contra loops: el plan real termina en 2
 
-export interface OpcionesDetective {
-  /** Decide si el monto cae en la banda cercana al umbral de reporte (pendiente de definir). */
-  montoCercaUmbral?: (monto: number) => boolean;
-}
-
 async function ejecutar(
   tool: ToolDetective,
   cuenta: string,
@@ -98,17 +93,15 @@ export async function detective(
   caso: Caso,
   ctx: ToolContext,
   deps: DepsAgentes,
-  opciones: OpcionesDetective = {},
 ): Promise<AgentResult<SalidaDetective>> {
   const cuenta = caso.transaccion.destino;
-  const montoCercaUmbral = opciones.montoCercaUmbral?.(caso.transaccion.monto) ?? false;
 
   let h: Hallazgos = {};
   const evidencia: Evidencia[] = [];
   const intentadas = new Set<ToolDetective>();
 
   for (let paso = 0; paso < MAX_PASOS; paso++) {
-    const tools = siguientesTools(h, { montoCercaUmbral }).filter((t) => !intentadas.has(t));
+    const tools = siguientesTools(h).filter((t) => !intentadas.has(t));
     if (tools.length === 0) break;
     const resultados = await Promise.all(tools.map((t) => ejecutar(t, cuenta, caso, ctx)));
     tools.forEach((t) => intentadas.add(t));

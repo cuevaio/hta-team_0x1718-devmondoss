@@ -38,6 +38,13 @@ export interface ResultadoInvestigacion {
 
 const mensajeDe = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
+/**
+ * Ejecuta `fn` garantizando una Promise: si `fn` lanza de forma sincrónica
+ * (p. ej. `agentes.detective is not a function`), se convierte en un rechazo
+ * y el caso degrada a P10 en vez de tumbar la request. (Reporte de Ale, SYNC 2.)
+ */
+const seguro = <T>(fn: () => Promise<T>): Promise<T> => Promise.resolve().then(fn);
+
 /** Coordinador → especialistas en paralelo (primer turno del Guardián incluido). */
 export async function investigar(caso: Caso, ctx: ToolContext, agentes: AgentsApi): Promise<ResultadoInvestigacion> {
   const r: ResultadoInvestigacion = { salidas: {}, turnoGuardian: null, uso: {}, errores: [] };
@@ -58,8 +65,7 @@ export async function investigar(caso: Caso, ctx: ToolContext, agentes: AgentsAp
   const casoConCoord: Caso = { ...caso, salidas: { ...caso.salidas, coordinador: coord } };
   await Promise.all([
     coord.invocar.includes('detective')
-      ? agentes
-          .detective(casoConCoord, ctx)
+      ? seguro(() => agentes.detective(casoConCoord, ctx))
           .then((d) => {
             r.salidas.detective = d.salida;
             r.uso.detective = d.uso;
@@ -67,8 +73,7 @@ export async function investigar(caso: Caso, ctx: ToolContext, agentes: AgentsAp
           .catch((e) => r.errores.push({ agente: 'detective', mensaje: mensajeDe(e) }))
       : Promise.resolve(),
     coord.invocar.includes('guardian')
-      ? agentes
-          .guardianTurno(casoConCoord, ctx)
+      ? seguro(() => agentes.guardianTurno(casoConCoord, ctx))
           .then((g) => {
             r.turnoGuardian = g.salida;
             r.uso.guardian = g.uso;

@@ -1,6 +1,6 @@
 # lib/agents — bloque de Tony
 
-Agentes del sistema. Diseño y por qué: [AGENT_PLAYBOOKS](../../docs/context/tony_dev/AGENT_PLAYBOOKS.md).
+Agentes del sistema. Diseño y por qué: [AGENT_PLAYBOOKS](../../docs/context/tony_dev/AGENT_PLAYBOOKS.md). Infraestructura, orquestación y plan Ollama: [INFRA_Y_ORQUESTACION](../../docs/context/tony_dev/INFRA_Y_ORQUESTACION.md).
 
 ## Cómo se usa (para `lib/pipeline.ts`)
 
