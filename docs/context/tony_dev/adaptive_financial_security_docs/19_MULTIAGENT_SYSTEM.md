@@ -10,32 +10,23 @@
 
 Dos puertas de entrada, un mismo núcleo:
 
-```text
- PUERTA A — Transferencia (Track 04)        PUERTA B — Alerta AML (B1)
-             │                                          │
-             ▼                                          │
- Nivel 0 — Reglas (sin IA)                              │
-   score bajo  → PERMITIR (fin)                         │
-   score alto  → PAUSA PREVENTIVA inmediata             │
-             │ score medio/alto                         │
-             ▼                                          ▼
- 🧭 COORDINADOR ── consulta 🧠 MEMORIA ──▶ hit → Policy (0 IA)
-             │ (en paralelo, solo los necesarios)
-     ┌───────┴────────┐
-     ▼                ▼
- 🛡️ GUARDIÁN       🔍 DETECTIVE  ◀───────────── (Puerta B entra aquí)
- lado cliente      lado cuenta destino
-     └───────┬────────┘
-             ▼
- POLICY ENGINE (determinista)
-   PERMITIR / PAUSAR / VERIFICAR / ESCALAR
-             │ si PAUSAR / ESCALAR / alerta AML
-             ▼
- 📋 AUDITOR → expediente con evidencia citada
-             ▼
- Consola del analista → Confirmar mula / Descartar
-             ▼
- 🧠 MEMORIA DE RIESGO
+```mermaid
+flowchart TD
+    A["Puerta A — Transferencia<br/>(Track 04)"] --> R{"Nivel 0 — Reglas<br/>(sin IA)"}
+    R -->|score bajo| OK["✅ PERMITIR (fin)"]
+    R -->|score medio| C["🧭 Coordinador"]
+    R -->|score alto| PP["⏸️ Pausa preventiva inmediata"]
+    PP --> C
+    B["Puerta B — Alerta AML<br/>(B1)"] --> C
+    C -.->|consulta primero| MEM[("🧠 Memoria de riesgo")]
+    MEM -.->|hit: 0 IA| P
+    C -->|si hace falta| G["🛡️ Guardián<br/>lado cliente"]
+    C -->|si hace falta| D["🔍 Detective<br/>lado cuenta destino"]
+    G --> P{"Policy Engine (determinista)<br/>PERMITIR · PAUSAR · VERIFICAR · ESCALAR"}
+    D --> P
+    P -->|PAUSAR / ESCALAR / alerta AML| AU["📋 Auditor<br/>expediente con evidencia citada"]
+    AU --> AN["👤 Consola del analista<br/>Confirmar mula / Descartar"]
+    AN -->|confirma| MEM
 ```
 
 **Decisión rápida, expediente después:** la pausa se decide en segundos con Guardián + Detective; el Auditor escribe el expediente después, sin bloquear la protección.
@@ -299,7 +290,37 @@ Cada llamada registra: agente, modelo, tools usadas, tokens, latencia, salida va
 
 ---
 
-## 10. Pendientes
+## 10. Límite conocido: mula en otro banco
+
+En el demo, la mula M-01 está en **el mismo banco**, así que el Detective ve todo su historial. En la realidad, si la cuenta destino está en **otra entidad**, el banco no ve a dónde reenvía el dinero.
+
+Lo que sí ve: **qué le envían sus propios clientes**. Esa señal sola ya es fuerte.
+
+```mermaid
+flowchart TD
+    T["Transferencia a cuenta destino"] --> Q{"¿La cuenta destino es<br/>de nuestro banco?"}
+    Q -->|sí| FULL["🔍 Detective completo<br/>fan-in · reenvío rápido · cadena · ciclos"]
+    Q -->|no| PART["🔍 Detective parcial<br/>solo lo que NUESTROS clientes le envían"]
+    FULL --> P["Policy normal (P1–P10)"]
+    PART --> S["Tipología fan_in_interno:<br/>≥ 3 clientes nuestros le transfieren<br/>por primera vez en 48h"]
+    S --> P
+    P --> AN["👤 Analista puede confirmarla"]
+    AN --> MEM[("🧠 Memoria: mismo efecto P1")]
+    MEM -.->|a futuro| S8["S8: compartir señales<br/>entre bancos"]
+```
+
+| | Cuenta destino interna | Cuenta destino externa |
+|---|---|---|
+| Fan-in | todos los remitentes | solo remitentes que son clientes nuestros (`fan_in_interno`) |
+| Reenvío rápido / cadena / ciclos | ✔ | ✖ no visible |
+| Riesgo máximo sin Guardián | `alto` | `medio` (`alto` si se combina con manipulación del Guardián) |
+| Memoria | ✔ | ✔ con validación del analista |
+
+**Respuesta para el jurado:** el demo muestra el caso completo (mula interna). Para mulas externas, el sistema funciona con lo que el banco sí ve y escala con S8 (señales compartidas entre bancos) a futuro.
+
+---
+
+## 11. Pendientes
 
 - Elegir stack y proveedor de LLM (un solo proyecto con frontend + API).
 - Definir `UMBRAL_REPORTE` y validar umbrales de tipologías con datos sintéticos.

@@ -2,45 +2,30 @@
 
 ## Arquitectura simplificada actual — fraude (lado emisor)
 
-```text
-LOGIN / DEVICE
-     ↓
-Identity & Authentication
-(password / OTP / biometrics)
-     ↓
-Transaction request
-     ↓
-Risk engine
-(device, IP, amount, history,
-beneficiary, velocity, location)
-     ↓
-Rules / model
-     ├─ low risk → allow
-     ├─ medium → challenge
-     └─ high → block / hold / review
-                    ↓
-               notification
-                    ↓
-                  user
+```mermaid
+flowchart TD
+    A["Login / dispositivo"] --> B["Identity & Authentication<br/>password · OTP · biometría"]
+    B --> C["Solicitud de transacción"]
+    C --> D["Risk engine<br/>device · IP · monto · historial<br/>beneficiario · velocity · ubicación"]
+    D --> E{"Reglas / modelo"}
+    E -->|riesgo bajo| F["Allow"]
+    E -->|riesgo medio| G["Challenge"]
+    E -->|riesgo alto| H["Block / hold / review"]
+    H --> I["Notificación"]
+    I --> J(["Usuario"])
 ```
 
 ## Arquitectura simplificada actual — AML (lado receptor)
 
-```text
-Transacciones ya ejecutadas
-     ↓
-Monitoreo transaccional (reglas / escenarios)
-     ↓
-ALERTA → cola de alertas (backlog)
-     ↓
-Analista abre varios sistemas
-(core, KYC, historial, contrapartes, listas, normativa)
-     ↓
-Reconstruye el caso a mano
-     ↓
-Decide: descartar / escalar
-     ↓
-Si escala → ROS a la UIF-Perú
+```mermaid
+flowchart TD
+    A["Transacciones ya ejecutadas"] --> B["Monitoreo transaccional<br/>reglas / escenarios"]
+    B --> C["Alerta → cola de alertas (backlog)"]
+    C --> D["Analista abre varios sistemas<br/>core · KYC · historial · contrapartes · listas · normativa"]
+    D --> E["Reconstruye el caso a mano"]
+    E --> F{"Decide"}
+    F -->|descartar| G["Caso cerrado"]
+    F -->|escalar| H["ROS a la UIF-Perú"]
 ```
 
 ## Controles clásicos útiles
@@ -77,15 +62,16 @@ La tercera pregunta es la menos resuelta.
 
 ## Arquitectura organizacional fragmentada
 
-```text
-IAM / Identity ─────┐
-Fraud engine ───────┤
-Mobile app ─────────┤
-Contact center ─────┤──> incident
-Security / SIEM ────┤
-Complaints ─────────┤
-Accessibility ──────┤
-AML / Compliance ───┘   ← ve al receptor, días después
+```mermaid
+flowchart LR
+    IAM["IAM / Identity"] --> INC(["Incidente"])
+    FE["Fraud engine"] --> INC
+    APP["Mobile app"] --> INC
+    CC["Contact center"] --> INC
+    SIEM["Security / SIEM"] --> INC
+    CMP["Complaints"] --> INC
+    ACC["Accessibility"] --> INC
+    AML["AML / Compliance<br/>ve al receptor, días después"] -.-> INC
 ```
 
 Cada equipo ve una parte distinta. En particular, **fraude ve a la víctima y AML ve a la mula**, aunque sea la misma transacción.
@@ -98,12 +84,15 @@ La información existe, pero la organización no siempre convierte señales disp
 
 No reemplaza nada: se agrega **entre el risk engine y la ejecución**, y **sobre la cola de alertas AML**.
 
-```text
-Risk engine existente ──▶ [ NUESTRA CAPA ] ──▶ ejecución / pausa
-                               │   ▲
-Cola de alertas AML ──────────▶│   │ Memoria de riesgo
-                               ▼   │
-                     Consola del analista
+```mermaid
+flowchart LR
+    RE["Risk engine existente"] --> CAPA["⭐ NUESTRA CAPA"]
+    AQ["Cola de alertas AML"] --> CAPA
+    CAPA --> EX["Ejecución / pausa"]
+    CAPA --> CON["Consola del analista"]
+    CON --> MEM[("🧠 Memoria de riesgo")]
+    MEM --> CAPA
+    style CAPA stroke-width:3px
 ```
 
 - **Entrada:** transacciones marcadas por el risk engine + alertas AML.

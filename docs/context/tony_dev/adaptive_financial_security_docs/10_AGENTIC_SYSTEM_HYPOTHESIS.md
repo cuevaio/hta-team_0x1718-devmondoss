@@ -44,22 +44,19 @@ Esto es la hipótesis H9 (`08`) y se mide con el experimento E5 (`14`).
 
 ## Arquitectura
 
-```text
-TRANSACCIÓN / ALERTA AML
-        ↓
-Nivel 0 — Reglas deterministas (sin IA)
-        ↓ solo sospechosas
-🧭 Coordinador ── consulta 🧠 Memoria ──▶ (si hay veredicto: directo a Policy)
-        ↓ (en paralelo)
-🛡️ Guardián            🔍 Detective
-lado del cliente        lado de la cuenta destino
-        ↓                    ↓
-Policy Engine determinista
-  PERMITIR / PAUSAR / VERIFICAR / ESCALAR
-        ↓ solo si se pausa / escala
-📋 Auditor → expediente
-        ↓
-Analista valida → 🧠 Memoria
+```mermaid
+flowchart TD
+    IN["Transacción / alerta AML"] --> R["Nivel 0 — Reglas deterministas<br/>(sin IA)"]
+    R -->|solo sospechosas| C["🧭 Coordinador"]
+    C -.->|consulta| MEM[("🧠 Memoria")]
+    MEM -.->|si hay veredicto| P
+    C -->|en paralelo| G["🛡️ Guardián<br/>lado del cliente"]
+    C -->|en paralelo| D["🔍 Detective<br/>lado de la cuenta destino"]
+    G --> P{"Policy Engine determinista<br/>PERMITIR · PAUSAR · VERIFICAR · ESCALAR"}
+    D --> P
+    P -->|solo si se pausa / escala| A["📋 Auditor → expediente"]
+    A --> AN["👤 Analista valida"]
+    AN --> MEM
 ```
 
 ## Roles finales

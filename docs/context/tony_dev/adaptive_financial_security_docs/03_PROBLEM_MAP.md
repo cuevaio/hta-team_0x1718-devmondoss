@@ -4,28 +4,18 @@
 
 La protección antifraude es parcialmente reactiva y depende de una interacción humana oportuna. Y cuando el fraude ocurre, la investigación del lado receptor (AML) vuelve a empezar desde cero, en otro equipo.
 
-```text
-Digitalización acelerada
-        ↓
-Más superficie transaccional
-        ↓
-Más identidad / dinero / acciones en canales digitales
-        ↓
-Fraude + ingeniería social + ATO + dispositivo robado
-        ↓
-Sistema detecta anomalía
-        ↓
-Envía challenge / alerta
-        ↓
-¿usuario disponible y capaz de responder?
-       / \
-     sí   no
-     ↓     ↓
-control   exposure window
-             ↓
-     dinero llega a cuenta mula
-             ↓
-     alerta AML → analista reconstruye manualmente
+```mermaid
+flowchart TD
+    A["Digitalización acelerada"] --> B["Más superficie transaccional"]
+    B --> C["Más identidad / dinero / acciones<br/>en canales digitales"]
+    C --> D["Fraude + ingeniería social<br/>+ ATO + dispositivo robado"]
+    D --> E["Sistema detecta anomalía"]
+    E --> F["Envía challenge / alerta"]
+    F --> Q{"¿Usuario disponible y<br/>capaz de responder?"}
+    Q -->|sí| OK["Control"]
+    Q -->|no| X["⚠️ Exposure window"]
+    X --> MU["Dinero llega a cuenta mula"]
+    MU --> AML["Alerta AML →<br/>analista reconstruye manualmente"]
 ```
 
 ## Gap 1 — Availability Gap
@@ -36,11 +26,17 @@ Definición:
 
 Ejemplo:
 
-```text
-T0  02:13 — nueva cuenta beneficiaria
-T1  02:13 — alerta enviada
-T2  02:20 — segunda transferencia
-T3  día 4 — usuario vuelve a tener conectividad
+```mermaid
+sequenceDiagram
+    participant AT as Atacante
+    participant B as Banco
+    participant U as Titular (sin señal)
+    AT->>B: T0 02:13 — agrega nueva cuenta beneficiaria
+    B--)U: T1 02:13 — alerta enviada
+    Note over U: sin conectividad
+    AT->>B: T2 02:20 — segunda transferencia
+    Note over B,U: ventana de exposición
+    U->>B: T3 día 4 — vuelve a tener conectividad
 ```
 
 La métrica relevante no es “alert sent in 3 seconds”.
@@ -55,12 +51,18 @@ Definición:
 
 Ejemplo (HIPÓTESIS, a validar con analistas):
 
-```text
-T0  alerta AML sobre cuenta receptora
-T1  analista abre 4–6 sistemas: core, monitoreo, listas, KYC, historial
-T2  arma a mano el perfil y las contrapartes
-T3  decide y redacta la justificación
-T4  la alerta siguiente espera en el backlog
+```mermaid
+sequenceDiagram
+    participant MON as Monitoreo
+    participant AN as Analista
+    participant SIS as 4 a 6 sistemas
+    participant Q as Backlog
+    MON->>AN: T0 alerta AML sobre cuenta receptora
+    AN->>SIS: T1 consulta core, monitoreo, listas, KYC, historial
+    SIS-->>AN: datos dispersos
+    Note over AN: T2 arma a mano perfil y contrapartes
+    Note over AN: T3 decide y redacta la justificación
+    Note over Q: T4 la alerta siguiente espera
 ```
 
 Mientras el caso espera, la mula sigue recibiendo de nuevas víctimas.
@@ -131,28 +133,26 @@ Mientras el caso espera, la mula sigue recibiendo de nuevas víctimas.
 
 ## Loop negativo clásico
 
-```text
-más fraude
-   ↓
-más reglas duras + más alertas
-   ↓
-más falsos positivos + más backlog
-   ↓
-más fricción / soporte / fatiga del analista
-   ↓
-usuarios crean workarounds · alertas se cierran sin diligencia
-   ↓
-comparten credenciales / dependen de terceros · mulas siguen activas
-   ↓
-nueva superficie de riesgo
+```mermaid
+flowchart TD
+    A["Más fraude"] --> B["Más reglas duras + más alertas"]
+    B --> C["Más falsos positivos + más backlog"]
+    C --> D["Más fricción / soporte /<br/>fatiga del analista"]
+    D --> E["Usuarios crean workarounds ·<br/>alertas se cierran sin diligencia"]
+    E --> F["Comparten credenciales / dependen de terceros ·<br/>mulas siguen activas"]
+    F --> G["Nueva superficie de riesgo"]
+    G -.-> A
 ```
 
 ## Loop positivo que buscamos
 
-```text
-víctima 1 → pausa → investigación de la cuenta destino → analista confirma mula
-     ↑                                                        ↓
-víctima 2 protegida al instante  ←──────────  Memoria de riesgo
+```mermaid
+flowchart LR
+    V1["Víctima 1"] --> P["⏸️ Pausa"]
+    P --> I["🔍 Investigación de<br/>la cuenta destino"]
+    I --> C["👤 Analista confirma mula"]
+    C --> MEM[("🧠 Memoria de riesgo")]
+    MEM --> V2["✅ Víctima 2 protegida<br/>al instante"]
 ```
 
 ## Dónde actúa cada componente

@@ -36,8 +36,12 @@ No depende de una sola modalidad.
 
 Ante riesgo alto + usuario no alcanzable o manipulado:
 
-```text
-ALLOW → PAUSA TEMPORAL → VERIFY → RELEASE / BLOCK
+```mermaid
+flowchart LR
+    OP["Operación riesgosa"] --> P["⏸️ Pausa temporal"]
+    P --> V{"Verificación"}
+    V -->|legítima| R["Liberar"]
+    V -->|fraude| B["Bloquear"]
 ```
 
 No todo debe ser “aprobar o bloquear para siempre”.
@@ -96,8 +100,14 @@ Tras exposición de datos / dispositivo / identidad:
 
 Construcción automática de:
 
-```text
-login → device → beneficiary → amount → alerts → responses → blocks
+```mermaid
+flowchart LR
+    A["Login"] --> B["Dispositivo"]
+    B --> C["Beneficiario"]
+    C --> D["Monto"]
+    D --> E["Alertas"]
+    E --> F["Respuestas"]
+    F --> G["Bloqueos"]
 ```
 
 Útil para soporte, fraude, auditoría y reclamo. En el MVP lo produce el 📋 Auditor, con cada afirmación citando su evidencia.

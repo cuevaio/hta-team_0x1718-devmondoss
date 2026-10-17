@@ -6,16 +6,13 @@ La seguridad financiera digital moderna puede detectar anomalías en segundos, p
 
 El gap central es:
 
-```text
-ANOMALÍA
-   ↓
-DETECCIÓN
-   ↓
-ALERTA
-   ↓
-¿EL USUARIO PUEDE RESPONDER AHORA?
-   ├─ Sí → challenge / bloqueo / confirmación
-   └─ No → ventana de exposición
+```mermaid
+flowchart TD
+    A["Anomalía"] --> B["Detección"]
+    B --> C["Alerta"]
+    C --> Q{"¿El usuario puede<br/>responder ahora?"}
+    Q -->|Sí| S["Challenge / bloqueo / confirmación"]
+    Q -->|No| N["⚠️ Ventana de exposición"]
 ```
 
 ## Tesis de problema
@@ -73,11 +70,12 @@ Una operación puede pasar Identity + Authorization y aun fallar Intent o Availa
 
 El dinero de una estafa no desaparece: llega a una cuenta receptora y desde ahí se mueve.
 
-```text
-VÍCTIMA ──transferencia──▶ CUENTA MULA ──reenvío rápido──▶ más cuentas (layering)
-   ↑                            ↑
-Track 04: estafa,         B1: alerta AML,
-suplantación, extorsión   lavado de activos
+```mermaid
+flowchart LR
+    V["👤 Víctima"] -->|transferencia| MU["Cuenta mula"]
+    MU -->|reenvío rápido| L["Más cuentas<br/>(layering)"]
+    T4["Track 04<br/>estafa · suplantación · extorsión"] -.-> V
+    B1["B1<br/>alerta AML · lavado de activos"] -.-> MU
 ```
 
 Es **la misma transacción vista desde dos extremos**. Del lado del emisor es fraude contra un cliente; del lado del receptor es una alerta AML. Hoy suelen investigarlo equipos distintos, con herramientas distintas y en momentos distintos.
@@ -93,11 +91,12 @@ Ambos gaps comparten causa: **señales dispersas que nadie convierte a tiempo en
 
 ## Cómo se traduce en producto
 
-```text
-PAUSA      → la operación riesgosa no sale, pero tampoco se bloquea todo
-PREGUNTA   → se verifica con el titular por un canal seguro; el silencio no es un “sí”
-INVESTIGA  → se perfila la cuenta destino y se arma un expediente con evidencia
-APRENDE    → la mula confirmada protege a la siguiente víctima sin costo extra
+```mermaid
+flowchart LR
+    P["⏸️ PAUSA<br/>la operación riesgosa no sale,<br/>pero no se bloquea todo"] --> Q["💬 PREGUNTA<br/>verificación por canal seguro,<br/>el silencio no es un sí"]
+    Q --> I["🔍 INVESTIGA<br/>perfil de la cuenta destino<br/>+ expediente con evidencia"]
+    I --> A["🧠 APRENDE<br/>la mula confirmada protege<br/>a la siguiente víctima"]
+    A -.-> P
 ```
 
 ## Principio de diseño
