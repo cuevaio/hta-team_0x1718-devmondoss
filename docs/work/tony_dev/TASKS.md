@@ -17,6 +17,16 @@
 - [x] `TurnoGuardian` en `firmas.ts` (el Guardián conversa varios turnos)
 - [x] 33 tests de decisión
 
+## ✅ Hecho en la rama `tony-dev`
+- [x] `lib/agents/mocks.ts` + `index.ts` (`AGENTS_MOCK=1`, `obtenerAgentes()`): **listo para que Ale integre**
+- [x] `lib/agents/llm.ts` + `runtime.ts` + `prompts.ts`: structured outputs, `effort: low`, validación + 1 reintento, `AgentError`
+- [x] Adaptadores de los 4 agentes con fallback determinista
+- [x] `lib/agents/README.md` con el protocolo para el pipeline de Ale
+- [x] 99 tests (decisiones, adaptadores, runtime, mocks), tsc y eslint limpios
+- [ ] ⚠️ Probar `llm.ts` contra la API real (falta `ANTHROPIC_API_KEY`)
+- [ ] Detective: seguir la cadena a 2 saltos (hoy toma 1 salto desde `reenvio.destinos`)
+- [ ] `UMBRAL_REPORTE` para `montoCercaUmbral` (estructuración)
+
 ## H0–2 · Contratos
 - [x] Los esquemas zod de los 4 agentes ya existen en `lib/contracts/agentes.ts` (los dejó escritos Ale en S0): **revísalos y ajústalos**
 - [ ] `AgentsApi` y `AgentResult` en `lib/contracts/firmas.ts` (ya agregados; confirma que te sirven)
