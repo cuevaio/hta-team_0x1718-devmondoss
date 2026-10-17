@@ -1,74 +1,64 @@
-# Ale_dev — Runtime de agentes + Frente cliente + Experiencia
+# Ale_dev — Infraestructura backend
 
-> Fuente de verdad: [../00_WORK_BLUEPRINT.md](../00_WORK_BLUEPRINT.md). Marca cada casilla al terminar.
+> Fuente de verdad: [../00_WORK_BLUEPRINT.md](../00_WORK_BLUEPRINT.md). **Trabajas solo en `main`, sin pedir permiso.** Avisa solo si cambias un contrato (`CONTRACT:` en el commit).
 
-**Soy dueño de:** runtime LLM · `pipeline.ts` · 🧭 Coordinador · tools del Guardián · 🛡️ Guardián · API routes · pantalla de dos paneles · deploy · README · video de respaldo.
+**Eres dueño de:** `src/server.ts` · `routes/` · `contracts/caso.ts` y `context.ts` · `data/` · `analytics/` · `rules/` · `policy/` · `memory/` · `evidence/` · `cases/` · `observability/` · `pipeline.ts` · `scripts/demo.ts` · deploy · README.
 
-**Entrego a Tony:** `runAgent` (runtime), `runPipeline`, mocks de Coordinador y Guardián.
-**Recibo de Tony:** `evaluateRules`, `decide`, `memory.get/confirm`, tools con evidencia, mocks de Detective y Auditor.
+**Entregas a Tony:** `ToolContext` (datos, analytics, memoria, evidencia, mensajes).
+**Recibes de Tony:** `AgentsApi` + mocks (a la hora 5).
 
-## H0–2 · Contratos (con Tony)
-- [ ] Confirmar stack y proveedor de LLM
-- [ ] Esquemas zod en `lib/contracts/`
-- [ ] Firmas acordadas y mergeadas en `main`
+## H0–2 · Scaffold
+- [ ] TypeScript + Fastify + zod + vitest; `npm run dev`, `npm test`
+- [ ] `contracts/caso.ts` y `contracts/context.ts`
 
-## H2–4 · Scaffold + deploy
-- [ ] Proyecto Next.js + TypeScript
-- [ ] Deploy inicial con URL pública
-- [ ] Variables de entorno (API key solo en env, nunca en el repo)
+## H2–4 · Deploy
+- [ ] Railway desde `main`, `/health`, `.env.example`
+- [ ] URL pública responde
 
-## H4–7 · Runtime de agentes
-- [ ] `agents/runtime.ts`: niveles `rapido` / `capaz`
-- [ ] Validación zod + 1 reintento → modo seguro
-- [ ] Presupuesto máx. 10 llamadas por caso + timeout
-- [ ] Log de uso (llamadas, tokens, ms) → `caso.ia`
-- [ ] Modo `AGENTS_MOCK=1`
+## H4–6 · Datos
+- [ ] `data/seed.json`: Rosa, Jorge, Lucía, M-01, M-02, M-03, Bodega Don Pepe, ~200 tx de fondo
+- [ ] M-01: 14 remitentes nuevos en 48h, ~90% reenviado en < 2h hacia M-02 → M-03
+- [ ] Bodega: muchos remitentes **sin** reenvío rápido
+- [ ] Lucía: pago recurrente al hotel
+- [ ] `data/repo.ts`
 
-## H7–9 · Pipeline + API
-- [ ] `pipeline.ts`: reglas → Coordinador → agentes (paralelo) → policy → Auditor → Caso
-- [ ] `POST /api/transfer`, `GET /api/case/[id]`, `POST /api/guardian/reply`, `POST /api/demo/reset`
-- [ ] Mocks de Coordinador y Guardián en `agents/mocks.ts`
+## H6–8 · Reglas + Policy
+- [ ] `rules/level0.ts` con puntajes de `19` §2
+- [ ] `policy/engine.ts` con P1–P10 en orden
+- [ ] Tests: Rosa 7, Lucía 6, Bodega 4, hotel → P2, Jorge → P1
 
-## 🔁 SYNC 1 (H9) — demo sin IA
-- [ ] Los 3 actos dan la regla correcta con mocks
+## H8–10 · Memoria, evidencia, analytics
+- [ ] `memory/store.ts`: get, confirm, expiración 90 días
+- [ ] `evidence/ledger.ts`: ids `E-xx` asignados por el sistema
+- [ ] `analytics/`: `fanIn`, `reenvioRapido`, `estructuracion`, `ciclos`, `listasRiesgo`, `disponibilidad`, `canalesSeguros`
+- [ ] Tests de tipologías sobre M-01 (mula) y Bodega (legítima)
 
-## H9–13 · 🛡️ Guardián
-- [ ] Tools: `disponibilidad`, `canales_seguros`, `enviar_mensaje`, `esperar_respuesta`
-- [ ] Chat simulado en la app, máx. 3 turnos
-- [ ] Nunca pide claves / OTP / tarjeta; nunca aprueba
-- [ ] Rosa → `manipulacion_probable`; Lucía → `sin_respuesta` / `canal_comprometido`
+## H10–12 · Pipeline + API con mocks
+- [ ] `cases/store.ts` con timeline
+- [ ] `pipeline.ts`: reglas → Coordinador → agentes en paralelo → policy → Auditor
+- [ ] Rutas `/transfers`, `/cases/:id`, `/cases/:id/guardian/reply`
 
-## H13–15 · 🧭 Coordinador
-- [ ] Consulta Memoria primero → salida temprana
-- [ ] Invoca Guardián ∥ Detective solo si hacen falta
-- [ ] Fallback determinista
-- [ ] Jorge → 0 llamadas; Bodega → solo Detective
+## 🔁 SYNC 1 (H12)
+- [ ] `npm run demo` corre CU-01, CU-02, CU-03 y CU-05 con mocks
 
-## 🔁 SYNC 2 (H17) — agentes reales
-- [ ] Mismas decisiones que con mocks
+## H12–17 · Puerta B y observabilidad
+- [ ] `/alerts` (Puerta B: sin Guardián)
+- [ ] `/cases/:id/verdict` (confirma / descarta; solo lo confirmado entra a la Memoria)
+- [ ] `/stats`: embudo (tx → sospechosas → IA) y llamadas de IA por caso
 
-## H15–22 · Pantalla de dos paneles
-- [ ] 📱 Celular: transferencia, pantalla de pausa, chat del Guardián
-- [ ] 🖥️ Consola: timeline en vivo (polling 1s), expediente con citas clickeables
-- [ ] Botón Confirmar mula / Descartar
-- [ ] Embudo (tx → sospechosas → IA) + contador de llamadas de IA por caso
+## H17–22 · Robustez
+- [ ] Tests e2e por escenario
+- [ ] Modo seguro P10 (error / timeout / presupuesto excedido)
+- [ ] `scripts/demo.ts` pulido, salida legible en consola
 
-## H22–25 · Controles de demo
-- [ ] Reset, selector de acto, botón “segunda víctima”
-- [ ] Demo reproducible en < 3 min sin tocar código
+## 🔁 SYNC 2 (H22)
+- [ ] Agentes reales dan las mismas decisiones que los mocks
 
-## 🔁 SYNC 3 (H23) — demo completo en URL pública
-- [ ] Los 3 actos funcionan en producción
+## H22–26 · Producción
+- [ ] Deploy final; demo corre contra la URL pública
+- [ ] README (cómo correrlo, qué es simulado)
+- [ ] `docs/work/API.md` con la API para el frontend de la Fase 2
 
-## H25–27 · Cierre
-- [ ] Deploy final
-- [ ] README: cómo correrlo y qué datos son simulados
-
-## H27–30 · Respaldo
-- [ ] Video del demo completo
-- [ ] Ensayo ×2 con Tony
-
-## Si hay recorte (ver blueprint §8)
-- Quitar acto extra (Lucía)
-- Coordinador como función determinista
-- Timeline estático
+## Si hay recorte
+- Quitar CU-04 (Lucía)
+- Quitar Puerta B

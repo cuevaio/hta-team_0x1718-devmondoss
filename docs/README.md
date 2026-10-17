@@ -5,7 +5,9 @@
 | [context/](context/) | **Contexto**: investigación, tesis, problema, diseño del sistema. Se lee antes de construir. |
 | [work/](work/) | **Trabajo**: plan de ejecución del hackathon, división de tareas y checklists. |
 
-Cada carpeta tiene una subcarpeta por dev: `tony_dev/` y `ale_dev/`.
+Cada carpeta tiene una subcarpeta por dev: `tony_dev/` (agentes) y `ale_dev/` (infraestructura backend).
+
+**Trabajo solo en `main`, backend primero.**
 
 ## Empezar aquí
 
