@@ -36,7 +36,7 @@ Diseño completo en [19_MULTIAGENT_SYSTEM.md](19_MULTIAGENT_SYSTEM.md).
 
 ## Lectura rápida (15 min)
 
-`00` → `01` → `19` → `13` → `17`
+`00` → `01` → `19` → `13` → Work Blueprint → `17`
 
 ## Índice de documentos
 
@@ -59,6 +59,7 @@ Diseño completo en [19_MULTIAGENT_SYSTEM.md](19_MULTIAGENT_SYSTEM.md).
 17. [17_PITCH_NARRATIVE.md](17_PITCH_NARRATIVE.md) — narrativa de pitch: Rosa, la mula y la segunda víctima.
 18. [18_SOURCES.md](18_SOURCES.md) — fuentes, datasets y cifras verificables.
 19. [19_MULTIAGENT_SYSTEM.md](19_MULTIAGENT_SYSTEM.md) — **diseño del sistema multiagente**: agentes, tools, contratos, policy engine, memoria y optimización de recursos.
+20. [Work Blueprint](../../../work/00_WORK_BLUEPRINT.md) *(en `docs/work/`)* — **división de trabajo Ale_dev / Tony_dev**: dueños, contratos, plan por horas, syncs y plan de recorte.
 
 ---
 
