@@ -88,12 +88,13 @@ Una misma persona puede cambiar de estado en horas.
 - falso familiar / ejecutivo;
 - coerción.
 
-```text
-FaceID ✔
-Password ✔
-OTP ✔
-Device ✔
-Intent ✖
+```mermaid
+flowchart LR
+    F["FaceID ✔"] --> PW["Password ✔"]
+    PW --> O["OTP ✔"]
+    O --> D["Device ✔"]
+    D --> I["Intent ✖"]
+    style I stroke:#d33,stroke-width:3px
 ```
 
 **Riesgo**

@@ -10,8 +10,11 @@ Los sistemas financieros son muy buenos autenticando identidad y cada vez mejore
 
 Pero muchas defensas terminan en:
 
-```text
-alert → wait for user → user reacts
+```mermaid
+flowchart LR
+    A["Alerta"] --> W["Esperar al usuario"]
+    W --> R["Usuario reacciona"]
+    W -.->|si no está disponible| X["⚠️ Nadie protege"]
 ```
 
 Eso funciona solo si el usuario está disponible y no está siendo manipulado.
@@ -52,8 +55,12 @@ Un equipo de agentes de IA, cada uno con un trabajo:
 
 La IA recomienda. Una política determinista decide:
 
-```text
-PERMITIR / PAUSAR / VERIFICAR / ESCALAR
+```mermaid
+flowchart LR
+    P{"Policy determinista"} --> A["✅ PERMITIR"]
+    P --> B["⏸️ PAUSAR"]
+    P --> C["💬 VERIFICAR"]
+    P --> D["🚨 ESCALAR"]
 ```
 
 ## Demo story (3 actos)

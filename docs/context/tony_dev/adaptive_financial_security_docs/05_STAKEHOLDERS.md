@@ -164,14 +164,16 @@ Ninguna cuenta entra a la Memoria de riesgo sin validación humana, con expiraci
 
 ## Mapa de tensiones
 
-```text
-Usuario:        no quiero perder dinero NI ser bloqueado
-Fraud team:     quiero bloquear más fraude SIN falsos positivos
-Product:        quiero menos fricción
-Security:       quiero más verificación
-Compliance:     quiero trazabilidad y accesibilidad
-Analista AML:   quiero menos backlog SIN cerrar alertas reales
-CFO:            quiero menor costo total de riesgo (incluido el costo de IA)
+```mermaid
+flowchart TD
+    X(("Producto fuerte:<br/>alinea las tensiones"))
+    U["Usuario<br/>no perder dinero NI ser bloqueado"] --- X
+    FR["Fraud team<br/>más fraude bloqueado SIN falsos positivos"] --- X
+    PR["Product<br/>menos fricción"] --- X
+    SE["Security<br/>más verificación"] --- X
+    CO["Compliance<br/>trazabilidad y accesibilidad"] --- X
+    AML["Analista AML<br/>menos backlog SIN cerrar alertas reales"] --- X
+    CFO["CFO<br/>menor costo total de riesgo, incluido IA"] --- X
 ```
 
 Un producto fuerte alinea estas tensiones; no optimiza solo una.

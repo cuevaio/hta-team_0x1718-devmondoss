@@ -25,12 +25,22 @@
 
 **Pausa → Pregunta → Investiga → Aprende**, implementado como sistema multiagente:
 
-```text
-Reglas (sin IA) → 🧭 Coordinador → 🛡️ Guardián ∥ 🔍 Detective → Policy Engine determinista
-      → 📋 Auditor (expediente) → Analista valida → 🧠 Memoria de riesgo
+```mermaid
+flowchart LR
+    R["Reglas<br/>(sin IA)"] --> C["🧭 Coordinador"]
+    C --> G["🛡️ Guardián"]
+    C --> D["🔍 Detective"]
+    G --> P{"Policy Engine<br/>determinista"}
+    D --> P
+    P --> A["📋 Auditor<br/>expediente"]
+    A --> AN["👤 Analista valida"]
+    AN --> MEM[("🧠 Memoria de riesgo")]
+    MEM -.->|protege a la próxima víctima| C
 ```
 
 Diseño completo en [19_MULTIAGENT_SYSTEM.md](19_MULTIAGENT_SYSTEM.md).
+
+**La solución en una página, con diagramas:** [docs/SOLUCION.md](../../../SOLUCION.md).
 
 ---
 
