@@ -6,7 +6,7 @@ import { guardianTurno } from '@/lib/agents/guardian';
 import { BANCO_PREGUNTAS } from '@/lib/agents/decisiones/guardian';
 import type { Hallazgos } from '@/lib/agents/decisiones/detective';
 import { ESQUEMAS_AGENTE } from '@/lib/contracts';
-import { casoDe, crearCtx, crearRunAgentFalso } from './fakes';
+import { casoDe, crearCtx, crearRunAgentFalso } from '@/lib/agents/simulacion';
 
 const m01: Hallazgos = {
   perfil: { cuenta: 'M-01', banco_propio: true, antiguedad_dias: 12, tipo: 'persona' },
@@ -29,8 +29,8 @@ describe('🔍 Detective (adaptador)', () => {
     expect(calls).toHaveLength(0);
     expect(r.salida.riesgo_destino).toBe('alto');
     expect(r.salida.tipologias).toEqual(['fan_in', 'reenvio_rapido']);
-    expect(r.salida.cadena).toEqual(['M-01', 'M-02', 'M-03']);
-    expect(r.salida.evidencia.length).toBeGreaterThanOrEqual(4);
+    expect(r.salida.cadena).toEqual(['M-01', 'M-02', 'M-03']); // 2 saltos, solo tools
+    expect(r.salida.evidencia.length).toBeGreaterThanOrEqual(5);
     expect(llamadas).toContain('ciclos'); // paso 2 porque el reenvío salió marcado
     expect(r.uso.llamadas).toBe(0);
     expect(ESQUEMAS_AGENTE.detective.safeParse(r.salida).success).toBe(true);
@@ -101,10 +101,16 @@ describe('🧭 Coordinador (adaptador)', () => {
     const r = await coordinador(casoDe({ destino: 'M-01', senales: ['beneficiario_nuevo', 'monto_atipico'], score: 4 }), ctx);
     expect(r.salida.salida_temprana).toBe(false);
   });
-  it('destino antiguo y propio → no se invoca al detective', async () => {
+  it('destino que el cliente ya conocía (no es beneficiario nuevo) → no se invoca al detective', async () => {
     const { ctx } = crearCtx({ hallazgos: { perfil: { cuenta: 'AMIGO', banco_propio: true, antiguedad_dias: 700, tipo: 'persona' } } });
-    const r = await coordinador(casoDe({ destino: 'AMIGO', senales: ['beneficiario_nuevo', 'llamada_activa'], score: 5 }), ctx);
+    const r = await coordinador(casoDe({ destino: 'AMIGO', senales: ['monto_atipico', 'llamada_activa'], score: 5 }), ctx);
     expect(r.salida.invocar).toEqual(['guardian']);
+  });
+  it('Bodega: cuenta antigua pero NUEVA para el cliente → solo detective, sin pedir el perfil', async () => {
+    const { ctx, llamadas } = crearCtx({ hallazgos: { perfil: { cuenta: 'BODEGA', banco_propio: true, antiguedad_dias: 900, tipo: 'comercio' } } });
+    const r = await coordinador(casoDe({ destino: 'BODEGA', senales: ['beneficiario_nuevo', 'monto_atipico'], score: 4 }), ctx);
+    expect(r.salida.invocar).toEqual(['detective']);
+    expect(llamadas).not.toContain('perfil_cuenta');
   });
   it('alerta AML → solo detective', async () => {
     const { ctx } = crearCtx({});

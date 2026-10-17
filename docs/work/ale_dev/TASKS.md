@@ -7,6 +7,21 @@
 **Entregas a Tony:** `ToolContext` (datos, analytics, memoria, evidencia, mensajes).
 **Recibes de Tony:** `AgentsApi` + mocks (a la hora 5).
 
+## 🔌 Integrar los agentes de Tony (ya listos en `lib/agents/`)
+
+> Guía completa: [lib/agents/README.md](../../../lib/agents/README.md). Los agentes funcionan sin API key con `AGENTS_MOCK=1`.
+
+- [ ] `lib/rules/level0.ts` emite **exactamente** estos ids: `beneficiario_nuevo`, `monto_atipico`, `dispositivo_nuevo`, `cambio_sim_o_clave`, `llamada_activa`, `horario_atipico` (`SENALES_NIVEL0` en `lib/contracts/analytics.ts`)
+- [ ] `nivel0.atajo = 'P1'` si el destino está en Memoria; `'P2'` si es beneficiario habitual sin señales de compromiso
+- [ ] `ToolContext.analytics.<fuente>(cuenta)` para `perfil_cuenta`, `listas_riesgo`, `fan_in`, `reenvio_rapido`, `estructuracion`, `ciclos`, y `canales(cliente)`; cada una devuelve `{ data, evidencia }` con la forma de `lib/contracts/analytics.ts`
+- [ ] `ToolContext.evidencia.registrar(fuente, dato)` asigna `E-xx` y **lo agrega a `caso.evidencia`** (el Guardián y el Auditor leen de ahí)
+- [ ] `canales(cliente).canal_comprometido = true` si la operación viene de dispositivo nuevo o cambio de SIM
+- [ ] Pipeline: `investigar` → (`continuarGuardian`…) → Policy → `auditar` si `debeAuditar`; ver el ejemplo en el README
+- [ ] Sumar el uso con `acumularIA` (alimenta el contador de IA del demo)
+- [ ] Endpoint `POST /api/cases/[id]/guardian/reply` → `continuarGuardian(caso, ctx, agentes, texto)`; `''` = no respondió a tiempo
+- [ ] Policy: si un agente invocado no tiene salida (falló) → P10
+- [ ] Para tests del pipeline sin LLM: `crearCtx`, `casoDe`, `crearRunAgentFalso` de `lib/agents/simulacion.ts`
+
 ## H0–2 · Scaffold ✅
 - [x] Next.js 15 + TypeScript + Tailwind + zod 4 + vitest (`app/` y `lib/` en la raíz, alias `@/`)
 - [x] Contratos en `lib/contracts/` (`caso`, `agentes`, `memoria`, `validadores`, `firmas`) + 32 tests

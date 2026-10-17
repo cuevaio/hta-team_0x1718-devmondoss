@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { crearAgentes, crearAgentesMock, detectarEscenario, obtenerAgentes } from '@/lib/agents';
 import { ESQUEMAS_AGENTE, type Caso } from '@/lib/contracts';
-import { casoDe, crearCtx, crearRunAgentFalso } from './fakes';
+import { casoDe, crearCtx, crearRunAgentFalso } from '@/lib/agents/simulacion';
 
 const rosa = () => casoDe({ origen: 'rosa', destino: 'M-01', senales: ['beneficiario_nuevo', 'monto_atipico', 'llamada_activa'], score: 7 });
 const bodega = () => casoDe({ origen: 'pedro', destino: 'BODEGA-DON-PEPE', senales: ['beneficiario_nuevo', 'monto_atipico'], score: 4 });

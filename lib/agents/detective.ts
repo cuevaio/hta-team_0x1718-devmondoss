@@ -17,7 +17,7 @@ import {
   type ToolDetective,
 } from './decisiones/detective';
 import { DetectiveLLM } from './esquemas';
-import { USO_CERO, evidenciaDelCaso, llamarTool, sumarUso, type DepsAgentes } from './util';
+import { USO_CERO, evidenciaDelCaso, llamarTool, sumarUso, type DepsAgentes, type LlamadaTool } from './util';
 
 const MAX_PASOS = 3; // guarda contra loops: el plan real termina en 2
 
@@ -60,6 +60,37 @@ async function ejecutar(
       return { h: r ? { ciclos: r.data } : {}, ev: r?.evidencia ?? [] };
     }
   }
+}
+
+const MAX_SALTOS = 2;
+
+/**
+ * Sigue el dinero hasta 2 saltos (M-01 → M-02 → M-03). Solo tools, 0 LLM:
+ * en cada salto pide `reenvio_rapido` de la siguiente cuenta y continúa si
+ * esa cuenta también reenvía rápido.
+ */
+async function seguirCadena(cuenta: string, h: Hallazgos, ctx: ToolContext, evidencia: Evidencia[]): Promise<string[]> {
+  const cadena = [cuenta];
+  if (!h.reenvio) return cadena;
+  if (!h.reenvio.marcado) return [...cadena, ...h.reenvio.destinos.filter((d) => d !== cuenta)];
+
+  let actual: ResultadoReenvio = h.reenvio;
+  for (let salto = 0; salto < MAX_SALTOS && actual.marcado; salto++) {
+    const siguiente: string | undefined = actual.destinos.find((d) => !cadena.includes(d));
+    if (!siguiente) break;
+    cadena.push(siguiente);
+    if (salto === MAX_SALTOS - 1) break;
+    const r: LlamadaTool<ResultadoReenvio> | null = await llamarTool(ctx, 'reenvio_rapido', siguiente, ResultadoReenvio);
+    if (!r) break;
+    evidencia.push(...r.evidencia);
+    actual = r.data;
+    if (!actual.marcado) {
+      const final = actual.destinos.find((d) => !cadena.includes(d));
+      if (final) cadena.push(final);
+      break;
+    }
+  }
+  return cadena;
 }
 
 /** 🔍 Detective: tools por plan fijo, riesgo por tabla, LLM solo en `medio`. */
@@ -136,10 +167,11 @@ export async function detective(
     }
   }
 
+  const cadena = await seguirCadena(cuenta, h, ctx, evidencia);
   const { salida } = ensamblarDetective({
     hallazgos: h,
-    evidencia: ids,
-    cadena: h.reenvio ? [cuenta, ...h.reenvio.destinos] : [cuenta],
+    evidencia: [...new Set(evidencia.map((e) => e.id))],
+    cadena,
     llm,
   });
   return { salida, uso: sumarUso(uso) };

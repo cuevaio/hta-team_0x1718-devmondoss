@@ -14,9 +14,12 @@ export async function coordinador(caso: Caso, ctx: ToolContext): Promise<AgentRe
   const v = ctx.memoria?.get(destino) ?? null;
   const memoria_hit = !!v && v.veredicto === 'mula_confirmada' && veredictoVigente(v);
 
-  // El perfil solo hace falta si ninguna salida temprana aplica
+  // "Conocido-limpio" = el cliente YA le transfería antes (no es beneficiario nuevo)
+  // y es una cuenta propia con historia. Una cuenta antigua pero nueva para el
+  // cliente (p. ej. la Bodega) no cuenta: ahí sí hay que mirar al destino.
   let destino_conocido_limpio = false;
-  if (!memoria_hit && !caso.nivel0.atajo && caso.puerta === 'transferencia') {
+  const beneficiarioNuevo = caso.nivel0.senales.includes('beneficiario_nuevo');
+  if (!memoria_hit && !caso.nivel0.atajo && caso.puerta === 'transferencia' && !beneficiarioNuevo) {
     const perfil =
       evidenciaDelCaso(caso.evidencia, 'perfil_cuenta', ResultadoPerfil, destino) ??
       (await llamarTool(ctx, 'perfil_cuenta', destino, ResultadoPerfil));

@@ -10,6 +10,15 @@ import type { DepsAgentes } from './util';
 
 export { crearAgentesMock, detectarEscenario } from './mocks';
 export { AgentError, crearRunAgent } from './runtime';
+export {
+  acumularIA,
+  auditar,
+  continuarGuardian,
+  debeAuditar,
+  investigar,
+  usoTotal,
+  type ResultadoInvestigacion,
+} from './orquestador';
 
 /** Agentes reales sobre un `runAgent` dado (en tests se le pasa uno falso). */
 export function crearAgentes(deps: DepsAgentes, opciones: OpcionesDetective = {}): AgentsApi {

@@ -1,7 +1,14 @@
+/**
+ * Simulación para tests y evals: ToolContext en memoria a partir de hallazgos,
+ * runAgent falso y constructor de casos. Sirve también como REFERENCIA de lo
+ * que el ToolContext real de Ale tiene que cumplir (ver lib/agents/README.md).
+ *
+ * No se usa en producción.
+ */
 import type { z } from 'zod';
 import type { Caso, Evidencia, RunAgent, ToolContext, UsoAgente, Veredicto } from '@/lib/contracts';
-import { AgentError } from '@/lib/agents/runtime';
-import type { Hallazgos } from '@/lib/agents/decisiones/detective';
+import { AgentError } from './runtime';
+import type { Hallazgos } from './decisiones/detective';
 
 /** Ledger falso: asigna ids E-xx como lo hará `lib/evidence/ledger.ts` de Ale. */
 export function crearLedger() {

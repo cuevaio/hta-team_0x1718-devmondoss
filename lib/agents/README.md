@@ -4,14 +4,35 @@ Agentes del sistema. Diseño y por qué: [AGENT_PLAYBOOKS](../../docs/context/to
 
 ## Cómo se usa (para `lib/pipeline.ts`)
 
-```ts
-import { obtenerAgentes } from '@/lib/agents';
+La forma recomendada es el **orquestador**: nunca lanza, y si un agente falla
+lo reporta en `errores` y su salida queda ausente (→ la Policy aplica P10).
 
-const agentes = obtenerAgentes();            // AGENTS_MOCK=1 → mocks; si no, Claude real
-const { salida, uso } = await agentes.detective(caso, ctx);
+```ts
+import { obtenerAgentes, investigar, continuarGuardian, auditar, debeAuditar, acumularIA } from '@/lib/agents';
+
+const agentes = obtenerAgentes();               // AGENTS_MOCK=1 → mocks; si no, Claude real
+
+// 1. Después de las reglas (score ≥ 3 o alerta AML):
+const inv = await investigar(caso, ctx, agentes);
+caso.salidas = { ...caso.salidas, ...inv.salidas };
+caso.ia = acumularIA(caso.ia, inv.uso);
+
+// 2. Si el Guardián preguntó y no terminó: mostrar inv.turnoGuardian.mensaje y esperar.
+//    Con la respuesta (o '' si no respondió a tiempo):
+const t = await continuarGuardian(caso, ctx, agentes, texto);
+if (t.turno?.terminado) caso.salidas.guardian = t.turno.salida;
+caso.ia = acumularIA(caso.ia, { guardian: t.uso });
+
+// 3. Policy (tuya) → caso.decision
+// 4. Expediente, después de la decisión:
+if (debeAuditar(caso)) {
+  const a = await auditar(caso, ctx, agentes);
+  caso.salidas.auditor = a.salida;
+  caso.ia = acumularIA(caso.ia, { auditor: a.uso });
+}
 ```
 
-`AgentsApi` está en `lib/contracts/firmas.ts`. Cada método devuelve `{ salida, uso }`; **suma `uso` a `caso.ia`**.
+También puedes llamar a `AgentsApi` directo (`agentes.detective(caso, ctx)`); está en `lib/contracts/firmas.ts`.
 
 ## Lo que `ctx` (ToolContext) debe cumplir
 
@@ -48,8 +69,11 @@ Devuelve `{ mensaje?, terminado, salida? }`. Cuando `terminado` es `true`, `sali
 | `runtime.ts` | `runAgent`: validación + 1 reintento + `AgentError` |
 | `coordinador.ts` `detective.ts` `guardian.ts` `auditor.ts` | adaptadores: unen decisiones + tools + LLM, con fallback |
 | `mocks.ts` | `AGENTS_MOCK=1`: salidas fijas por escenario, misma lógica de ensamblado |
+| `orquestador.ts` | `investigar`, `continuarGuardian`, `auditar`, `debeAuditar`, `acumularIA` |
+| `simulacion.ts` | ToolContext en memoria + runAgent falso: para testear tu pipeline sin LLM, y como **referencia** de lo que tu ToolContext debe cumplir |
+| `evals.ts` | E7 y gasto de LLM por escenario (`npm run evals`) |
 | `index.ts` | `obtenerAgentes()` y `crearAgentes(deps)` |
 
 ## Estado
 
-Probado con LLM y tools falsos (99 tests). **Pendiente de probar contra la API real:** falta una `ANTHROPIC_API_KEY`.
+Probado con LLM y tools falsos (108 tests). `npm run evals` muestra el gasto por escenario. **Pendiente de probar contra la API real:** falta una `ANTHROPIC_API_KEY`.
