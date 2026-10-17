@@ -47,5 +47,6 @@ export type Caso = z.infer<typeof Caso>;
 export * from './caso';
 export * from './agentes';
 export * from './memoria';
+export * from './analytics';
 export * from './validadores';
 export type * from './firmas';

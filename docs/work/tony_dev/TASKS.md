@@ -1,11 +1,21 @@
 # Tony_dev — Agentes
 
+> 📐 **Antes de escribir cualquier prompt:** [AGENT_PLAYBOOKS.md](../../context/tony_dev/AGENT_PLAYBOOKS.md) define pasos fijos, entradas, salidas cerradas y tope de gasto de cada agente. Las decisiones deterministas ya están en `lib/agents/decisiones/` con tests.
+
 > Fuente de verdad: [../00_WORK_BLUEPRINT.md](../00_WORK_BLUEPRINT.md). **Trabajas solo en `main`, sin pedir permiso.** Avisa solo si cambias un contrato (`CONTRACT:` en el commit).
 
 **Eres dueño de:** `lib/contracts/agentes.ts` · `lib/agents/**` (runtime, LLM, 4 agentes, prompts, tools de agentes, mocks) · `scripts/evals.ts`.
 
 **Entregas a Ale:** `AgentsApi` + mocks (a la hora 5).
 **Recibes de Ale:** `ToolContext` (datos, analytics, memoria, evidencia, mensajes).
+
+## ✅ Hecho: arquitectura de decisión
+- [x] `AGENT_PLAYBOOKS.md`: playbook de los 4 agentes
+- [x] `lib/agents/decisiones/`: tabla del Coordinador, riesgo base y plan de tools del Detective, guion y estado final del Guardián, afirmaciones candidatas y ensamblado del Auditor
+- [x] `lib/agents/esquemas.ts`: esquemas acotados que ve el LLM
+- [x] `lib/contracts/analytics.ts`: salida de cada tool de Ale, ids de señales, umbrales, nombres de fuente
+- [x] `TurnoGuardian` en `firmas.ts` (el Guardián conversa varios turnos)
+- [x] 33 tests de decisión
 
 ## H0–2 · Contratos
 - [x] Los esquemas zod de los 4 agentes ya existen en `lib/contracts/agentes.ts` (los dejó escritos Ale en S0): **revísalos y ajústalos**
@@ -25,8 +35,9 @@
 - [ ] Conteo de llamadas/tokens/ms en cada `AgentResult`
 
 ## H9–12 · 🧭 Coordinador
-- [ ] Consulta Memoria primero → salida temprana
-- [ ] Decide qué especialistas invocar
+- [x] Tabla de decisión (`decidirCoordinador`): 0 llamadas de LLM
+- [ ] Armar el `BriefingCoordinador` desde el `ToolContext` (memoria, perfil de la cuenta destino)
+- [ ] Adaptador a `AgentsApi.coordinador`
 - [ ] Definición de tools del LLM sobre `ctx.analytics`
 - [ ] Jorge → 0 llamadas; Bodega → solo Detective
 

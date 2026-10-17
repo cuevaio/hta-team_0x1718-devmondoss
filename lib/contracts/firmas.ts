@@ -144,6 +144,18 @@ export interface ToolContext {
   };
 }
 
+/**
+ * CONTRACT: el Guardián conversa varios turnos (máx. 3), así que cada turno
+ * devuelve el mensaje a enviar y, solo al terminar, la salida final.
+ */
+export interface TurnoGuardian {
+  /** Texto de la siguiente pregunta (del banco cerrado). Ausente al terminar. */
+  mensaje?: string;
+  terminado: boolean;
+  /** Presente solo cuando `terminado` es true. */
+  salida?: SalidaGuardian;
+}
+
 export interface AgentResult<T> {
   salida: T;
   uso: UsoAgente;
@@ -159,6 +171,6 @@ export interface AgentsApi {
     caso: Caso,
     ctx: ToolContext,
     mensajeCliente?: string,
-  ): Promise<AgentResult<SalidaGuardian>>;
+  ): Promise<AgentResult<TurnoGuardian>>;
   auditor(caso: Caso, ctx: ToolContext): Promise<AgentResult<SalidaAuditor>>;
 }
