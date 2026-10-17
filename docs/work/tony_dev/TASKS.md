@@ -23,7 +23,7 @@
 - [x] Adaptadores de los 4 agentes con fallback determinista
 - [x] `lib/agents/README.md` con el protocolo para el pipeline de Ale
 - [x] Tests de decisiones, adaptadores, runtime y mocks; tsc y eslint limpios
-- [ ] ⚠️ Probar `llm.ts` contra la API real (falta `ANTHROPIC_API_KEY`)
+- [ ] ⚠️ Probar con un LLM real: primero **Ollama local** (plan en [INFRA_Y_ORQUESTACION §6](../../context/tony_dev/INFRA_Y_ORQUESTACION.md#6-plan-probar-con-un-modelo-local-ollama--para-después)), luego Claude si hay key
 - [x] Detective: sigue la cadena a 2 saltos (M-01 → M-02 → M-03), solo tools
 - [x] Coordinador: "destino conocido-limpio" exige que el cliente ya le transfiriera antes (la Bodega antigua pero nueva para el cliente sí pasa por el Detective)
 - [x] `lib/agents/orquestador.ts`: `investigar`, `continuarGuardian`, `auditar`, `debeAuditar`, `acumularIA` para el pipeline de Ale
@@ -36,7 +36,10 @@
 - [x] Modo `simulado` (sin key): agentes reales + LLM simulado determinista
 - [x] Pipeline y demo de Ale usan `obtenerAgentes()`: `npm run demo` 8/8, 220 tests
 - [x] Auditor: si el cliente está en riesgo (Guardián), no se recomienda descartar
-- [ ] `UMBRAL_REPORTE` para `montoCercaUmbral` (estructuración)
+- [x] Estructuración: corre siempre en el paso 2 del Detective (usa el umbral de Ale)
+- [x] Orquestador blindado contra errores sincrónicos (reporte de Ale en SYNC 2)
+- [x] Documentado: [INFRA_Y_ORQUESTACION.md](../../context/tony_dev/INFRA_Y_ORQUESTACION.md) (infraestructura, orquestación, LangGraph no hace falta, laptop como servidor, plan Ollama, pendientes)
+- [ ] Números de `npm run evals` en una slide del pitch
 
 ## H0–2 · Contratos
 - [x] Los esquemas zod de los 4 agentes ya existen en `lib/contracts/agentes.ts` (los dejó escritos Ale en S0): **revísalos y ajústalos**

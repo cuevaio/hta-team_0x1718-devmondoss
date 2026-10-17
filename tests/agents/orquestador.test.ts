@@ -81,6 +81,14 @@ describe('orquestador', () => {
     expect(r.turnoGuardian).not.toBeNull();
   });
 
+  it('a la AgentsApi le falta un método → error capturado, no tumba la request (reporte de Ale)', async () => {
+    const base = crearAgentesMock();
+    const incompleto = { ...base, detective: undefined } as unknown as AgentsApi;
+    const r = await investigar(rosa(), crearCtx({}).ctx, incompleto);
+    expect(r.errores.map((e) => e.agente)).toEqual(['detective']);
+    expect(r.salidas.detective).toBeUndefined();
+  });
+
   it('coordinador caído → se invoca a ambos (conservador)', async () => {
     const base = crearAgentesMock();
     const roto: AgentsApi = { ...base, coordinador: async () => { throw new Error('x'); } };

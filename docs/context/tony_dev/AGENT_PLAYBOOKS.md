@@ -76,7 +76,7 @@ flowchart TD
     S["Caso con cuenta destino"] --> P1["PASO 1 — en paralelo<br/>perfil_cuenta · listas_riesgo · fan_in · reenvio_rapido"]
     P1 --> L{"¿en_lista?"}
     L -->|sí| ALTO
-    L -->|no| P2["PASO 2 — condicional<br/>reenvio marcado → ciclos<br/>monto cerca del umbral → estructuracion"]
+    L -->|no| P2["PASO 2<br/>reenvio marcado → ciclos<br/>estructuracion siempre (sin costo de IA)"]
     P2 --> T["TIPOLOGÍAS marcadas por tools"]
     T --> B{"RIESGO BASE (tabla)"}
     B -->|"en_lista · circular · fan_in+reenvio"| ALTO["riesgo = alto<br/>hipótesis por plantilla · 0 LLM"]
@@ -102,6 +102,7 @@ flowchart TD
 - **Entrada (`BriefingDetective`):** hallazgos de las tools (números ya calculados) + tipo y antigüedad de la cuenta. Nunca transacciones crudas.
 - **Gasto:** Rosa 0, Jorge 0, Bodega 1. Alerta AML con patrón claro: 0.
 - **Parada:** el plan de tools termina cuando `siguientesTools()` devuelve `[]` (máx. 2 pasos).
+- **Estructuración:** corre siempre en el paso 2: mira si la *cuenta destino* recibe muchas operaciones justo bajo el umbral de reporte, algo que no depende del monto de esta transferencia. El umbral lo da Ale (`ctx.data.umbralReporte()`).
 
 ---
 

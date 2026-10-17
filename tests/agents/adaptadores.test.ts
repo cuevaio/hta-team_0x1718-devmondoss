@@ -45,7 +45,8 @@ describe('🔍 Detective (adaptador)', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0].nombre).toBe('detective');
     expect(r.salida.riesgo_destino).toBe('bajo');
-    expect(llamadas).not.toContain('ciclos'); // sin reenvío marcado no se pide el paso 2
+    expect(llamadas).not.toContain('ciclos'); // sin reenvío marcado no se piden ciclos
+    expect(llamadas).toContain('estructuracion'); // estructuración corre siempre (sin costo de IA)
   });
 
   it('Bodega con LLM caído → se queda en medio (modo seguro)', async () => {

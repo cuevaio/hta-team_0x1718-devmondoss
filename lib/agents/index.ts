@@ -1,7 +1,7 @@
 import type { AgentsApi } from '@/lib/contracts';
 import { auditor } from './auditor';
 import { coordinador } from './coordinador';
-import { detective, type OpcionesDetective } from './detective';
+import { detective } from './detective';
 import { guardianTurno } from './guardian';
 import { crearLlmAnthropic } from './llm';
 import { crearRunAgent, modelosDesdeEnv } from './runtime';
@@ -22,10 +22,10 @@ export {
 } from './orquestador';
 
 /** Agentes reales sobre un `runAgent` dado (en tests se le pasa uno falso). */
-export function crearAgentes(deps: DepsAgentes, opciones: OpcionesDetective = {}): AgentsApi {
+export function crearAgentes(deps: DepsAgentes): AgentsApi {
   return {
     coordinador: (caso, ctx) => coordinador(caso, ctx),
-    detective: (caso, ctx) => detective(caso, ctx, deps, opciones),
+    detective: (caso, ctx) => detective(caso, ctx, deps),
     guardianTurno: (caso, ctx, mensaje) => guardianTurno(caso, ctx, deps, mensaje),
     auditor: (caso, ctx) => auditor(caso, ctx, deps),
   };

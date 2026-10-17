@@ -105,12 +105,17 @@ describe('🔍 Detective', () => {
     expect(riesgoBase(['fan_in', 'reenvio_rapido'], false)).toBe('medio');
     expect(riesgoBase(['en_lista'], false)).toBe('alto');
   });
-  it('plan de tools: paso 1 completo, paso 2 condicional, y termina', () => {
+  it('plan de tools: paso 1 completo, paso 2 (ciclos si hay reenvío + estructuración siempre), y termina', () => {
     expect(siguientesTools({})).toEqual(['perfil_cuenta', 'listas_riesgo', 'fan_in', 'reenvio_rapido']);
-    expect(siguientesTools(m01)).toEqual(['ciclos']);
-    expect(siguientesTools({ ...m01, ciclos: { cuenta: 'M-01', ciclo: null, marcado: false } })).toEqual([]);
-    expect(siguientesTools(bodega)).toEqual([]);
-    expect(siguientesTools(bodega, { montoCercaUmbral: true })).toEqual(['estructuracion']);
+    expect(siguientesTools(m01)).toEqual(['ciclos', 'estructuracion']);
+    const sinEstructuracion = { cuenta: 'M-01', operaciones_cercanas_umbral: 0, marcado: false };
+    expect(siguientesTools({ ...m01, ciclos: { cuenta: 'M-01', ciclo: null, marcado: false }, estructuracion: sinEstructuracion })).toEqual([]);
+    expect(siguientesTools(bodega)).toEqual(['estructuracion']); // siempre: no depende del monto actual
+  });
+  it('estructuración marcada sola → medio (el LLM decide si es falso positivo)', () => {
+    const h: Hallazgos = { ...bodega, fan_in: { ...bodega.fan_in!, marcado: false }, estructuracion: { cuenta: 'BODEGA', operaciones_cercanas_umbral: 5, marcado: true } };
+    expect(tipologiasMarcadas(h)).toEqual(['estructuracion']);
+    expect(riesgoBase(tipologiasMarcadas(h))).toBe('medio');
   });
   it('en lista de riesgo corta el plan', () => {
     const h: Hallazgos = { ...m01, listas: { cuenta: 'M-01', en_lista: true, listas: ['UIF'] } };
