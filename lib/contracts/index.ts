@@ -50,3 +50,6 @@ export * from './memoria';
 export * from './analytics';
 export * from './validadores';
 export type * from './firmas';
+// `firmas.ts` también exporta constantes del presupuesto por caso (19 §7).
+// `export type *` no las trae, así que se reexportan como valores.
+export { MAX_LLAMADAS_POR_CASO, LIMITES_AGENTE } from './firmas';

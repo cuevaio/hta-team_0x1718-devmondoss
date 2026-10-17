@@ -1,0 +1,1936 @@
+{
+  "generado": "2026-10-17T02:13:00.000Z",
+  "nota": "DATOS 100% SINTÉTICOS, generados por scripts/seed.ts con PRNG determinista (seed 1718). No corresponden a ninguna persona, cuenta ni institución real. Ningún campo contiene atributos demográficos, de salud ni socioeconómicos (doc 15, R1).",
+  "umbral_reporte": 10000,
+  "cuentas": [
+    {
+      "id": "C-ROSA",
+      "nombre": "Rosa Quispe",
+      "tipo": "persona",
+      "abierta": "2019-03-11"
+    },
+    {
+      "id": "C-JORGE",
+      "nombre": "Jorge Mamani",
+      "tipo": "persona",
+      "abierta": "2021-07-02"
+    },
+    {
+      "id": "C-LUCIA",
+      "nombre": "Lucía Flores",
+      "tipo": "persona",
+      "abierta": "2020-01-20"
+    },
+    {
+      "id": "M-01",
+      "nombre": "Cuenta M-01",
+      "tipo": "desconocido",
+      "abierta": "2026-10-09"
+    },
+    {
+      "id": "M-02",
+      "nombre": "Cuenta M-02",
+      "tipo": "desconocido",
+      "abierta": "2026-10-10"
+    },
+    {
+      "id": "M-03",
+      "nombre": "Cuenta M-03",
+      "tipo": "desconocido",
+      "abierta": "2026-10-11"
+    },
+    {
+      "id": "B-PEPE",
+      "nombre": "Bodega Don Pepe",
+      "tipo": "comercio",
+      "abierta": "2017-05-04"
+    },
+    {
+      "id": "H-SOL",
+      "nombre": "Hotel Sol Andino",
+      "tipo": "comercio",
+      "abierta": "2015-11-30"
+    },
+    {
+      "id": "C-VIC-01",
+      "nombre": "Cliente 1",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-02",
+      "nombre": "Cliente 2",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-03",
+      "nombre": "Cliente 3",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-04",
+      "nombre": "Cliente 4",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-05",
+      "nombre": "Cliente 5",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-06",
+      "nombre": "Cliente 6",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-07",
+      "nombre": "Cliente 7",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-08",
+      "nombre": "Cliente 8",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-09",
+      "nombre": "Cliente 9",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-10",
+      "nombre": "Cliente 10",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-11",
+      "nombre": "Cliente 11",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-12",
+      "nombre": "Cliente 12",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-13",
+      "nombre": "Cliente 13",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-VIC-14",
+      "nombre": "Cliente 14",
+      "tipo": "persona",
+      "abierta": "2022-01-01"
+    },
+    {
+      "id": "C-COMP-01",
+      "nombre": "Comprador 1",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-02",
+      "nombre": "Comprador 2",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-03",
+      "nombre": "Comprador 3",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-04",
+      "nombre": "Comprador 4",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-05",
+      "nombre": "Comprador 5",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-06",
+      "nombre": "Comprador 6",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-07",
+      "nombre": "Comprador 7",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-08",
+      "nombre": "Comprador 8",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-09",
+      "nombre": "Comprador 9",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-10",
+      "nombre": "Comprador 10",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-11",
+      "nombre": "Comprador 11",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-12",
+      "nombre": "Comprador 12",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-13",
+      "nombre": "Comprador 13",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-14",
+      "nombre": "Comprador 14",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-15",
+      "nombre": "Comprador 15",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-16",
+      "nombre": "Comprador 16",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-17",
+      "nombre": "Comprador 17",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-18",
+      "nombre": "Comprador 18",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-19",
+      "nombre": "Comprador 19",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-20",
+      "nombre": "Comprador 20",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-21",
+      "nombre": "Comprador 21",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-22",
+      "nombre": "Comprador 22",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-COMP-23",
+      "nombre": "Comprador 23",
+      "tipo": "persona",
+      "abierta": "2021-06-15"
+    },
+    {
+      "id": "C-PROV-01",
+      "nombre": "Proveedor mayorista",
+      "tipo": "comercio",
+      "abierta": "2016-02-02"
+    }
+  ],
+  "clientes": [
+    {
+      "id": "rosa",
+      "nombre": "Rosa Quispe",
+      "cuenta": "C-ROSA",
+      "promedio_90d": 420,
+      "beneficiarios_habituales": [
+        "B-PEPE"
+      ],
+      "dispositivo_habitual": "dev-rosa-01",
+      "canales_disponibles": [
+        "app",
+        "sms",
+        "llamada"
+      ],
+      "canales_comprometidos": [],
+      "alcanzable": true
+    },
+    {
+      "id": "jorge",
+      "nombre": "Jorge Mamani",
+      "cuenta": "C-JORGE",
+      "promedio_90d": 380,
+      "beneficiarios_habituales": [],
+      "dispositivo_habitual": "dev-jorge-01",
+      "canales_disponibles": [
+        "app",
+        "sms"
+      ],
+      "canales_comprometidos": [],
+      "alcanzable": true
+    },
+    {
+      "id": "lucia",
+      "nombre": "Lucía Flores",
+      "cuenta": "C-LUCIA",
+      "promedio_90d": 650,
+      "beneficiarios_habituales": [
+        "H-SOL"
+      ],
+      "dispositivo_habitual": "dev-lucia-01",
+      "canales_disponibles": [
+        "app",
+        "sms"
+      ],
+      "canales_comprometidos": [
+        "app"
+      ],
+      "alcanzable": false
+    }
+  ],
+  "movimientos": [
+    {
+      "id": "T-0068",
+      "origen": "C-LUCIA",
+      "destino": "H-SOL",
+      "monto": 637.52,
+      "moneda": "PEN",
+      "t": "2026-04-20T02:13:00.000Z"
+    },
+    {
+      "id": "T-0067",
+      "origen": "C-LUCIA",
+      "destino": "H-SOL",
+      "monto": 700.77,
+      "moneda": "PEN",
+      "t": "2026-05-20T02:13:00.000Z"
+    },
+    {
+      "id": "T-0066",
+      "origen": "C-LUCIA",
+      "destino": "H-SOL",
+      "monto": 687.74,
+      "moneda": "PEN",
+      "t": "2026-06-19T02:13:00.000Z"
+    },
+    {
+      "id": "T-0065",
+      "origen": "C-LUCIA",
+      "destino": "H-SOL",
+      "monto": 700.95,
+      "moneda": "PEN",
+      "t": "2026-07-19T02:13:00.000Z"
+    },
+    {
+      "id": "T-0141",
+      "origen": "C-VIC-05",
+      "destino": "H-SOL",
+      "monto": 227.63,
+      "moneda": "PEN",
+      "t": "2026-07-28T23:49:39.611Z"
+    },
+    {
+      "id": "T-0096",
+      "origen": "C-COMP-17",
+      "destino": "H-SOL",
+      "monto": 112.07,
+      "moneda": "PEN",
+      "t": "2026-07-29T00:07:04.305Z"
+    },
+    {
+      "id": "T-0200",
+      "origen": "C-VIC-04",
+      "destino": "B-PEPE",
+      "monto": 119.26,
+      "moneda": "PEN",
+      "t": "2026-07-29T06:57:45.393Z"
+    },
+    {
+      "id": "T-0177",
+      "origen": "C-COMP-05",
+      "destino": "B-PEPE",
+      "monto": 86.73,
+      "moneda": "PEN",
+      "t": "2026-07-29T17:05:11.531Z"
+    },
+    {
+      "id": "T-0163",
+      "origen": "C-COMP-20",
+      "destino": "C-PROV-01",
+      "monto": 157.21,
+      "moneda": "PEN",
+      "t": "2026-08-02T02:16:09.203Z"
+    },
+    {
+      "id": "T-0097",
+      "origen": "C-VIC-08",
+      "destino": "C-PROV-01",
+      "monto": 32.76,
+      "moneda": "PEN",
+      "t": "2026-08-03T10:17:51.524Z"
+    },
+    {
+      "id": "T-0108",
+      "origen": "C-LUCIA",
+      "destino": "H-SOL",
+      "monto": 175.9,
+      "moneda": "PEN",
+      "t": "2026-08-04T08:29:34.263Z"
+    },
+    {
+      "id": "T-0178",
+      "origen": "C-VIC-05",
+      "destino": "B-PEPE",
+      "monto": 301.47,
+      "moneda": "PEN",
+      "t": "2026-08-04T16:20:06.322Z"
+    },
+    {
+      "id": "T-0184",
+      "origen": "C-COMP-16",
+      "destino": "C-PROV-01",
+      "monto": 157.82,
+      "moneda": "PEN",
+      "t": "2026-08-05T17:17:15.577Z"
+    },
+    {
+      "id": "T-0062",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 256.39,
+      "moneda": "PEN",
+      "t": "2026-08-06T02:13:00.000Z"
+    },
+    {
+      "id": "T-0080",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 152.62,
+      "moneda": "PEN",
+      "t": "2026-08-06T02:13:00.000Z"
+    },
+    {
+      "id": "T-0120",
+      "origen": "C-COMP-06",
+      "destino": "C-PROV-01",
+      "monto": 76.8,
+      "moneda": "PEN",
+      "t": "2026-08-06T11:07:18.306Z"
+    },
+    {
+      "id": "T-0168",
+      "origen": "C-COMP-01",
+      "destino": "C-PROV-01",
+      "monto": 163.26,
+      "moneda": "PEN",
+      "t": "2026-08-08T11:03:56.353Z"
+    },
+    {
+      "id": "T-0161",
+      "origen": "C-COMP-07",
+      "destino": "B-PEPE",
+      "monto": 273.7,
+      "moneda": "PEN",
+      "t": "2026-08-09T07:55:45.340Z"
+    },
+    {
+      "id": "T-0094",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 355.82,
+      "moneda": "PEN",
+      "t": "2026-08-09T10:18:21.824Z"
+    },
+    {
+      "id": "T-0061",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 391.01,
+      "moneda": "PEN",
+      "t": "2026-08-10T02:13:00.000Z"
+    },
+    {
+      "id": "T-0144",
+      "origen": "C-COMP-15",
+      "destino": "B-PEPE",
+      "monto": 275.46,
+      "moneda": "PEN",
+      "t": "2026-08-10T18:57:50.713Z"
+    },
+    {
+      "id": "T-0089",
+      "origen": "C-VIC-13",
+      "destino": "H-SOL",
+      "monto": 82.48,
+      "moneda": "PEN",
+      "t": "2026-08-11T02:40:20.742Z"
+    },
+    {
+      "id": "T-0083",
+      "origen": "C-VIC-02",
+      "destino": "C-PROV-01",
+      "monto": 85.53,
+      "moneda": "PEN",
+      "t": "2026-08-11T13:14:31.280Z"
+    },
+    {
+      "id": "T-0079",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 285.75,
+      "moneda": "PEN",
+      "t": "2026-08-12T02:13:00.000Z"
+    },
+    {
+      "id": "T-0169",
+      "origen": "C-COMP-14",
+      "destino": "B-PEPE",
+      "monto": 250.09,
+      "moneda": "PEN",
+      "t": "2026-08-12T17:50:23.430Z"
+    },
+    {
+      "id": "T-0190",
+      "origen": "C-COMP-09",
+      "destino": "C-PROV-01",
+      "monto": 126.33,
+      "moneda": "PEN",
+      "t": "2026-08-13T01:07:17.580Z"
+    },
+    {
+      "id": "T-0102",
+      "origen": "C-LUCIA",
+      "destino": "C-PROV-01",
+      "monto": 203.15,
+      "moneda": "PEN",
+      "t": "2026-08-13T04:46:17.028Z"
+    },
+    {
+      "id": "T-0162",
+      "origen": "C-VIC-11",
+      "destino": "C-PROV-01",
+      "monto": 29.17,
+      "moneda": "PEN",
+      "t": "2026-08-13T05:07:11.020Z"
+    },
+    {
+      "id": "T-0148",
+      "origen": "C-COMP-14",
+      "destino": "H-SOL",
+      "monto": 368.55,
+      "moneda": "PEN",
+      "t": "2026-08-13T10:45:27.667Z"
+    },
+    {
+      "id": "T-0151",
+      "origen": "C-COMP-01",
+      "destino": "B-PEPE",
+      "monto": 211.71,
+      "moneda": "PEN",
+      "t": "2026-08-13T23:26:29.318Z"
+    },
+    {
+      "id": "T-0060",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 322.85,
+      "moneda": "PEN",
+      "t": "2026-08-14T02:13:00.000Z"
+    },
+    {
+      "id": "T-0194",
+      "origen": "C-COMP-14",
+      "destino": "B-PEPE",
+      "monto": 355.17,
+      "moneda": "PEN",
+      "t": "2026-08-14T02:40:18.101Z"
+    },
+    {
+      "id": "T-0146",
+      "origen": "C-COMP-21",
+      "destino": "B-PEPE",
+      "monto": 319.83,
+      "moneda": "PEN",
+      "t": "2026-08-15T00:03:26.218Z"
+    },
+    {
+      "id": "T-0137",
+      "origen": "C-COMP-14",
+      "destino": "C-PROV-01",
+      "monto": 161.04,
+      "moneda": "PEN",
+      "t": "2026-08-15T16:03:09.285Z"
+    },
+    {
+      "id": "T-0185",
+      "origen": "C-COMP-10",
+      "destino": "B-PEPE",
+      "monto": 273.75,
+      "moneda": "PEN",
+      "t": "2026-08-16T05:45:04.545Z"
+    },
+    {
+      "id": "T-0138",
+      "origen": "C-COMP-20",
+      "destino": "B-PEPE",
+      "monto": 299.73,
+      "moneda": "PEN",
+      "t": "2026-08-17T02:59:42.673Z"
+    },
+    {
+      "id": "T-0129",
+      "origen": "C-COMP-01",
+      "destino": "H-SOL",
+      "monto": 96.61,
+      "moneda": "PEN",
+      "t": "2026-08-17T22:37:19.306Z"
+    },
+    {
+      "id": "T-0059",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 213.83,
+      "moneda": "PEN",
+      "t": "2026-08-18T02:13:00.000Z"
+    },
+    {
+      "id": "T-0064",
+      "origen": "C-LUCIA",
+      "destino": "H-SOL",
+      "monto": 629.1,
+      "moneda": "PEN",
+      "t": "2026-08-18T02:13:00.000Z"
+    },
+    {
+      "id": "T-0078",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 296.6,
+      "moneda": "PEN",
+      "t": "2026-08-18T02:13:00.000Z"
+    },
+    {
+      "id": "T-0183",
+      "origen": "C-COMP-15",
+      "destino": "H-SOL",
+      "monto": 331.89,
+      "moneda": "PEN",
+      "t": "2026-08-18T08:40:22.464Z"
+    },
+    {
+      "id": "T-0091",
+      "origen": "C-COMP-19",
+      "destino": "C-PROV-01",
+      "monto": 128.87,
+      "moneda": "PEN",
+      "t": "2026-08-18T22:21:14.141Z"
+    },
+    {
+      "id": "T-0152",
+      "origen": "C-ROSA",
+      "destino": "C-PROV-01",
+      "monto": 281.8,
+      "moneda": "PEN",
+      "t": "2026-08-18T23:27:02.642Z"
+    },
+    {
+      "id": "T-0188",
+      "origen": "C-COMP-17",
+      "destino": "H-SOL",
+      "monto": 287.64,
+      "moneda": "PEN",
+      "t": "2026-08-20T03:43:54.538Z"
+    },
+    {
+      "id": "T-0112",
+      "origen": "C-VIC-11",
+      "destino": "B-PEPE",
+      "monto": 185.14,
+      "moneda": "PEN",
+      "t": "2026-08-21T04:41:46.611Z"
+    },
+    {
+      "id": "T-0116",
+      "origen": "C-COMP-21",
+      "destino": "H-SOL",
+      "monto": 65.6,
+      "moneda": "PEN",
+      "t": "2026-08-21T23:47:16.214Z"
+    },
+    {
+      "id": "T-0058",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 540.8,
+      "moneda": "PEN",
+      "t": "2026-08-22T02:13:00.000Z"
+    },
+    {
+      "id": "T-0155",
+      "origen": "C-VIC-03",
+      "destino": "H-SOL",
+      "monto": 215.36,
+      "moneda": "PEN",
+      "t": "2026-08-22T08:54:07.582Z"
+    },
+    {
+      "id": "T-0086",
+      "origen": "C-VIC-08",
+      "destino": "B-PEPE",
+      "monto": 195.05,
+      "moneda": "PEN",
+      "t": "2026-08-22T15:48:55.791Z"
+    },
+    {
+      "id": "T-0117",
+      "origen": "C-COMP-22",
+      "destino": "C-PROV-01",
+      "monto": 151.44,
+      "moneda": "PEN",
+      "t": "2026-08-22T15:53:47.097Z"
+    },
+    {
+      "id": "T-0125",
+      "origen": "C-VIC-11",
+      "destino": "B-PEPE",
+      "monto": 198.69,
+      "moneda": "PEN",
+      "t": "2026-08-22T16:44:45.222Z"
+    },
+    {
+      "id": "T-0165",
+      "origen": "C-COMP-02",
+      "destino": "C-PROV-01",
+      "monto": 20.07,
+      "moneda": "PEN",
+      "t": "2026-08-23T00:07:32.083Z"
+    },
+    {
+      "id": "T-0099",
+      "origen": "C-VIC-07",
+      "destino": "B-PEPE",
+      "monto": 34.8,
+      "moneda": "PEN",
+      "t": "2026-08-23T00:26:28.919Z"
+    },
+    {
+      "id": "T-0077",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 206.96,
+      "moneda": "PEN",
+      "t": "2026-08-24T02:13:00.000Z"
+    },
+    {
+      "id": "T-0115",
+      "origen": "C-VIC-04",
+      "destino": "H-SOL",
+      "monto": 365.55,
+      "moneda": "PEN",
+      "t": "2026-08-24T06:11:43.269Z"
+    },
+    {
+      "id": "T-0107",
+      "origen": "C-VIC-06",
+      "destino": "C-PROV-01",
+      "monto": 120.75,
+      "moneda": "PEN",
+      "t": "2026-08-24T09:34:32.234Z"
+    },
+    {
+      "id": "T-0192",
+      "origen": "C-VIC-14",
+      "destino": "B-PEPE",
+      "monto": 267.79,
+      "moneda": "PEN",
+      "t": "2026-08-25T00:53:38.252Z"
+    },
+    {
+      "id": "T-0139",
+      "origen": "C-ROSA",
+      "destino": "C-PROV-01",
+      "monto": 354.58,
+      "moneda": "PEN",
+      "t": "2026-08-25T06:16:40.284Z"
+    },
+    {
+      "id": "T-0127",
+      "origen": "C-COMP-21",
+      "destino": "H-SOL",
+      "monto": 127.63,
+      "moneda": "PEN",
+      "t": "2026-08-25T16:06:30.169Z"
+    },
+    {
+      "id": "T-0057",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 228.84,
+      "moneda": "PEN",
+      "t": "2026-08-26T02:13:00.000Z"
+    },
+    {
+      "id": "T-0101",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 209.76,
+      "moneda": "PEN",
+      "t": "2026-08-27T15:18:58.891Z"
+    },
+    {
+      "id": "T-0158",
+      "origen": "C-COMP-02",
+      "destino": "C-PROV-01",
+      "monto": 338.48,
+      "moneda": "PEN",
+      "t": "2026-08-28T14:47:53.729Z"
+    },
+    {
+      "id": "T-0085",
+      "origen": "C-VIC-04",
+      "destino": "H-SOL",
+      "monto": 132.84,
+      "moneda": "PEN",
+      "t": "2026-08-29T07:19:43.052Z"
+    },
+    {
+      "id": "T-0088",
+      "origen": "C-COMP-15",
+      "destino": "H-SOL",
+      "monto": 192.33,
+      "moneda": "PEN",
+      "t": "2026-08-30T00:09:59.743Z"
+    },
+    {
+      "id": "T-0056",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 241.64,
+      "moneda": "PEN",
+      "t": "2026-08-30T02:13:00.000Z"
+    },
+    {
+      "id": "T-0076",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 358.09,
+      "moneda": "PEN",
+      "t": "2026-08-30T02:13:00.000Z"
+    },
+    {
+      "id": "T-0196",
+      "origen": "C-COMP-05",
+      "destino": "C-PROV-01",
+      "monto": 325.85,
+      "moneda": "PEN",
+      "t": "2026-08-30T18:13:25.233Z"
+    },
+    {
+      "id": "T-0156",
+      "origen": "C-VIC-05",
+      "destino": "B-PEPE",
+      "monto": 199.78,
+      "moneda": "PEN",
+      "t": "2026-08-30T23:54:39.268Z"
+    },
+    {
+      "id": "T-0104",
+      "origen": "C-COMP-16",
+      "destino": "H-SOL",
+      "monto": 347.63,
+      "moneda": "PEN",
+      "t": "2026-08-31T01:09:56.788Z"
+    },
+    {
+      "id": "T-0136",
+      "origen": "C-COMP-03",
+      "destino": "B-PEPE",
+      "monto": 31.62,
+      "moneda": "PEN",
+      "t": "2026-08-31T18:57:12.015Z"
+    },
+    {
+      "id": "T-0113",
+      "origen": "C-VIC-03",
+      "destino": "C-PROV-01",
+      "monto": 211.5,
+      "moneda": "PEN",
+      "t": "2026-09-01T14:38:51.565Z"
+    },
+    {
+      "id": "T-0172",
+      "origen": "C-VIC-10",
+      "destino": "C-PROV-01",
+      "monto": 190.43,
+      "moneda": "PEN",
+      "t": "2026-09-01T16:10:04.720Z"
+    },
+    {
+      "id": "T-0055",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 354.23,
+      "moneda": "PEN",
+      "t": "2026-09-03T02:13:00.000Z"
+    },
+    {
+      "id": "T-0181",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 149.96,
+      "moneda": "PEN",
+      "t": "2026-09-03T04:39:03.558Z"
+    },
+    {
+      "id": "T-0193",
+      "origen": "C-COMP-09",
+      "destino": "B-PEPE",
+      "monto": 346.96,
+      "moneda": "PEN",
+      "t": "2026-09-03T04:45:59.078Z"
+    },
+    {
+      "id": "T-0173",
+      "origen": "C-VIC-08",
+      "destino": "B-PEPE",
+      "monto": 203.67,
+      "moneda": "PEN",
+      "t": "2026-09-04T19:54:04.474Z"
+    },
+    {
+      "id": "T-0075",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 315.83,
+      "moneda": "PEN",
+      "t": "2026-09-05T02:13:00.000Z"
+    },
+    {
+      "id": "T-0126",
+      "origen": "C-COMP-03",
+      "destino": "B-PEPE",
+      "monto": 202.77,
+      "moneda": "PEN",
+      "t": "2026-09-05T14:20:13.628Z"
+    },
+    {
+      "id": "T-0175",
+      "origen": "C-COMP-19",
+      "destino": "B-PEPE",
+      "monto": 197.49,
+      "moneda": "PEN",
+      "t": "2026-09-06T04:52:10.935Z"
+    },
+    {
+      "id": "T-0154",
+      "origen": "C-VIC-10",
+      "destino": "B-PEPE",
+      "monto": 126.52,
+      "moneda": "PEN",
+      "t": "2026-09-06T11:44:25.580Z"
+    },
+    {
+      "id": "T-0179",
+      "origen": "C-COMP-17",
+      "destino": "C-PROV-01",
+      "monto": 209.39,
+      "moneda": "PEN",
+      "t": "2026-09-06T12:55:11.918Z"
+    },
+    {
+      "id": "T-0176",
+      "origen": "C-COMP-20",
+      "destino": "C-PROV-01",
+      "monto": 27.51,
+      "moneda": "PEN",
+      "t": "2026-09-06T22:53:32.022Z"
+    },
+    {
+      "id": "T-0054",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 456.51,
+      "moneda": "PEN",
+      "t": "2026-09-07T02:13:00.000Z"
+    },
+    {
+      "id": "T-0159",
+      "origen": "C-COMP-20",
+      "destino": "H-SOL",
+      "monto": 217.03,
+      "moneda": "PEN",
+      "t": "2026-09-07T04:01:32.783Z"
+    },
+    {
+      "id": "T-0100",
+      "origen": "C-VIC-06",
+      "destino": "C-PROV-01",
+      "monto": 298.03,
+      "moneda": "PEN",
+      "t": "2026-09-08T04:57:06.392Z"
+    },
+    {
+      "id": "T-0135",
+      "origen": "C-COMP-13",
+      "destino": "H-SOL",
+      "monto": 157.11,
+      "moneda": "PEN",
+      "t": "2026-09-09T05:33:53.566Z"
+    },
+    {
+      "id": "T-0111",
+      "origen": "C-COMP-04",
+      "destino": "H-SOL",
+      "monto": 203.25,
+      "moneda": "PEN",
+      "t": "2026-09-09T13:09:15.396Z"
+    },
+    {
+      "id": "T-0170",
+      "origen": "C-VIC-10",
+      "destino": "B-PEPE",
+      "monto": 257.02,
+      "moneda": "PEN",
+      "t": "2026-09-09T15:55:17.838Z"
+    },
+    {
+      "id": "T-0153",
+      "origen": "C-VIC-14",
+      "destino": "B-PEPE",
+      "monto": 264.29,
+      "moneda": "PEN",
+      "t": "2026-09-10T09:51:33.388Z"
+    },
+    {
+      "id": "T-0122",
+      "origen": "C-COMP-08",
+      "destino": "H-SOL",
+      "monto": 44.65,
+      "moneda": "PEN",
+      "t": "2026-09-10T14:32:51.497Z"
+    },
+    {
+      "id": "T-0053",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 452.44,
+      "moneda": "PEN",
+      "t": "2026-09-11T02:13:00.000Z"
+    },
+    {
+      "id": "T-0074",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 353.1,
+      "moneda": "PEN",
+      "t": "2026-09-11T02:13:00.000Z"
+    },
+    {
+      "id": "T-0132",
+      "origen": "C-COMP-17",
+      "destino": "H-SOL",
+      "monto": 196.21,
+      "moneda": "PEN",
+      "t": "2026-09-11T14:42:19.637Z"
+    },
+    {
+      "id": "T-0118",
+      "origen": "C-VIC-10",
+      "destino": "H-SOL",
+      "monto": 290.39,
+      "moneda": "PEN",
+      "t": "2026-09-11T19:10:55.378Z"
+    },
+    {
+      "id": "T-0087",
+      "origen": "C-COMP-10",
+      "destino": "B-PEPE",
+      "monto": 47.92,
+      "moneda": "PEN",
+      "t": "2026-09-12T22:44:48.425Z"
+    },
+    {
+      "id": "T-0121",
+      "origen": "C-COMP-23",
+      "destino": "B-PEPE",
+      "monto": 34.1,
+      "moneda": "PEN",
+      "t": "2026-09-13T17:29:07.883Z"
+    },
+    {
+      "id": "T-0128",
+      "origen": "C-COMP-13",
+      "destino": "B-PEPE",
+      "monto": 31.2,
+      "moneda": "PEN",
+      "t": "2026-09-14T14:32:50.911Z"
+    },
+    {
+      "id": "T-0174",
+      "origen": "C-COMP-17",
+      "destino": "H-SOL",
+      "monto": 315.83,
+      "moneda": "PEN",
+      "t": "2026-09-15T01:02:34.705Z"
+    },
+    {
+      "id": "T-0052",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 212.78,
+      "moneda": "PEN",
+      "t": "2026-09-15T02:13:00.000Z"
+    },
+    {
+      "id": "T-0167",
+      "origen": "C-LUCIA",
+      "destino": "C-PROV-01",
+      "monto": 24.44,
+      "moneda": "PEN",
+      "t": "2026-09-15T07:54:25.937Z"
+    },
+    {
+      "id": "T-0082",
+      "origen": "C-VIC-14",
+      "destino": "C-PROV-01",
+      "monto": 119.94,
+      "moneda": "PEN",
+      "t": "2026-09-15T09:34:08.473Z"
+    },
+    {
+      "id": "T-0123",
+      "origen": "C-VIC-06",
+      "destino": "B-PEPE",
+      "monto": 303.69,
+      "moneda": "PEN",
+      "t": "2026-09-15T20:06:36.486Z"
+    },
+    {
+      "id": "T-0110",
+      "origen": "C-VIC-01",
+      "destino": "B-PEPE",
+      "monto": 74.49,
+      "moneda": "PEN",
+      "t": "2026-09-16T14:22:37.231Z"
+    },
+    {
+      "id": "T-0084",
+      "origen": "C-COMP-09",
+      "destino": "B-PEPE",
+      "monto": 53.85,
+      "moneda": "PEN",
+      "t": "2026-09-17T00:08:24.742Z"
+    },
+    {
+      "id": "T-0063",
+      "origen": "C-LUCIA",
+      "destino": "H-SOL",
+      "monto": 698.51,
+      "moneda": "PEN",
+      "t": "2026-09-17T02:13:00.000Z"
+    },
+    {
+      "id": "T-0073",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 278.42,
+      "moneda": "PEN",
+      "t": "2026-09-17T02:13:00.000Z"
+    },
+    {
+      "id": "T-0081",
+      "origen": "C-VIC-13",
+      "destino": "H-SOL",
+      "monto": 247.81,
+      "moneda": "PEN",
+      "t": "2026-09-18T07:26:20.945Z"
+    },
+    {
+      "id": "T-0180",
+      "origen": "C-VIC-01",
+      "destino": "B-PEPE",
+      "monto": 236.52,
+      "moneda": "PEN",
+      "t": "2026-09-18T19:16:01.563Z"
+    },
+    {
+      "id": "T-0051",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 507.57,
+      "moneda": "PEN",
+      "t": "2026-09-19T02:13:00.000Z"
+    },
+    {
+      "id": "T-0109",
+      "origen": "C-COMP-17",
+      "destino": "B-PEPE",
+      "monto": 367.22,
+      "moneda": "PEN",
+      "t": "2026-09-19T21:33:13.324Z"
+    },
+    {
+      "id": "T-0164",
+      "origen": "C-COMP-22",
+      "destino": "H-SOL",
+      "monto": 49.87,
+      "moneda": "PEN",
+      "t": "2026-09-20T00:47:00.910Z"
+    },
+    {
+      "id": "T-0090",
+      "origen": "C-VIC-10",
+      "destino": "B-PEPE",
+      "monto": 219.58,
+      "moneda": "PEN",
+      "t": "2026-09-21T06:50:45.016Z"
+    },
+    {
+      "id": "T-0095",
+      "origen": "C-COMP-08",
+      "destino": "C-PROV-01",
+      "monto": 190.96,
+      "moneda": "PEN",
+      "t": "2026-09-22T06:43:14.358Z"
+    },
+    {
+      "id": "T-0166",
+      "origen": "C-VIC-12",
+      "destino": "C-PROV-01",
+      "monto": 85.67,
+      "moneda": "PEN",
+      "t": "2026-09-22T08:21:44.649Z"
+    },
+    {
+      "id": "T-0050",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 514.76,
+      "moneda": "PEN",
+      "t": "2026-09-23T02:13:00.000Z"
+    },
+    {
+      "id": "T-0072",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 272.23,
+      "moneda": "PEN",
+      "t": "2026-09-23T02:13:00.000Z"
+    },
+    {
+      "id": "T-0133",
+      "origen": "C-VIC-05",
+      "destino": "B-PEPE",
+      "monto": 190.03,
+      "moneda": "PEN",
+      "t": "2026-09-23T13:01:41.352Z"
+    },
+    {
+      "id": "T-0142",
+      "origen": "C-COMP-04",
+      "destino": "B-PEPE",
+      "monto": 238.4,
+      "moneda": "PEN",
+      "t": "2026-09-23T13:14:41.305Z"
+    },
+    {
+      "id": "T-0114",
+      "origen": "C-VIC-11",
+      "destino": "B-PEPE",
+      "monto": 363.11,
+      "moneda": "PEN",
+      "t": "2026-09-23T19:30:57.696Z"
+    },
+    {
+      "id": "T-0186",
+      "origen": "C-VIC-02",
+      "destino": "C-PROV-01",
+      "monto": 319.59,
+      "moneda": "PEN",
+      "t": "2026-09-23T23:23:42.154Z"
+    },
+    {
+      "id": "T-0134",
+      "origen": "C-VIC-01",
+      "destino": "C-PROV-01",
+      "monto": 154.59,
+      "moneda": "PEN",
+      "t": "2026-09-24T00:50:46.937Z"
+    },
+    {
+      "id": "T-0160",
+      "origen": "C-VIC-13",
+      "destino": "B-PEPE",
+      "monto": 138.89,
+      "moneda": "PEN",
+      "t": "2026-09-24T06:37:21.764Z"
+    },
+    {
+      "id": "T-0171",
+      "origen": "C-COMP-11",
+      "destino": "H-SOL",
+      "monto": 154.47,
+      "moneda": "PEN",
+      "t": "2026-09-24T13:21:09.601Z"
+    },
+    {
+      "id": "T-0199",
+      "origen": "C-COMP-05",
+      "destino": "B-PEPE",
+      "monto": 50.68,
+      "moneda": "PEN",
+      "t": "2026-09-25T05:18:08.380Z"
+    },
+    {
+      "id": "T-0049",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 490.06,
+      "moneda": "PEN",
+      "t": "2026-09-27T02:13:00.000Z"
+    },
+    {
+      "id": "T-0103",
+      "origen": "C-COMP-07",
+      "destino": "B-PEPE",
+      "monto": 187.56,
+      "moneda": "PEN",
+      "t": "2026-09-27T10:12:52.047Z"
+    },
+    {
+      "id": "T-0098",
+      "origen": "C-COMP-09",
+      "destino": "H-SOL",
+      "monto": 76.31,
+      "moneda": "PEN",
+      "t": "2026-09-28T10:51:38.309Z"
+    },
+    {
+      "id": "T-0187",
+      "origen": "C-COMP-12",
+      "destino": "B-PEPE",
+      "monto": 256.07,
+      "moneda": "PEN",
+      "t": "2026-09-28T21:20:44.430Z"
+    },
+    {
+      "id": "T-0143",
+      "origen": "C-COMP-06",
+      "destino": "B-PEPE",
+      "monto": 280.61,
+      "moneda": "PEN",
+      "t": "2026-09-28T23:36:32.161Z"
+    },
+    {
+      "id": "T-0071",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 351.96,
+      "moneda": "PEN",
+      "t": "2026-09-29T02:13:00.000Z"
+    },
+    {
+      "id": "T-0189",
+      "origen": "C-ROSA",
+      "destino": "H-SOL",
+      "monto": 36.15,
+      "moneda": "PEN",
+      "t": "2026-09-29T23:13:31.620Z"
+    },
+    {
+      "id": "T-0048",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 295.16,
+      "moneda": "PEN",
+      "t": "2026-10-01T02:13:00.000Z"
+    },
+    {
+      "id": "T-0092",
+      "origen": "C-COMP-16",
+      "destino": "H-SOL",
+      "monto": 299.89,
+      "moneda": "PEN",
+      "t": "2026-10-03T01:45:44.631Z"
+    },
+    {
+      "id": "T-0140",
+      "origen": "C-VIC-03",
+      "destino": "B-PEPE",
+      "monto": 361.33,
+      "moneda": "PEN",
+      "t": "2026-10-04T21:23:11.541Z"
+    },
+    {
+      "id": "T-0047",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 200.71,
+      "moneda": "PEN",
+      "t": "2026-10-05T02:13:00.000Z"
+    },
+    {
+      "id": "T-0070",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 385.86,
+      "moneda": "PEN",
+      "t": "2026-10-05T02:13:00.000Z"
+    },
+    {
+      "id": "T-0191",
+      "origen": "C-COMP-15",
+      "destino": "H-SOL",
+      "monto": 53.24,
+      "moneda": "PEN",
+      "t": "2026-10-05T06:07:04.504Z"
+    },
+    {
+      "id": "T-0130",
+      "origen": "C-LUCIA",
+      "destino": "C-PROV-01",
+      "monto": 209.66,
+      "moneda": "PEN",
+      "t": "2026-10-05T10:54:29.782Z"
+    },
+    {
+      "id": "T-0157",
+      "origen": "C-COMP-23",
+      "destino": "H-SOL",
+      "monto": 239.77,
+      "moneda": "PEN",
+      "t": "2026-10-05T11:54:29.446Z"
+    },
+    {
+      "id": "T-0198",
+      "origen": "C-COMP-21",
+      "destino": "C-PROV-01",
+      "monto": 29.78,
+      "moneda": "PEN",
+      "t": "2026-10-05T22:31:34.741Z"
+    },
+    {
+      "id": "T-0119",
+      "origen": "C-LUCIA",
+      "destino": "C-PROV-01",
+      "monto": 102.14,
+      "moneda": "PEN",
+      "t": "2026-10-06T11:58:44.297Z"
+    },
+    {
+      "id": "T-0195",
+      "origen": "C-LUCIA",
+      "destino": "H-SOL",
+      "monto": 347.55,
+      "moneda": "PEN",
+      "t": "2026-10-06T23:47:58.954Z"
+    },
+    {
+      "id": "T-0197",
+      "origen": "C-VIC-05",
+      "destino": "B-PEPE",
+      "monto": 334.07,
+      "moneda": "PEN",
+      "t": "2026-10-07T11:39:49.762Z"
+    },
+    {
+      "id": "T-0145",
+      "origen": "C-VIC-06",
+      "destino": "C-PROV-01",
+      "monto": 278.45,
+      "moneda": "PEN",
+      "t": "2026-10-08T07:00:09.100Z"
+    },
+    {
+      "id": "T-0182",
+      "origen": "C-VIC-10",
+      "destino": "C-PROV-01",
+      "monto": 216.19,
+      "moneda": "PEN",
+      "t": "2026-10-08T07:50:12.047Z"
+    },
+    {
+      "id": "T-0124",
+      "origen": "C-VIC-08",
+      "destino": "C-PROV-01",
+      "monto": 208.85,
+      "moneda": "PEN",
+      "t": "2026-10-08T17:35:00.043Z"
+    },
+    {
+      "id": "T-0046",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 308.9,
+      "moneda": "PEN",
+      "t": "2026-10-09T02:13:00.000Z"
+    },
+    {
+      "id": "T-0150",
+      "origen": "C-COMP-20",
+      "destino": "B-PEPE",
+      "monto": 93.32,
+      "moneda": "PEN",
+      "t": "2026-10-09T15:12:00.876Z"
+    },
+    {
+      "id": "T-0069",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 312.02,
+      "moneda": "PEN",
+      "t": "2026-10-11T02:13:00.000Z"
+    },
+    {
+      "id": "T-0131",
+      "origen": "C-VIC-03",
+      "destino": "H-SOL",
+      "monto": 69.86,
+      "moneda": "PEN",
+      "t": "2026-10-11T15:50:29.134Z"
+    },
+    {
+      "id": "T-0149",
+      "origen": "C-JORGE",
+      "destino": "H-SOL",
+      "monto": 158.21,
+      "moneda": "PEN",
+      "t": "2026-10-12T09:41:00.418Z"
+    },
+    {
+      "id": "T-0045",
+      "origen": "C-ROSA",
+      "destino": "B-PEPE",
+      "monto": 291.47,
+      "moneda": "PEN",
+      "t": "2026-10-13T02:13:00.000Z"
+    },
+    {
+      "id": "T-0106",
+      "origen": "C-VIC-10",
+      "destino": "H-SOL",
+      "monto": 32.97,
+      "moneda": "PEN",
+      "t": "2026-10-13T08:39:27.916Z"
+    },
+    {
+      "id": "T-0093",
+      "origen": "C-COMP-12",
+      "destino": "H-SOL",
+      "monto": 368.58,
+      "moneda": "PEN",
+      "t": "2026-10-14T01:21:24.525Z"
+    },
+    {
+      "id": "T-0147",
+      "origen": "C-VIC-06",
+      "destino": "H-SOL",
+      "monto": 234.84,
+      "moneda": "PEN",
+      "t": "2026-10-14T16:22:32.383Z"
+    },
+    {
+      "id": "T-0105",
+      "origen": "C-COMP-14",
+      "destino": "H-SOL",
+      "monto": 26.78,
+      "moneda": "PEN",
+      "t": "2026-10-15T04:43:25.116Z"
+    },
+    {
+      "id": "T-0021",
+      "origen": "C-COMP-01",
+      "destino": "B-PEPE",
+      "monto": 52.87,
+      "moneda": "PEN",
+      "t": "2026-10-15T06:07:00.000Z"
+    },
+    {
+      "id": "T-0001",
+      "origen": "C-VIC-01",
+      "destino": "M-01",
+      "monto": 3406.12,
+      "moneda": "PEN",
+      "t": "2026-10-15T06:19:00.000Z"
+    },
+    {
+      "id": "T-0022",
+      "origen": "C-COMP-02",
+      "destino": "B-PEPE",
+      "monto": 112.93,
+      "moneda": "PEN",
+      "t": "2026-10-15T08:01:00.000Z"
+    },
+    {
+      "id": "T-0002",
+      "origen": "C-VIC-02",
+      "destino": "M-01",
+      "monto": 2953.19,
+      "moneda": "PEN",
+      "t": "2026-10-15T09:25:00.000Z"
+    },
+    {
+      "id": "T-0023",
+      "origen": "C-COMP-03",
+      "destino": "B-PEPE",
+      "monto": 157.28,
+      "moneda": "PEN",
+      "t": "2026-10-15T09:55:00.000Z"
+    },
+    {
+      "id": "T-0024",
+      "origen": "C-COMP-04",
+      "destino": "B-PEPE",
+      "monto": 123.9,
+      "moneda": "PEN",
+      "t": "2026-10-15T11:49:00.000Z"
+    },
+    {
+      "id": "T-0003",
+      "origen": "C-VIC-03",
+      "destino": "M-01",
+      "monto": 3158.59,
+      "moneda": "PEN",
+      "t": "2026-10-15T12:31:00.000Z"
+    },
+    {
+      "id": "T-0025",
+      "origen": "C-COMP-05",
+      "destino": "B-PEPE",
+      "monto": 121.85,
+      "moneda": "PEN",
+      "t": "2026-10-15T13:43:00.000Z"
+    },
+    {
+      "id": "T-0004",
+      "origen": "C-VIC-04",
+      "destino": "M-01",
+      "monto": 3616.18,
+      "moneda": "PEN",
+      "t": "2026-10-15T15:37:00.000Z"
+    },
+    {
+      "id": "T-0026",
+      "origen": "C-COMP-06",
+      "destino": "B-PEPE",
+      "monto": 107.21,
+      "moneda": "PEN",
+      "t": "2026-10-15T15:37:00.000Z"
+    },
+    {
+      "id": "T-0027",
+      "origen": "C-COMP-07",
+      "destino": "B-PEPE",
+      "monto": 167.55,
+      "moneda": "PEN",
+      "t": "2026-10-15T17:31:00.000Z"
+    },
+    {
+      "id": "T-0005",
+      "origen": "C-VIC-05",
+      "destino": "M-01",
+      "monto": 3134.46,
+      "moneda": "PEN",
+      "t": "2026-10-15T18:43:00.000Z"
+    },
+    {
+      "id": "T-0028",
+      "origen": "C-COMP-08",
+      "destino": "B-PEPE",
+      "monto": 165.33,
+      "moneda": "PEN",
+      "t": "2026-10-15T19:25:00.000Z"
+    },
+    {
+      "id": "T-0018",
+      "origen": "M-01",
+      "destino": "M-02",
+      "monto": 9200,
+      "moneda": "PEN",
+      "t": "2026-10-15T20:13:00.000Z"
+    },
+    {
+      "id": "T-0029",
+      "origen": "C-COMP-09",
+      "destino": "B-PEPE",
+      "monto": 169.53,
+      "moneda": "PEN",
+      "t": "2026-10-15T21:19:00.000Z"
+    },
+    {
+      "id": "T-0006",
+      "origen": "C-VIC-06",
+      "destino": "M-01",
+      "monto": 1661.58,
+      "moneda": "PEN",
+      "t": "2026-10-15T21:49:00.000Z"
+    },
+    {
+      "id": "T-0030",
+      "origen": "C-COMP-10",
+      "destino": "B-PEPE",
+      "monto": 200.71,
+      "moneda": "PEN",
+      "t": "2026-10-15T23:13:00.000Z"
+    },
+    {
+      "id": "T-0019",
+      "origen": "M-01",
+      "destino": "M-02",
+      "monto": 9400,
+      "moneda": "PEN",
+      "t": "2026-10-16T00:13:00.000Z"
+    },
+    {
+      "id": "T-0007",
+      "origen": "C-VIC-07",
+      "destino": "M-01",
+      "monto": 3780.42,
+      "moneda": "PEN",
+      "t": "2026-10-16T00:55:00.000Z"
+    },
+    {
+      "id": "T-0031",
+      "origen": "C-COMP-11",
+      "destino": "B-PEPE",
+      "monto": 85.89,
+      "moneda": "PEN",
+      "t": "2026-10-16T01:07:00.000Z"
+    },
+    {
+      "id": "T-0032",
+      "origen": "C-COMP-12",
+      "destino": "B-PEPE",
+      "monto": 49.3,
+      "moneda": "PEN",
+      "t": "2026-10-16T03:01:00.000Z"
+    },
+    {
+      "id": "T-0008",
+      "origen": "C-VIC-08",
+      "destino": "M-01",
+      "monto": 4379.03,
+      "moneda": "PEN",
+      "t": "2026-10-16T04:01:00.000Z"
+    },
+    {
+      "id": "T-0020",
+      "origen": "M-01",
+      "destino": "M-02",
+      "monto": 9600,
+      "moneda": "PEN",
+      "t": "2026-10-16T04:13:00.000Z"
+    },
+    {
+      "id": "T-0033",
+      "origen": "C-COMP-13",
+      "destino": "B-PEPE",
+      "monto": 36.2,
+      "moneda": "PEN",
+      "t": "2026-10-16T04:55:00.000Z"
+    },
+    {
+      "id": "T-0034",
+      "origen": "C-COMP-14",
+      "destino": "B-PEPE",
+      "monto": 173.19,
+      "moneda": "PEN",
+      "t": "2026-10-16T06:49:00.000Z"
+    },
+    {
+      "id": "T-0009",
+      "origen": "C-VIC-09",
+      "destino": "M-01",
+      "monto": 4197.48,
+      "moneda": "PEN",
+      "t": "2026-10-16T07:07:00.000Z"
+    },
+    {
+      "id": "T-0035",
+      "origen": "C-COMP-15",
+      "destino": "B-PEPE",
+      "monto": 58.94,
+      "moneda": "PEN",
+      "t": "2026-10-16T08:43:00.000Z"
+    },
+    {
+      "id": "T-0010",
+      "origen": "C-VIC-10",
+      "destino": "M-01",
+      "monto": 2322.95,
+      "moneda": "PEN",
+      "t": "2026-10-16T10:13:00.000Z"
+    },
+    {
+      "id": "T-0036",
+      "origen": "C-COMP-16",
+      "destino": "B-PEPE",
+      "monto": 30.72,
+      "moneda": "PEN",
+      "t": "2026-10-16T10:37:00.000Z"
+    },
+    {
+      "id": "T-0037",
+      "origen": "C-COMP-17",
+      "destino": "B-PEPE",
+      "monto": 137.53,
+      "moneda": "PEN",
+      "t": "2026-10-16T12:31:00.000Z"
+    },
+    {
+      "id": "T-0011",
+      "origen": "C-VIC-11",
+      "destino": "M-01",
+      "monto": 3379.29,
+      "moneda": "PEN",
+      "t": "2026-10-16T13:19:00.000Z"
+    },
+    {
+      "id": "T-0038",
+      "origen": "C-COMP-18",
+      "destino": "B-PEPE",
+      "monto": 26.64,
+      "moneda": "PEN",
+      "t": "2026-10-16T14:25:00.000Z"
+    },
+    {
+      "id": "T-0039",
+      "origen": "C-COMP-19",
+      "destino": "B-PEPE",
+      "monto": 126.37,
+      "moneda": "PEN",
+      "t": "2026-10-16T16:19:00.000Z"
+    },
+    {
+      "id": "T-0012",
+      "origen": "C-VIC-12",
+      "destino": "M-01",
+      "monto": 4278.5,
+      "moneda": "PEN",
+      "t": "2026-10-16T16:25:00.000Z"
+    },
+    {
+      "id": "T-0040",
+      "origen": "C-COMP-20",
+      "destino": "B-PEPE",
+      "monto": 32.9,
+      "moneda": "PEN",
+      "t": "2026-10-16T18:13:00.000Z"
+    },
+    {
+      "id": "T-0044",
+      "origen": "B-PEPE",
+      "destino": "C-PROV-01",
+      "monto": 300,
+      "moneda": "PEN",
+      "t": "2026-10-16T18:13:00.000Z"
+    },
+    {
+      "id": "T-0013",
+      "origen": "C-VIC-13",
+      "destino": "M-01",
+      "monto": 1044.92,
+      "moneda": "PEN",
+      "t": "2026-10-16T19:31:00.000Z"
+    },
+    {
+      "id": "T-0041",
+      "origen": "C-COMP-21",
+      "destino": "B-PEPE",
+      "monto": 50.78,
+      "moneda": "PEN",
+      "t": "2026-10-16T20:07:00.000Z"
+    },
+    {
+      "id": "T-0042",
+      "origen": "C-COMP-22",
+      "destino": "B-PEPE",
+      "monto": 178.15,
+      "moneda": "PEN",
+      "t": "2026-10-16T22:01:00.000Z"
+    },
+    {
+      "id": "T-0014",
+      "origen": "C-VIC-14",
+      "destino": "M-01",
+      "monto": 1164.55,
+      "moneda": "PEN",
+      "t": "2026-10-16T22:37:00.000Z"
+    },
+    {
+      "id": "T-0043",
+      "origen": "C-COMP-23",
+      "destino": "B-PEPE",
+      "monto": 197.09,
+      "moneda": "PEN",
+      "t": "2026-10-16T23:55:00.000Z"
+    },
+    {
+      "id": "T-0015",
+      "origen": "M-01",
+      "destino": "M-02",
+      "monto": 26335.9,
+      "moneda": "PEN",
+      "t": "2026-10-17T01:01:00.000Z"
+    },
+    {
+      "id": "T-0016",
+      "origen": "M-01",
+      "destino": "M-03",
+      "monto": 12318.41,
+      "moneda": "PEN",
+      "t": "2026-10-17T01:37:00.000Z"
+    },
+    {
+      "id": "T-0017",
+      "origen": "M-02",
+      "destino": "M-03",
+      "monto": 23362.49,
+      "moneda": "PEN",
+      "t": "2026-10-17T01:49:00.000Z"
+    }
+  ]
+}

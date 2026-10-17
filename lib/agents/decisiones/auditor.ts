@@ -99,7 +99,11 @@ export function afirmacionesCandidatas(evidencia: Evidencia[]): Afirmacion[] {
 export interface ContextoAuditor {
   evidencia: Evidencia[];
   riesgoDetective?: RiesgoDestino;
+  /** Estado del cliente según el Guardián, si participó. */
+  estadoGuardian?: string;
 }
+
+const CLIENTE_EN_RIESGO = ['canal_comprometido', 'manipulacion_probable', 'sin_respuesta'];
 
 /** Arma la `SalidaAuditor` con lo que eligió el LLM, aplicando las validaciones del playbook. */
 export function ensamblarAuditor(
@@ -113,6 +117,9 @@ export function ensamblarAuditor(
   let revision = false;
   if (afirmaciones.length === 0) revision = true;
   if (ctx.riesgoDetective === 'alto' && llm.recomendacion === 'descartar') revision = true;
+  if (ctx.estadoGuardian && CLIENTE_EN_RIESGO.includes(ctx.estadoGuardian) && llm.recomendacion === 'descartar') {
+    revision = true; // descartar con el cliente en riesgo es incoherente: que lo vea un humano
+  }
 
   const salida: SalidaAuditor = {
     resumen: llm.resumen,

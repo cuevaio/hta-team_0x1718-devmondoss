@@ -214,6 +214,10 @@ describe('📋 Auditor', () => {
     const s = ensamblarAuditor({ ...llmOk, recomendacion: 'descartar' }, candidatas, { evidencia, riesgoDetective: 'alto' });
     expect(s.requiere_revision_manual).toBe(true);
   });
+  it('cliente en riesgo (Guardián) + «descartar» → revisión manual', () => {
+    const s = ensamblarAuditor({ ...llmOk, recomendacion: 'descartar' }, candidatas, { evidencia, riesgoDetective: 'bajo', estadoGuardian: 'canal_comprometido' });
+    expect(s.requiere_revision_manual).toBe(true);
+  });
   it('el esquema del LLM no admite afirmaciones libres ni hipótesis fuera de catálogo', () => {
     expect(AuditorLLM.safeParse({ ...llmOk, hipotesis: 'inventada' }).success).toBe(false);
     expect(AuditorLLM.safeParse({ ...llmOk, resumen: 'x'.repeat(321) }).success).toBe(false);

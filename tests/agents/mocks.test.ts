@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crearAgentes, crearAgentesMock, detectarEscenario, obtenerAgentes } from '@/lib/agents';
+import { crearAgentes, crearAgentesMock, detectarEscenario, modoAgentes, obtenerAgentes } from '@/lib/agents';
 import { ESQUEMAS_AGENTE, type Caso } from '@/lib/contracts';
 import { casoDe, crearCtx, crearRunAgentFalso } from '@/lib/agents/simulacion';
 
@@ -83,7 +83,10 @@ describe('obtenerAgentes', () => {
   it('AGENTS_MOCK=1 no necesita API key', () => {
     expect(() => obtenerAgentes({ AGENTS_MOCK: '1' } as unknown as NodeJS.ProcessEnv)).not.toThrow();
   });
-  it('sin mock y sin key falla con un mensaje claro', () => {
-    expect(() => obtenerAgentes({} as unknown as NodeJS.ProcessEnv)).toThrow(/ANTHROPIC_API_KEY/);
+  it('sin key → modo simulado (agentes reales + LLM simulado), nunca rompe', () => {
+    expect(modoAgentes({} as unknown as NodeJS.ProcessEnv)).toBe('simulado');
+    expect(modoAgentes({ ANTHROPIC_API_KEY: 'sk-ant-...' } as unknown as NodeJS.ProcessEnv)).toBe('simulado');
+    expect(modoAgentes({ ANTHROPIC_API_KEY: 'sk-ant-real' } as unknown as NodeJS.ProcessEnv)).toBe('claude');
+    expect(() => obtenerAgentes({} as unknown as NodeJS.ProcessEnv)).not.toThrow();
   });
 });

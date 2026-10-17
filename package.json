@@ -10,6 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "demo": "tsx scripts/demo.ts",
+    "seed": "tsx scripts/seed.ts",
     "evals": "tsx scripts/evals.ts"
   },
   "dependencies": {
@@ -28,7 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.28",
     "tailwindcss": "^4",
-    "tsx": "^4.19.2",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^3.0.5"
   }

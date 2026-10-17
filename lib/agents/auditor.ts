@@ -31,7 +31,11 @@ export async function auditor(
       { nivel: 'capaz', maxLlamadas: 2, timeoutMs: 25_000 },
     );
     return {
-      salida: ensamblarAuditor(r.salida, candidatas, { evidencia: caso.evidencia, riesgoDetective }),
+      salida: ensamblarAuditor(r.salida, candidatas, {
+        evidencia: caso.evidencia,
+        riesgoDetective,
+        estadoGuardian: caso.salidas.guardian?.estado_usuario,
+      }),
       uso: r.uso,
     };
   } catch (err) {

@@ -15,6 +15,17 @@ import type {
   SalidaGuardian,
 } from './agentes';
 import type { Veredicto } from './memoria';
+import type { Tipologia } from './agentes';
+import type {
+  ResultadoCiclos,
+  ResultadoEstructuracion,
+  ResultadoFanIn,
+  ResultadoListas,
+  ResultadoPerfil,
+  ResultadoReenvio,
+} from './analytics';
+import type { Cliente, Cuenta, Movimiento } from '@/lib/data/types';
+import type { ResultadoCanales, ResultadoDisponibilidad } from '@/lib/analytics';
 
 /**
  * Firmas acordadas entre Tony_dev y Ale_dev.
@@ -125,15 +136,62 @@ export const LIMITES_AGENTE = {
 // ─────────────────────────────────────────────────────────────
 
 /**
+ * Una tool devuelve su dato y la evidencia con los ids ya emitidos.
+ * `A` son sus argumentos: por defecto, el id de la cuenta.
+ */
+export type ToolDe<D, A extends unknown[] = [cuenta: string]> = (
+  ...args: A
+) => Promise<{ data: D; evidencia: Evidencia[] }>;
+
+/**
  * Lo que Ale expone a los agentes de Tony. Los agentes NUNCA leen datos
  * por otra vía ni inventan ids de evidencia.
+ *
+ * CONTRACT (Ale, S1): se tiparon `data` y `analytics`, que estaban como
+ * `Record<string, ...>`. Dos razones concretas:
+ *
+ *  1. `data: Record<string, (...args: never[]) => unknown>` era **imposible de
+ *     llamar**: un parámetro `never[]` no acepta un string, así que
+ *     `ctx.data.cliente('rosa')` no compilaba.
+ *  2. `analytics: Record<string, Tool>` devolvía `data: unknown`, lo que
+ *     obligaba a un cast en cada uso y anulaba la validación del compilador.
+ *
+ * Ahora los nombres de las analytics son los de `FUENTES` y cada una devuelve
+ * su `Resultado*` de `./analytics`, así el compilador verifica la integración.
+ * Los nombres de los campos no cambian: el código que ya usaba `ctx.data` o
+ * `ctx.analytics` sigue funcionando.
  */
 export interface ToolContext {
-  /** Cuenta/historial. Ale define el detalle de los datos en lib/data/repo.ts. */
-  data: Record<string, (...args: never[]) => unknown>;
-  /** Funciones deterministas: fanIn, reenvioRapido, estructuracion, ciclos, listasRiesgo, disponibilidad, canalesSeguros. */
-  analytics: Record<string, Tool>;
-  /** Solo lectura para los agentes. */
+  /** Lectura de datos. Los agentes nunca acceden al repositorio directamente. */
+  data: {
+    cuenta(id: string): Cuenta | null;
+    cliente(id: string): Cliente | null;
+    clientePorCuenta(cuentaId: string): Cliente | null;
+    entrantes(cuentaId: string, horas: number): Movimiento[];
+    salientes(cuentaId: string, horas: number): Movimiento[];
+    umbralReporte(): number;
+    ahora(): Date;
+  };
+
+  /**
+   * Funciones deterministas. **Las tools calculan, el agente interpreta.**
+   * Las seis primeras emiten evidencia (sus `fuente` son las de `FUENTES`);
+   * las demás son contexto operativo y no emiten id.
+   */
+  analytics: {
+    perfil_cuenta: ToolDe<ResultadoPerfil>;
+    fan_in: ToolDe<ResultadoFanIn, [cuenta: string, horas?: number]>;
+    reenvio_rapido: ToolDe<ResultadoReenvio, [cuenta: string, horas?: number]>;
+    estructuracion: ToolDe<ResultadoEstructuracion>;
+    ciclos: ToolDe<ResultadoCiclos, [cuenta: string, profundidad?: number]>;
+    listas_riesgo: ToolDe<ResultadoListas>;
+    cadena_reenvio: ToolDe<string[], [cuenta: string, saltos?: number]>;
+    disponibilidad: ToolDe<ResultadoDisponibilidad, [cliente: string]>;
+    canales_seguros: ToolDe<ResultadoCanales, [cliente: string]>;
+    tipologias_marcadas: ToolDe<Tipologia[]>;
+  };
+
+  /** Solo lectura para los agentes: escribir exige un analista (R10). */
   memoria: Pick<Memoria, 'get'>;
   /** Asigna ids E-xx. */
   evidencia: { registrar(fuente: string, dato: unknown): Evidencia };

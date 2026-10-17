@@ -7,6 +7,7 @@
  */
 import type { z } from 'zod';
 import type { Caso, Evidencia, RunAgent, ToolContext, UsoAgente, Veredicto } from '@/lib/contracts';
+import type { Cliente } from '@/lib/data/types';
 import { AgentError } from './runtime';
 import type { Hallazgos } from './decisiones/detective';
 
@@ -26,47 +27,71 @@ export function crearLedger() {
 export interface OpcionesCtx {
   hallazgos?: Hallazgos;
   memoria?: Record<string, Veredicto>;
-  canal?: { canal_comprometido: boolean; canal_habitual?: string; canal_seguro?: string | null };
+  /** Canales del cliente (forma de `analytics.canales_seguros` de Ale). */
+  canal?: { seguros?: string[]; comprometidos?: string[]; alcanzable?: boolean };
+  /** Respuestas encoladas en el buzón (modo una-llamada del pipeline). */
+  respuestas?: string[];
   sinTools?: boolean;
 }
 
+/**
+ * ToolContext en memoria con la forma tipada de `lib/contracts/firmas.ts`.
+ * Una tool sin hallazgo configurado (o con `sinTools`) falla: el agente la trata
+ * como no disponible, igual que si la tool real se cayera.
+ */
 export function crearCtx(op: OpcionesCtx = {}) {
   const ledger = crearLedger();
   const llamadas: string[] = [];
   const enviados: string[] = [];
+  const cola = [...(op.respuestas ?? [])];
   const h = op.hallazgos ?? {};
 
-  const tool = (fuente: string, data: unknown) => async () => {
-    llamadas.push(fuente);
-    return { data, evidencia: [ledger.registrar(fuente, data)] };
+  const tool =
+    <D>(fuente: string, data: D | undefined, conEvidencia = true) =>
+    async () => {
+      llamadas.push(fuente);
+      if (op.sinTools || data === undefined) throw new Error(`tool ${fuente} no disponible`);
+      return { data, evidencia: conEvidencia ? [ledger.registrar(fuente, data)] : [] };
+    };
+
+  const canal = {
+    seguros: op.canal?.seguros ?? ['app', 'sms'],
+    comprometidos: op.canal?.comprometidos ?? [],
   };
 
-  const analytics: ToolContext['analytics'] = {};
-  if (!op.sinTools) {
-    if (h.perfil) analytics.perfil_cuenta = tool('perfil_cuenta', h.perfil);
-    if (h.listas) analytics.listas_riesgo = tool('listas_riesgo', h.listas);
-    if (h.fan_in) analytics.fan_in = tool('fan_in', h.fan_in);
-    if (h.reenvio) analytics.reenvio_rapido = tool('reenvio_rapido', h.reenvio);
-    if (h.estructuracion) analytics.estructuracion = tool('estructuracion', h.estructuracion);
-    analytics.ciclos = tool('ciclos', h.ciclos ?? { cuenta: 'X', ciclo: null, marcado: false });
-    analytics.canales = tool('canales', {
-      cliente: 'cliente',
-      canal_comprometido: op.canal?.canal_comprometido ?? false,
-      canal_habitual: op.canal?.canal_habitual ?? 'app',
-      canal_seguro: op.canal?.canal_seguro ?? null,
-    });
-  }
-
   const ctx: ToolContext = {
-    data: {},
-    analytics,
+    data: {
+      cuenta: () => null,
+      cliente: () => null,
+      clientePorCuenta: (c: string) => ({ id: c }) as unknown as Cliente,
+      entrantes: () => [],
+      salientes: () => [],
+      umbralReporte: () => 10_000,
+      ahora: () => new Date(),
+    },
+    analytics: {
+      perfil_cuenta: tool('perfil_cuenta', h.perfil),
+      listas_riesgo: tool('listas_riesgo', h.listas),
+      fan_in: tool('fan_in', h.fan_in),
+      reenvio_rapido: tool('reenvio_rapido', h.reenvio),
+      estructuracion: tool('estructuracion', h.estructuracion),
+      ciclos: tool('ciclos', h.ciclos ?? { cuenta: 'X', ciclo: null, marcado: false }),
+      cadena_reenvio: tool('cadena_reenvio', h.reenvio?.destinos ?? [], false),
+      tipologias_marcadas: tool('tipologias_marcadas', [], false),
+      canales_seguros: tool('canales_seguros', { cliente: 'cliente', ...canal }, false),
+      disponibilidad: tool(
+        'disponibilidad',
+        { cliente: 'cliente', alcanzable: op.canal?.alcanzable ?? true, canales_disponibles: canal.seguros },
+        false,
+      ),
+    } as unknown as ToolContext['analytics'],
     memoria: { get: (c: string) => op.memoria?.[c] ?? null },
     evidencia: ledger,
     mensajes: {
       enviar: async (_c, texto) => {
         enviados.push(texto);
       },
-      esperar: async () => null,
+      esperar: async () => cola.shift() ?? null,
     },
   };
   return { ctx, ledger, llamadas, enviados };

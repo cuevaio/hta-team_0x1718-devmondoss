@@ -174,7 +174,7 @@ describe('🛡️ Guardián (adaptador)', () => {
   });
 
   it('canal comprometido → termina sin preguntar nada (no se verifica por ese canal)', async () => {
-    const pack = crearCtx({ canal: { canal_comprometido: true, canal_habitual: 'app', canal_seguro: 'sms' } });
+    const pack = crearCtx({ canal: { seguros: ['sms'], comprometidos: ['app'] } });
     const { runAgent } = crearRunAgentFalso();
     const t = await turno(pack, runAgent);
     expect(pack.enviados).toHaveLength(0);

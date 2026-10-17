@@ -98,7 +98,7 @@ const LLM_FALSO = {
 };
 
 async function correr(nombre: string, caso: Caso, h: Hallazgos | undefined, respuesta?: string, decision?: 'PERMITIR' | 'ESCALAR' | 'PAUSAR'): Promise<FilaGasto> {
-  const pack = crearCtx({ hallazgos: h, canal: { canal_comprometido: caso.nivel0.senales.includes('dispositivo_nuevo') } });
+  const pack = crearCtx({ hallazgos: h, canal: { comprometidos: caso.nivel0.senales.includes('dispositivo_nuevo') ? ['app'] : [] } });
   const { runAgent, calls } = crearRunAgentFalso(LLM_FALSO);
   const agentes = crearAgentes({ runAgent });
   const inv = await investigar(caso, pack.ctx, agentes);

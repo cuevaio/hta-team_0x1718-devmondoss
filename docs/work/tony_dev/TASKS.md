@@ -30,6 +30,12 @@
 - [x] `lib/agents/simulacion.ts`: ToolContext de referencia + runAgent falso
 - [x] `npm run evals`: E7 (sintético) y gasto de LLM por escenario; 108 tests
 - [ ] E5 (1 agente vs. multiagente): necesita `ANTHROPIC_API_KEY`
+
+## ✅ Integración con el S1 de Ale
+- [x] Adaptado al `ToolContext` tipado de Ale; Guardián en modo una-llamada y varios turnos
+- [x] Modo `simulado` (sin key): agentes reales + LLM simulado determinista
+- [x] Pipeline y demo de Ale usan `obtenerAgentes()`: `npm run demo` 8/8, 220 tests
+- [x] Auditor: si el cliente está en riesgo (Guardián), no se recomienda descartar
 - [ ] `UMBRAL_REPORTE` para `montoCercaUmbral` (estructuración)
 
 ## H0–2 · Contratos

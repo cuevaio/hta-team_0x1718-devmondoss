@@ -47,7 +47,8 @@ export const FUENTES = [
   'ciclos',
   'listas_riesgo',
   'guardian_respuesta',
-  'canales',
+  /** Pregunta que el Guardián envió: registra el estado de la conversación. */
+  'guardian_pregunta',
 ] as const;
 export type Fuente = (typeof FUENTES)[number];
 
@@ -106,17 +107,6 @@ export const ResultadoListas = z.object({
 });
 export type ResultadoListas = z.infer<typeof ResultadoListas>;
 
-/** Estado del canal con el cliente (analytics.canales). Lo usa el Guardián. */
-export const ResultadoCanal = z.object({
-  cliente: z.string().min(1),
-  /** Dispositivo/SIM nuevo o señal de toma de control: no se verifica por este canal. */
-  canal_comprometido: z.boolean(),
-  canal_habitual: z.string().min(1),
-  /** Canal alternativo confiable, si existe. */
-  canal_seguro: z.string().min(1).nullable(),
-});
-export type ResultadoCanal = z.infer<typeof ResultadoCanal>;
-
 /**
  * Respuesta del cliente al Guardián, registrada como evidencia
  * (`ctx.evidencia.registrar('guardian_respuesta', …)`). Los campos opcionales
@@ -135,9 +125,10 @@ export const DatoRespuestaGuardian = z.object({
 });
 export type DatoRespuestaGuardian = z.infer<typeof DatoRespuestaGuardian>;
 
-/**
- * Convención de `ctx.analytics`: la clave es el nombre de la fuente
- * (`perfil_cuenta`, `listas_riesgo`, `fan_in`, `reenvio_rapido`,
- * `estructuracion`, `ciclos`, `canales`) y el primer argumento es la cuenta
- * (o el cliente, para `canales`). Cada tool devuelve `{ data, evidencia }`.
- */
+/** Pregunta enviada por el Guardián (evidencia `guardian_pregunta`). */
+export const DatoPreguntaGuardian = z.object({
+  id: z.enum(['Q1', 'Q2', 'Q3', 'Q4']),
+  pregunta: z.string().min(1),
+  canal: z.string().min(1),
+});
+export type DatoPreguntaGuardian = z.infer<typeof DatoPreguntaGuardian>;
