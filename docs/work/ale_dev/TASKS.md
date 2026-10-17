@@ -8,14 +8,15 @@
 **Recibo de Tony:** `evaluateRules`, `decide`, `memory.get/confirm`, tools con evidencia, mocks de Detective y Auditor.
 
 ## H0–2 · Contratos (con Tony)
-- [ ] Confirmar stack y proveedor de LLM
-- [ ] Esquemas zod en `lib/contracts/`
-- [ ] Firmas acordadas y mergeadas en `main`
+- [x] Confirmar stack y proveedor de LLM → ver [SPRINTS.md](../../context/ale_dev/SPRINTS.md#decisiones-de-stack-ya-resueltas)
+- [x] Esquemas zod en `lib/contracts/` (Caso, Evidencia, los 4 agentes, Veredicto)
+- [x] Firmas escritas en `lib/contracts/firmas.ts` + validadores cruzados + 32 tests
+- [ ] ⚠️ **Firmas acordadas con Tony** y mergeadas en `main` — escritas, falta su revisión
 
 ## H2–4 · Scaffold + deploy
-- [ ] Proyecto Next.js + TypeScript
-- [ ] Deploy inicial con URL pública
-- [ ] Variables de entorno (API key solo en env, nunca en el repo)
+- [x] Proyecto Next.js 15 + TypeScript + Tailwind + vitest
+- [ ] ⚠️ Deploy inicial con URL pública — **requiere cuenta de Vercel, pendiente**
+- [x] Variables de entorno: `.env.example` versionado, `.env.local` ignorado
 
 ## H4–7 · Runtime de agentes
 - [ ] `agents/runtime.ts`: niveles `rapido` / `capaz`
