@@ -17,6 +17,27 @@
 - [x] `TurnoGuardian` en `firmas.ts` (el Guardián conversa varios turnos)
 - [x] 33 tests de decisión
 
+## ✅ Hecho en la rama `tony-dev`
+- [x] `lib/agents/mocks.ts` + `index.ts` (`AGENTS_MOCK=1`, `obtenerAgentes()`): **listo para que Ale integre**
+- [x] `lib/agents/llm.ts` + `runtime.ts` + `prompts.ts`: structured outputs, `effort: low`, validación + 1 reintento, `AgentError`
+- [x] Adaptadores de los 4 agentes con fallback determinista
+- [x] `lib/agents/README.md` con el protocolo para el pipeline de Ale
+- [x] Tests de decisiones, adaptadores, runtime y mocks; tsc y eslint limpios
+- [ ] ⚠️ Probar `llm.ts` contra la API real (falta `ANTHROPIC_API_KEY`)
+- [x] Detective: sigue la cadena a 2 saltos (M-01 → M-02 → M-03), solo tools
+- [x] Coordinador: "destino conocido-limpio" exige que el cliente ya le transfiriera antes (la Bodega antigua pero nueva para el cliente sí pasa por el Detective)
+- [x] `lib/agents/orquestador.ts`: `investigar`, `continuarGuardian`, `auditar`, `debeAuditar`, `acumularIA` para el pipeline de Ale
+- [x] `lib/agents/simulacion.ts`: ToolContext de referencia + runAgent falso
+- [x] `npm run evals`: E7 (sintético) y gasto de LLM por escenario; 108 tests
+- [ ] E5 (1 agente vs. multiagente): necesita `ANTHROPIC_API_KEY`
+
+## ✅ Integración con el S1 de Ale
+- [x] Adaptado al `ToolContext` tipado de Ale; Guardián en modo una-llamada y varios turnos
+- [x] Modo `simulado` (sin key): agentes reales + LLM simulado determinista
+- [x] Pipeline y demo de Ale usan `obtenerAgentes()`: `npm run demo` 8/8, 220 tests
+- [x] Auditor: si el cliente está en riesgo (Guardián), no se recomienda descartar
+- [ ] `UMBRAL_REPORTE` para `montoCercaUmbral` (estructuración)
+
 ## H0–2 · Contratos
 - [x] Los esquemas zod de los 4 agentes ya existen en `lib/contracts/agentes.ts` (los dejó escritos Ale en S0): **revísalos y ajústalos**
 - [ ] `AgentsApi` y `AgentResult` en `lib/contracts/firmas.ts` (ya agregados; confirma que te sirven)

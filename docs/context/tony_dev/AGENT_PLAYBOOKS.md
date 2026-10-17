@@ -61,6 +61,7 @@ flowchart TD
 | C6 | C4 y C5 vacías, `score ≥ 3` | `[guardian, detective]` | | | |
 
 - **Entrada (`BriefingCoordinador`):** `puerta`, `score`, `senales[]`, `atajo?`, `memoria_hit`, `destino_conocido_limpio`.
+- **`destino_conocido_limpio`** = el cliente **ya le transfería antes** (no hay `beneficiario_nuevo`) **y** es cuenta propia con ≥ 90 días. Una cuenta antigua pero nueva para el cliente (la Bodega) **no** cuenta: ahí sí se mira el destino.
 - **Gasto:** 0 llamadas. **Parada:** siempre termina en una fila.
 - **Qué NO hace:** no lee datos, no llama tools de análisis, no opina sobre riesgo.
 
@@ -237,7 +238,9 @@ flowchart TD
 ## 8. Orden de implementación
 
 1. ✅ Este documento + funciones puras en `lib/agents/decisiones/` con tests.
-2. `lib/agents/mocks.ts` + `lib/agents/index.ts` (`AGENTS_MOCK=1`) → desbloquea a Ale.
-3. `lib/agents/runtime.ts` + `llm.ts` (structured outputs, effort bajo, presupuesto).
-4. Cada agente: briefing → plan de tools → (LLM) → ensamblado → fallback.
-5. `scripts/evals.ts`: E5 y E7.
+2. ✅ `lib/agents/mocks.ts` + `lib/agents/index.ts` (`AGENTS_MOCK=1`).
+3. ✅ `lib/agents/runtime.ts` + `llm.ts` (structured outputs, effort bajo, 1 reintento).
+4. ✅ Adaptadores de los 4 agentes con fallback + `orquestador.ts` para el pipeline.
+5. ✅ `npm run evals`: gasto por escenario (verifica §7) y E7. ⏳ E5 necesita API key.
+
+> **Sobre E7:** la población es sintética y la diseñamos nosotros; muestra que la regla «fan-in + reenvío» se comporta como se espera (20/20 mulas, 0 comercios marcados frente a 93 con «solo fan-in»), **no** es una medición de desempeño real.

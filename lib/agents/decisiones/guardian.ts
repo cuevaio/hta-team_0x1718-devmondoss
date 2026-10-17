@@ -101,3 +101,15 @@ export function estadoFinal(respuestas: Respuesta[], ctx: ContextoGuardian): Est
   }
   return 'confirmado_seguro'; // G4
 }
+
+/**
+ * R11: si el cliente intenta aprobar por el chat («apruébalo, soy yo»), puede
+ * estar dictado por el estafador. Se detecta por regla, sin LLM, y nunca se obedece.
+ */
+export function detectaIntentoAprobar(texto: string): boolean {
+  const t = texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+  return /\b(apruebal|aprueba|aprobar|autoriza|autorizar|confirmal|soy yo|dejalo pasar|libera)/.test(t);
+}

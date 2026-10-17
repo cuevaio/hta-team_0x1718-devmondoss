@@ -47,6 +47,8 @@ export const FUENTES = [
   'ciclos',
   'listas_riesgo',
   'guardian_respuesta',
+  /** Pregunta que el Guardián envió: registra el estado de la conversación. */
+  'guardian_pregunta',
 ] as const;
 export type Fuente = (typeof FUENTES)[number];
 
@@ -105,9 +107,28 @@ export const ResultadoListas = z.object({
 });
 export type ResultadoListas = z.infer<typeof ResultadoListas>;
 
-/** Respuesta del cliente al Guardián, registrada como evidencia. */
+/**
+ * Respuesta del cliente al Guardián, registrada como evidencia
+ * (`ctx.evidencia.registrar('guardian_respuesta', …)`). Los campos opcionales
+ * permiten reconstruir el estado de la conversación desde `caso.evidencia`.
+ */
 export const DatoRespuestaGuardian = z.object({
   pregunta: z.string().min(1),
   texto: z.string(),
+  id: z.enum(['Q1', 'Q2', 'Q3', 'Q4']).optional(),
+  clasificacion: z.enum(['si', 'no', 'incierta', 'sin_respuesta']).optional(),
+  senales_extra: z
+    .array(
+      z.enum(['guiado_por_telefono', 'urgencia', 'cuenta_segura', 'presion_tercero', 'intenta_aprobar_por_chat']),
+    )
+    .optional(),
 });
 export type DatoRespuestaGuardian = z.infer<typeof DatoRespuestaGuardian>;
+
+/** Pregunta enviada por el Guardián (evidencia `guardian_pregunta`). */
+export const DatoPreguntaGuardian = z.object({
+  id: z.enum(['Q1', 'Q2', 'Q3', 'Q4']),
+  pregunta: z.string().min(1),
+  canal: z.string().min(1),
+});
+export type DatoPreguntaGuardian = z.infer<typeof DatoPreguntaGuardian>;

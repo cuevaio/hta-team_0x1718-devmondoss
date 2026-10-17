@@ -12,7 +12,7 @@ import { repo } from '@/lib/data/repo';
 import { analytics } from '@/lib/analytics';
 import { storeCasos, type CasoVivo } from '@/lib/cases/store';
 import { construirToolContext, nuevoBuzon, type BuzonMensajes } from '@/lib/tool-context';
-import { agentesProvisional } from '@/lib/agents-provisional';
+import { obtenerAgentes } from '@/lib/agents';
 
 /**
  * Pipeline de orquestación.
@@ -32,7 +32,7 @@ import { agentesProvisional } from '@/lib/agents-provisional';
  */
 
 export interface OpcionesPipeline {
-  /** Implementación de agentes. Por defecto, el adaptador provisional. */
+  /** Implementación de agentes. Por defecto, los de Tony (`obtenerAgentes`: Claude o simulado). */
   agentes?: AgentsApi;
   /** Respuesta del cliente al Guardián, si el escenario la define. */
   respuestaCliente?: string;
@@ -96,7 +96,7 @@ export async function evaluarAlerta(
 
 async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<ResultadoPipeline> {
   const { caso, ledger } = vivo;
-  const agentes = opciones.agentes ?? agentesProvisional;
+  const agentes = opciones.agentes ?? obtenerAgentes();
   const buzon = nuevoBuzon();
   const ctx = construirToolContext(ledger, buzon);
   const id = caso.id;

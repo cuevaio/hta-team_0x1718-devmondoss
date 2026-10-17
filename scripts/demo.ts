@@ -14,7 +14,7 @@ import type { Caso, Transaccion } from '../lib/contracts';
 import { crearVeredicto, memoria } from '../lib/memory/store';
 import { repo } from '../lib/data/repo';
 import { estadisticas, evaluarAlerta, evaluarTransferencia } from '../lib/pipeline';
-import { agentesProvisional } from '../lib/agents-provisional';
+import { modoAgentes, obtenerAgentes } from '../lib/agents';
 
 const C = {
   reset: '\x1b[0m',
@@ -94,7 +94,8 @@ const tx = (origen: string, destino: string, monto: number): Transaccion => ({
 });
 
 async function main() {
-  const agentes = agentesProvisional;
+  const agentes = obtenerAgentes();
+  console.log(`Agentes: ${modoAgentes() === 'claude' ? 'Claude (API real)' : 'simulados (sin API key)'}`);
   const resultados: boolean[] = [];
 
   console.log(`\n${C.bold}Adaptive Financial Security — demo de consola${C.reset}`);

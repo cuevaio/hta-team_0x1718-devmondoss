@@ -7,6 +7,17 @@
 **Entregas a Tony:** `ToolContext` (datos, analytics, memoria, evidencia, mensajes).
 **Recibes de Tony:** `AgentsApi` + mocks (a la hora 5).
 
+## 🔌 Agentes de Tony — integrados
+
+> Guía: [lib/agents/README.md](../../../lib/agents/README.md).
+
+- [x] `lib/pipeline.ts` y `scripts/demo.ts` usan `obtenerAgentes()` (Claude si hay key; si no, simulado). `npm run demo` 8/8.
+- [x] Mi Guardián funciona con tu modelo de una llamada (`respuestaCliente` o buzón) y también en varios turnos.
+- [x] Mis agentes usan tu `ToolContext` tipado (`canales_seguros`, `disponibilidad` con id de cliente).
+- [ ] `lib/agents-provisional.ts` quedó sin uso: bórralo cuando quieras.
+- [ ] `POST /api/cases/[id]/guardian/reply` hoy solo registra el texto: para el modo varios turnos debe llamar `agentes.guardianTurno(caso, ctx, texto)` (tras `sincronizarEvidencia`), y si `terminado` → `decide` → auditor. Opción: `continuarGuardian` de `lib/agents`.
+- [ ] `/api/health` puede mostrar `modoAgentes()` (`claude` | `simulado`).
+
 ## H0–2 · Scaffold ✅
 - [x] Next.js 15 + TypeScript + Tailwind + zod 4 + vitest (`app/` y `lib/` en la raíz, alias `@/`)
 - [x] Contratos en `lib/contracts/` (`caso`, `agentes`, `memoria`, `validadores`, `firmas`) + 32 tests
