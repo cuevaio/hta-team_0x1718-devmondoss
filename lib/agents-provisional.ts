@@ -74,6 +74,9 @@ export const agentesProvisional: AgentsApi = {
   async detective(caso: Caso, ctx: ToolContext): Promise<AgentResult<SalidaDetective>> {
     const destino = caso.transaccion.destino;
     const hallazgos: Hallazgos = {};
+    // Los ids los devuelven las tools. No se leen de `caso.evidencia`, que el
+    // pipeline sincroniza DESPUÉS de que el agente termina.
+    const ids: string[] = [];
     const montoCercaUmbral =
       caso.transaccion.monto >= ctx.data.umbralReporte() * 0.9 &&
       caso.transaccion.monto <= ctx.data.umbralReporte();
@@ -83,7 +86,7 @@ export const agentesProvisional: AgentsApi = {
       const tools = siguientesTools(hallazgos, { montoCercaUmbral });
       if (tools.length === 0) break;
       // Las tools del mismo paso corren en paralelo (19 §7).
-      await Promise.all(tools.map((t) => ejecutarTool(t, destino, ctx, hallazgos)));
+      await Promise.all(tools.map((t) => ejecutarTool(t, destino, ctx, hallazgos, ids)));
     }
 
     const tipologias = analytics.tipologiasMarcadas(destino);
@@ -108,7 +111,7 @@ export const agentesProvisional: AgentsApi = {
             ? 'patrón atípico sin el par que define una mula'
             : 'alto volumen de entrada sin reenvío: patrón de comercio',
       cadena: cadena.length > 1 ? cadena : [destino],
-      evidencia: idsDe(caso),
+      evidencia: ids,
     };
 
     // Regla de consistencia del doc 19 §3.
@@ -150,7 +153,8 @@ export const agentesProvisional: AgentsApi = {
             estado_usuario: estadoFinal([], { canalComprometido: true }),
             senales_manipulacion: [],
             canal_usado: canales.seguros[0] ?? 'ninguno',
-            evidencia: idsDe(caso),
+            // No se preguntó nada: no hay evidencia propia que citar.
+            evidencia: [],
           },
         },
         uso: SIN_USO,
@@ -160,6 +164,7 @@ export const agentesProvisional: AgentsApi = {
     const preguntas = seleccionarPreguntas(caso.nivel0.senales);
     const respuestas: Respuesta[] = [];
     const canal = canales.seguros[0] ?? 'app';
+    const ids: string[] = [];
 
     for (const id of preguntas as IdPregunta[]) {
       const pregunta = BANCO_PREGUNTAS[id];
@@ -172,7 +177,11 @@ export const agentesProvisional: AgentsApi = {
       respuestas.push({ pregunta: id, clasificacion } as Respuesta);
 
       if (texto !== null && texto !== undefined) {
-        ctx.evidencia.registrar('guardian_respuesta', { pregunta: pregunta.texto, texto });
+        const e = ctx.evidencia.registrar('guardian_respuesta', {
+          pregunta: pregunta.texto,
+          texto,
+        });
+        ids.push(e.id);
       }
 
       if (debeParar(respuestas)) break;
@@ -185,7 +194,7 @@ export const agentesProvisional: AgentsApi = {
           estado_usuario: estadoFinal(respuestas, { canalComprometido: false }),
           senales_manipulacion: senalesDe(respuestas),
           canal_usado: canal,
-          evidencia: idsDe(caso),
+          evidencia: ids,
         },
       },
       uso: SIN_USO,
@@ -230,32 +239,32 @@ async function ejecutarTool(
   destino: string,
   ctx: ToolContext,
   h: Hallazgos,
+  ids: string[],
 ): Promise<void> {
+  const recoger = <T>(r: { data: T; evidencia: { id: string }[] }): T => {
+    ids.push(...r.evidencia.map((e) => e.id));
+    return r.data;
+  };
   switch (tool) {
     case 'perfil_cuenta':
-      h.perfil = (await ctx.analytics.perfil_cuenta(destino)).data;
+      h.perfil = recoger(await ctx.analytics.perfil_cuenta(destino));
       return;
     case 'listas_riesgo':
-      h.listas = (await ctx.analytics.listas_riesgo(destino)).data;
+      h.listas = recoger(await ctx.analytics.listas_riesgo(destino));
       return;
     case 'fan_in':
-      h.fan_in = (await ctx.analytics.fan_in(destino)).data;
+      h.fan_in = recoger(await ctx.analytics.fan_in(destino));
       return;
     case 'reenvio_rapido':
-      h.reenvio = (await ctx.analytics.reenvio_rapido(destino)).data;
+      h.reenvio = recoger(await ctx.analytics.reenvio_rapido(destino));
       return;
     case 'estructuracion':
-      h.estructuracion = (await ctx.analytics.estructuracion(destino))
-        .data;
+      h.estructuracion = recoger(await ctx.analytics.estructuracion(destino));
       return;
     case 'ciclos':
-      h.ciclos = (await ctx.analytics.ciclos(destino)).data;
+      h.ciclos = recoger(await ctx.analytics.ciclos(destino));
       return;
   }
-}
-
-function idsDe(caso: Caso): string[] {
-  return caso.evidencia.map((e) => e.id);
 }
 
 function describir(fuente: string, dato: unknown): string | null {

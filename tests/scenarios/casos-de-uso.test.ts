@@ -70,6 +70,72 @@ describe('CU-01 — frenar una estafa a un cliente autenticado', () => {
   });
 });
 
+describe('Trazabilidad de la evidencia', () => {
+  it('las salidas de los agentes citan los ids que emitieron sus tools', async () => {
+    // Regresión: antes leían `caso.evidencia`, que el pipeline sincroniza
+    // DESPUÉS de que el agente termina, así que llegaban vacías.
+    const { caso } = await evaluarTransferencia(tx('C-ROSA', 'M-01', 4800), {
+      contexto: { llamada_activa_o_acceso_remoto: true },
+      respuestaCliente: 'sí',
+    });
+    const det = caso.salidas.detective!;
+    expect(det.evidencia.length).toBeGreaterThan(0);
+
+    // Todo id citado debe existir en el caso.
+    const existentes = new Set(caso.evidencia.map((e) => e.id));
+    for (const id of det.evidencia) expect(existentes.has(id), id).toBe(true);
+    for (const id of caso.salidas.guardian!.evidencia) expect(existentes.has(id), id).toBe(true);
+  });
+
+  it('los ids son únicos y consecutivos desde E-01', async () => {
+    const { caso } = await evaluarAlerta('M-01', 'monitoreo');
+    const ids = caso.evidencia.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids[0]).toBe('E-01');
+  });
+
+  it('cada caso numera su evidencia desde cero', async () => {
+    const a = await evaluarAlerta('M-01', 'monitoreo');
+    const b = await evaluarAlerta('M-02', 'monitoreo');
+    expect(a.caso.evidencia[0].id).toBe('E-01');
+    expect(b.caso.evidencia[0].id).toBe('E-01');
+    expect(a.caso.id).not.toBe(b.caso.id);
+  });
+});
+
+describe('Clasificación de la respuesta del cliente', () => {
+  it('una respuesta corta y afirmativa SÍ detecta manipulación', async () => {
+    // Antes solo se afirmaba P4, y `sin_respuesta` también da P4: el test no
+    // distinguía "detectó manipulación" de "no contestó".
+    const { caso } = await evaluarTransferencia(tx('C-ROSA', 'M-01', 4800), {
+      contexto: { llamada_activa_o_acceso_remoto: true },
+      respuestaCliente: 'sí',
+    });
+    expect(caso.salidas.guardian?.estado_usuario).toBe('manipulacion_probable');
+    expect(caso.salidas.guardian?.senales_manipulacion.length).toBeGreaterThan(0);
+  });
+
+  it('una frase larga queda sin clasificar y cae al lado conservador', async () => {
+    // `clasificarRapido` devuelve null con más de 4 palabras ("que la lea el
+    // modelo"). Sin LLM, el adaptador provisional la trata como incierta, que
+    // `estadoFinal` mapea a sin_respuesta: NO libera dinero.
+    const { caso } = await evaluarTransferencia(tx('C-ROSA', 'M-01', 4800), {
+      contexto: { llamada_activa_o_acceso_remoto: true },
+      respuestaCliente: 'sí, me está guiando un asesor del banco por teléfono',
+    });
+    expect(caso.salidas.guardian?.estado_usuario).toBe('sin_respuesta');
+    expect(caso.decision?.accion).not.toBe('PERMITIR');
+  });
+
+  it('una negativa corta no inventa señales de manipulación', async () => {
+    const { caso } = await evaluarTransferencia(tx('C-ROSA', 'B-PEPE', 1500), {
+      contexto: { llamada_activa_o_acceso_remoto: true },
+      respuestaCliente: 'no',
+    });
+    expect(caso.salidas.guardian?.senales_manipulacion).toEqual([]);
+  });
+});
+
 describe('CU-02 — investigar la cuenta destino y entregar el expediente', () => {
   it('una alerta AML produce expediente sin pasar por el Guardián', async () => {
     const { caso } = await evaluarAlerta('M-01', 'fan-in con reenvío inmediato');

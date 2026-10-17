@@ -59,17 +59,17 @@
 - [x] `/api/stats`: embudo y llamadas de IA por caso
 
 ## H17–22 · Robustez
-- [ ] Tests e2e por escenario
+- [x] Tests e2e por escenario (`tests/scenarios/casos-de-uso.test.ts`, 28 tests)
 - [x] Modo seguro P10 (error / timeout / presupuesto excedido) + test
 - [x] `scripts/demo.ts` con salida legible y verificación 8/8
 
 ## 🔁 SYNC 2 (H22)
-- [ ] Agentes reales dan las mismas decisiones que los mocks
+- [ ] ⏳ Agentes reales dan las mismas decisiones — su `AgentsApi` está en `tony-dev`, falta que llegue a `main`
 
 ## H22–26 · Producción
 - [ ] Deploy final; demo corre contra la URL pública
-- [ ] README (cómo correrlo, qué es simulado)
-- [ ] `docs/work/API.md` con la API para el frontend de la Fase 2
+- [x] README (cómo correrlo, qué es simulado, sección sobre sesgos)
+- [x] [`docs/work/API.md`](../API.md) con la API para el frontend de la Fase 2
 
 ## Si hay recorte
 - Quitar CU-04 (Lucía)
