@@ -14,9 +14,9 @@
 - [x] `lib/pipeline.ts` y `scripts/demo.ts` usan `obtenerAgentes()` (Claude si hay key; si no, simulado). `npm run demo` 8/8.
 - [x] Mi Guardián funciona con tu modelo de una llamada (`respuestaCliente` o buzón) y también en varios turnos.
 - [x] Mis agentes usan tu `ToolContext` tipado (`canales_seguros`, `disponibilidad` con id de cliente).
-- [ ] `lib/agents-provisional.ts` quedó sin uso: bórralo cuando quieras.
-- [ ] `POST /api/cases/[id]/guardian/reply` hoy solo registra el texto: para el modo varios turnos debe llamar `agentes.guardianTurno(caso, ctx, texto)` (tras `sincronizarEvidencia`), y si `terminado` → `decide` → auditor. Opción: `continuarGuardian` de `lib/agents`.
-- [ ] `/api/health` puede mostrar `modoAgentes()` (`claude` | `simulado`).
+- [x] `lib/agents-provisional.ts` borrado (reemplazado por `obtenerAgentes()`).
+- [x] `POST /api/cases/[id]/guardian/reply` multiturno vía `responderGuardian` (usa `continuarGuardian`, sincroniza evidencia, re-decide y audita). Verificado en vivo: 3 silencios → `sin_respuesta` → P4.
+- [x] `/api/health` expone `modoAgentes()` (`claude` | `simulado`).
 
 ## H0–2 · Scaffold ✅
 - [x] Next.js 15 + TypeScript + Tailwind + zod 4 + vitest (`app/` y `lib/` en la raíz, alias `@/`)
@@ -64,7 +64,7 @@
 - [x] `scripts/demo.ts` con salida legible y verificación 8/8
 
 ## 🔁 SYNC 2 (H22)
-- [ ] ⏳ Agentes reales dan las mismas decisiones — su `AgentsApi` está en `tony-dev`, falta que llegue a `main`
+- [x] Agentes reales dan las mismas decisiones que los mocks: demo 8/8, 5 llamadas de IA
 
 ## H22–26 · Producción
 - [ ] Deploy final; demo corre contra la URL pública
@@ -93,6 +93,11 @@ Dos cambios en `lib/contracts/firmas.ts`, commiteados con `CONTRACT:`:
    indefinido y el caso caía hasta P10 pese al riesgo alto. Ahora P4 y P5
    cubren juntos todo destino `alto`.
 
-Además, `lib/agents-provisional.ts` es temporal: compone las funciones de
-decisión de Tony (`lib/agents/decisiones/*`) con mis analytics, sin LLM, para
-no quedar bloqueado hasta su `AgentsApi`. Se borra cuando llegue.
+`lib/agents-provisional.ts` ya se borró: el pipeline usa el orquestador de
+Tony (`investigar` / `continuarGuardian` / `auditar`) con el bucle multiturno
+del Guardián y la sincronización de evidencia que pide `lib/agents/README.md`.
+
+**Para Tony:** `investigar` documenta que nunca lanza, pero lanza de forma
+sincrónica si al `AgentsApi` le falta un método (`agentes.detective is not a
+function`). Mi pipeline lo captura y degrada a P10, pero conviene envolver la
+llamada sincrónica dentro del orquestador.

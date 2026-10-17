@@ -115,15 +115,15 @@ describe('Clasificación de la respuesta del cliente', () => {
     expect(caso.salidas.guardian?.senales_manipulacion.length).toBeGreaterThan(0);
   });
 
-  it('una frase larga queda sin clasificar y cae al lado conservador', async () => {
+  it('una frase larga la resuelve el modelo y detecta la manipulación', async () => {
     // `clasificarRapido` devuelve null con más de 4 palabras ("que la lea el
-    // modelo"). Sin LLM, el adaptador provisional la trata como incierta, que
-    // `estadoFinal` mapea a sin_respuesta: NO libera dinero.
+    // modelo"). Con los agentes reales conectados eso ya se resuelve bien;
+    // antes, sin runtime de LLM, caía al lado conservador (sin_respuesta).
     const { caso } = await evaluarTransferencia(tx('C-ROSA', 'M-01', 4800), {
       contexto: { llamada_activa_o_acceso_remoto: true },
       respuestaCliente: 'sí, me está guiando un asesor del banco por teléfono',
     });
-    expect(caso.salidas.guardian?.estado_usuario).toBe('sin_respuesta');
+    expect(caso.salidas.guardian?.estado_usuario).toBe('manipulacion_probable');
     expect(caso.decision?.accion).not.toBe('PERMITIR');
   });
 
@@ -289,9 +289,18 @@ describe('Embudo y presupuesto', () => {
 });
 
 describe('Modo seguro — P10', () => {
-  it('si los agentes fallan, no se libera dinero con score alto', async () => {
+  it('si un agente lanza, no se libera dinero con score alto', async () => {
     const agentesRotos = {
       coordinador: async () => {
+        throw new Error('timeout simulado');
+      },
+      detective: async () => {
+        throw new Error('timeout simulado');
+      },
+      guardianTurno: async () => {
+        throw new Error('timeout simulado');
+      },
+      auditor: async () => {
         throw new Error('timeout simulado');
       },
     } as never;
@@ -302,5 +311,23 @@ describe('Modo seguro — P10', () => {
     expect(caso.decision?.regla).toBe('P10');
     expect(caso.decision?.accion).toBe('PAUSAR');
     expect(caso.timeline.map((e) => e.evento)).toContain('error_agentes');
+  });
+
+  it('un AgentsApi incompleto tampoco tumba la request: degrada a P10', async () => {
+    // `investigar` documenta que nunca lanza, pero un método ausente lanza de
+    // forma SINCRÓNICA (`agentes.detective is not a function`). El pipeline lo
+    // captura: en una decisión sobre dinero, fallar seguro manda.
+    const soloCoordinador = {
+      coordinador: async () => ({
+        salida: { salida_temprana: false, invocar: ['detective'], motivo: 'x' },
+        uso: { llamadas: 1, tokens: 10, ms: 1 },
+      }),
+    } as never;
+    const { caso } = await evaluarTransferencia(tx('C-ROSA', 'M-01', 4800), {
+      agentes: soloCoordinador,
+      contexto: { llamada_activa_o_acceso_remoto: true },
+    });
+    expect(caso.decision?.regla).toBe('P10');
+    expect(caso.decision?.accion).toBe('PAUSAR');
   });
 });

@@ -91,12 +91,18 @@ Salud del servicio y confirmación de que los datos son simulados.
   "ok": true,
   "servicio": "adaptive-financial-security",
   "t": "2026-10-17T22:19:38.431Z",
+  "agentes": "simulado",
   "datos": {
     "cuentas": 46, "clientes": 3, "movimientos": 200,
     "nota": "DATOS 100% SINTÉTICOS, generados por scripts/seed.ts..."
   }
 }
 ```
+
+`agentes` es `"claude"` si hay `ANTHROPIC_API_KEY` real, o `"simulado"` si
+corre el LLM determinista. En modo simulado el contador de IA **sí** cuenta las
+llamadas que gastaría con el modelo real, así el embudo es honesto en ambos
+modos.
 
 > Conviene mostrar `datos.nota` en algún lugar visible de la UI. Es un requisito
 > del Definition of Done: todo dato marcado como simulado.
@@ -193,23 +199,59 @@ curl localhost:3000/api/cases/CASO-0001
 
 ## 6. `POST /api/cases/[id]/guardian/reply`
 
-El cliente responde a una pregunta del Guardián.
+El cliente responde al Guardián. **Devuelve el `Caso` actualizado**, con la
+decisión recalculada si la conversación cerró.
 
 ```json
 { "texto": "sí" }
 ```
 
-El texto se guarda en el `timeline` como **dato, nunca como instrucción** para
-un modelo (doc 15, R5). `404` si el caso no existe.
+`texto: ""` significa **el cliente no respondió a tiempo**. El texto se trata
+como dato, nunca como instrucción para un modelo (doc 15, R5).
 
-**Detalle que importa para la UI:** la clasificación rápida determinista solo
-cubre respuestas de **hasta 4 palabras** (`sí`, `no`, `claro`, `para nada`…).
-Una frase más larga queda sin clasificar y la resuelve el modelo; mientras el
-runtime de IA no esté conectado, cae al lado conservador (`sin_respuesta`), que
-**no libera dinero**. Si el panel ofrece botones de respuesta corta en vez de
-texto libre, el resultado es más predecible para el demo.
+### El Guardián es multiturno
 
----
+`POST /api/transfers` abre la conversación y **deja la pregunta pendiente**: no
+responde por el cliente. El flujo es:
+
+```
+POST /api/transfers
+  → timeline: evento `pregunta` con el texto a mostrar
+  → salidas.guardian ausente
+  → decision: ESCALAR / P5   ← el dinero YA está retenido
+
+POST /api/cases/[id]/guardian/reply  { "texto": "sí" }
+  → salidas.guardian: { estado_usuario: "manipulacion_probable",
+                        senales_manipulacion: ["guiado_por_telefono"] }
+  → decision: ESCALAR / P4   ← decisión refinada
+```
+
+**Lo que importa para la UI:** la protección no espera la respuesta. Ya en la
+primera llamada el caso está escalado por P5; la respuesta del cliente solo
+precisa el diagnóstico. Si el panel muestra «tu dinero está protegido», puede
+hacerlo desde el evento `pausa_preventiva`, sin esperar nada.
+
+El guion tiene **máximo 3 preguntas**. Si el cliente calla las tres veces, la
+conversación cierra en `sin_respuesta` y la decisión pasa a P4 — el silencio no
+libera dinero, y llamar de nuevo no cambia el resultado:
+
+| Llamada | `salidas.guardian` | `decision` |
+|:-:|---|---|
+| 1 con `""` | pendiente, nueva pregunta | ESCALAR / P5 |
+| 2 con `""` | pendiente, nueva pregunta | ESCALAR / P5 |
+| 3 con `""` | `sin_respuesta` | ESCALAR / **P4** |
+| 4 con `""` | `sin_respuesta` | ESCALAR / P4 |
+
+Para pintar el chat, los eventos `pregunta` del `timeline` traen cada texto en
+`detalle.mensaje`, y las respuestas quedan como evidencia con fuente
+`guardian_respuesta`.
+
+**Clasificación:** las respuestas de hasta 4 palabras (`sí`, `no`, `claro`,
+`para nada`…) las resuelve una tabla determinista; las frases más largas las
+clasifica el modelo. Botones de respuesta corta hacen el demo más predecible,
+pero el texto libre también funciona.
+
+**Errores:** `400` si falta `texto`; `404` si el caso no existe.
 
 ## 7. `POST /api/cases/[id]/verdict`
 
@@ -294,7 +336,7 @@ explicabilidad es un criterio de aceptación de los tres casos de uso *must*.
 ```bash
 npm run dev          # servidor en :3000
 npm run demo         # los 5 casos de uso en consola, con sus reglas
-npm test             # 182 tests
+npm test             # 227 tests
 npm run typecheck
 ```
 

@@ -40,7 +40,7 @@ forma más rápida de ver qué hace el sistema.
 
 ```bash
 npm run dev        # servidor en http://localhost:3000
-npm test           # 182 tests
+npm test           # 227 tests
 npm run typecheck
 npm run seed       # regenera lib/data/seed.json (determinista)
 ```
@@ -102,10 +102,10 @@ Salida real de `npm run demo`:
 
 | Caso | Escenario | Resultado | Regla | IA |
 |---|---|---|:-:|:-:|
-| **CU-01** | Rosa transfiere S/4,800 guiada por una llamada del «banco» | ESCALAR | P4 | 0 |
-| **CU-02** | Alerta AML sobre la cuenta destino → expediente para el analista | ESCALAR | P5 | 0 |
+| **CU-01** | Rosa transfiere S/4,800 guiada por una llamada del «banco» | ESCALAR | P4 | 3 |
+| **CU-02** | Alerta AML sobre la cuenta destino → expediente para el analista | ESCALAR | P5 | 1 |
 | **CU-03** | Jorge transfiere a la misma mula, ya confirmada | ESCALAR | **P1** | **0** |
-| **CU-05** | Primer pago grande a Bodega Don Pepe (negocio legítimo) | PERMITIR | P8 | 0 |
+| **CU-05** | Primer pago grande a Bodega Don Pepe (negocio legítimo) | PERMITIR | P8 | 1 |
 | **CU-04** | Atacante desde dispositivo nuevo; Lucía viaja sin señal | PAUSAR | P7 | 0 |
 | | …y su pago recurrente al hotel sigue pasando | PERMITIR | P2 | 0 |
 
@@ -119,10 +119,10 @@ la bodega **no reenvía nada**. Por eso `esMulaProbable()` exige el par
 **CU-03 es el diferencial.** Lo que aprendió el caso de Rosa protege a Jorge
 sin investigar de nuevo y sin gastar una sola llamada de modelo.
 
-> El consumo de IA es 0 en toda la tabla porque el runtime de LLM todavía no
-> está conectado: hoy corre `lib/agents-provisional.ts`, que compone las
-> funciones de decisión deterministas con las analytics. Los agentes con modelo
-> son el bloque de Tony_dev.
+> **5 llamadas de IA en total**, y Jorge cuesta 0: ese es el ahorro que produce
+> la Memoria. Sin `ANTHROPIC_API_KEY` el runtime corre en modo simulado
+> (determinista) y cuenta las llamadas que gastaría con el modelo real, así el
+> embudo del demo es honesto en ambos modos.
 
 ---
 
@@ -144,7 +144,7 @@ lib/
 scripts/
   seed.ts             genera los datos
   demo.ts             los 5 casos de uso en consola
-tests/                182 tests
+tests/                227 tests
 ```
 
 ---
@@ -185,8 +185,11 @@ identidad.
 ## Estado
 
 **Backend completo y verificado**: datos, reglas, policy, memoria, ledger de
-evidencia, analytics, pipeline, las 8 rutas y el script de demo. 182 tests,
+evidencia, analytics, pipeline, las 8 rutas y el script de demo. 227 tests,
 typecheck y lint limpios, `next build` correcto.
 
-**Pendiente**: conectar el runtime de LLM (bloque de Tony_dev), el deploy
-público y el frontend de la Fase 2.
+**Agentes integrados**: el pipeline usa el orquestador de `lib/agents`
+(Tony_dev). `npm run demo` da 8/8 con los agentes reales en modo simulado.
+
+**Pendiente**: probar contra la API real de Claude (falta una
+`ANTHROPIC_API_KEY`), el deploy público y el frontend de la Fase 2.
