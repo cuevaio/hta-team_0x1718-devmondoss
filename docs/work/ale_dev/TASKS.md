@@ -57,16 +57,20 @@
 - [x] `/api/alerts` (Puerta B: sin Guardián)
 - [x] `/api/cases/[id]/verdict` (solo lo validado por un humano entra a la Memoria)
 - [x] `/api/stats`: embudo y llamadas de IA por caso
+- [x] `lib/observability/`: métricas del doc 14 (TTPA, trazabilidad de citas, E6 llamadas evitadas por la Memoria, modo seguro, fricción) + registro del doc 19 §9. Aditivo en `/api/stats`; 28 tests
+- [x] La hora de la decisión ya no incluye la latencia del Auditor (`finalizar()` la reescribía después del expediente)
 
 ## H17–22 · Robustez
 - [x] Tests e2e por escenario (`tests/scenarios/casos-de-uso.test.ts`, 28 tests)
 - [x] Modo seguro P10 (error / timeout / presupuesto excedido) + test
-- [x] `scripts/demo.ts` con salida legible y verificación 8/8
+- [x] `scripts/demo.ts` con salida legible y verificación 8/8 (+ métricas, con la aclaración de que los casos no son una población real)
+- [x] Rutas endurecidas: `verdict` con `validado_por` de solo espacios daba 500 → 400; `alerts` sobre cuenta inexistente abría un caso PERMITIDO → 404. Tests en `tests/api/`
 
 ## 🔁 SYNC 2 (H22)
 - [x] Agentes reales dan las mismas decisiones que los mocks: demo 8/8, 5 llamadas de IA
 
 ## H22–26 · Producción
+- [x] Prueba local de producción: `next build` + `next start`, los 6 casos del demo por HTTP con la regla correcta, caminos 400/404, reset
 - [ ] Deploy final; demo corre contra la URL pública
 - [x] README (cómo correrlo, qué es simulado, sección sobre sesgos)
 - [x] [`docs/work/API.md`](../API.md) con la API para el frontend de la Fase 2
@@ -101,3 +105,38 @@ del Guardián y la sincronización de evidencia que pide `lib/agents/README.md`.
 sincrónica si al `AgentsApi` le falta un método (`agentes.detective is not a
 function`). Mi pipeline lo captura y degrada a P10, pero conviene envolver la
 llamada sincrónica dentro del orquestador.
+
+---
+
+## Deploy — pasos cuando haya cuenta de Vercel
+
+Ya verificado en local con el mismo artefacto (`next build` + `next start`):
+las 8 rutas responden, `/api/stats` y `/api/health` son dinámicas (no se
+prerenderizan con datos vacíos) y la secuencia del demo da las reglas correctas.
+
+1. `npx vercel login` y `npx vercel link` (proyecto nuevo, framework Next.js, sin cambios de build).
+2. Sin variables de entorno el runtime corre en **simulado**. La API key se
+   agrega después en el panel de Vercel (Settings → Environment Variables),
+   nunca en el repo.
+3. `npx vercel --prod` y luego `curl <url>/api/health` → `"agentes":"simulado"`.
+4. Correr la secuencia del demo contra la URL **en una sola sesión seguida**:
+   el estado vive en memoria y cada instancia tiene el suyo (API.md §10).
+
+---
+
+## Para Tony — hallazgo en cuentas externas (no lo toqué: es tu bloque)
+
+**Repro:** `POST /api/transfers` de `C-ROSA` a `X-99` (cuenta de otro banco,
+`banco_propio: false`). `reenvio_rapido` devuelve `porcentaje_reenviado: 0` y
+entra al ledger como evidencia. Si el caso termina en PAUSAR/ESCALAR (p. ej.
+por P10), la plantilla de `afirmacionDe` en `lib/agents/decisiones/auditor.ts`
+escribe *«Reenvió el 0% de lo recibido en menos de 2 h»* citando un `E-xx`
+**válido**. El validador de citas no puede detectarlo: la cita existe, el dato
+no se observó (doc 19 §10: de una cuenta externa no vemos sus salidas).
+
+**Propuesta** (`CONTRACT:`): agregar `observable: boolean` a `ResultadoReenvio`
+y `ResultadoCiclos` en `lib/contracts/analytics.ts`. Yo lo pongo en `false`
+para cuentas externas en `lib/analytics/`; tu Auditor omite la afirmación (o
+escribe «no observable: cuenta de otra entidad») cuando es `false`. No cambia
+ningún caso del demo: todas sus cuentas son del banco propio.
+

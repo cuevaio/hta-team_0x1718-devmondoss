@@ -180,6 +180,11 @@ En la respuesta, `puerta` es `"alerta_aml"` y `salidas.guardian` viene
 `undefined`. La regla aplicada suele ser **P5**: con destino de riesgo alto y
 sin cliente a quien preguntar, se escala.
 
+**Errores:** `400` si `cuenta` falta, está vacía o es solo espacios; `404` si
+la cuenta no existe en los datos. La alerta viene del monitoreo del propio
+banco sobre sus cuentas: una cuenta desconocida es una entrada inválida, no un
+caso (antes se abría el caso y la falta de datos terminaba en PERMITIR).
+
 ---
 
 ## 5. `GET /api/cases/[id]`
@@ -276,7 +281,9 @@ El analista confirma o descarta. **Es el único camino hacia la Memoria.**
 }
 ```
 
-**Errores:** `400` si falta `validado_por`; `404` si el caso no existe.
+**Errores:** `400` si falta `validado_por` o es solo espacios (no identifica a
+ningún humano, R10), o si la Memoria rechaza el veredicto; `404` si el caso no
+existe. En todos los `400`, nada entra a la Memoria.
 
 Después de esto, una transferencia nueva al mismo destino se pausa por **P1 con
 0 llamadas de IA** (CU-03). Es el momento más fuerte del demo: conviene que la
@@ -286,29 +293,84 @@ UI lo muestre explícitamente.
 
 ## 8. `GET /api/stats`
 
-Embudo y consumo de IA, para el panel de métricas.
+Embudo, consumo de IA y métricas del doc 14, para el panel de métricas.
+Respuesta real tras la secuencia del demo (en modo simulado; los `ms` varían):
 
 ```json
 {
-  "transacciones_evaluadas": 5,
+  "transacciones_evaluadas": 6,
   "sospechosas": 5,
-  "con_llamadas_de_ia": 0,
-  "llamadas_de_ia_totales": 0,
+  "con_llamadas_de_ia": 4,
+  "llamadas_de_ia_totales": 5,
   "costo_estimado_total": 0,
-  "por_regla": { "P4": 1, "P5": 2, "P1": 1, "P8": 1 },
+  "por_regla": { "P4": 1, "P5": 1, "P1": 1, "P8": 1, "P7": 1, "P2": 1 },
   "mulas_en_memoria": 1,
-  "nota_datos": "DATOS 100% SINTÉTICOS..."
+  "nota_datos": "DATOS 100% SINTÉTICOS...",
+  "metricas": {
+    "eficiencia_ia": {
+      "pct_transacciones_con_ia": 0.667,
+      "llamadas_por_caso_con_ia": 1.25,
+      "tokens_totales": 0,
+      "casos_resueltos_sin_ia": 2,
+      "resueltos_por_memoria": 1,
+      "hit_rate_memoria": 0.167,
+      "llamadas_evitadas_por_memoria": {
+        "estimado": 1.5,
+        "casos_p1": 1,
+        "casos_p1_con_base": 1,
+        "base": "por cada caso P1: promedio de llamadas de IA de los casos previos al mismo destino"
+      }
+    },
+    "modo_seguro": { "casos_con_falla_de_agente": 0, "decididos_por_p10": 0, "tasa_modo_seguro": 0 },
+    "friccion": {
+      "permitidos": 2, "retenidos": 4, "tasa_de_retencion": 0.667,
+      "por_accion": { "ESCALAR": 3, "PERMITIR": 2, "PAUSAR": 1 },
+      "preguntas_al_cliente": 1
+    },
+    "trazabilidad": {
+      "expedientes": 3, "expedientes_con_evidencia_completa": 3,
+      "afirmaciones": 12, "afirmaciones_con_cita_valida": 12,
+      "pct_afirmaciones_citadas": 1, "citas_inexistentes": 0
+    },
+    "ttpa": {
+      "con_pausa_preventiva": { "casos": 3, "p50_ms": 0, "max_ms": 2 },
+      "sin_pausa_preventiva": { "casos": 1, "p50_ms": 0, "max_ms": 0 },
+      "nota": "ms del proceso que corrió; en modo simulado no incluye la latencia de un modelo real"
+    }
+  },
+  "registro_reciente": [
+    { "tipo": "agente", "t": "...", "caso": "CASO-0001", "agente": "detective",
+      "llamadas": 0, "tokens": 0, "ms": 0, "resultado": "ok" },
+    { "tipo": "decision", "t": "...", "caso": "CASO-0001", "regla": "P4",
+      "accion": "ESCALAR", "degradado": false, "llamadas_ia_del_caso": 2 }
+  ]
 }
 ```
 
-`sospechosas` cuenta los casos con `score >= 3`. `por_regla` sirve directo para
-un gráfico de barras de decisiones.
+Las claves de primer nivel de antes no cambiaron; `metricas` y
+`registro_reciente` son nuevas (`lib/observability/`).
+
+**Cómo leer las métricas** (para no mostrar un número engañoso):
+
+| Campo | Qué es | Cuidado |
+|---|---|---|
+| `null` en cualquier cociente | no hay casos para medirlo | no es 0: mostrar «—» |
+| `pct_transacciones_con_ia` | casos que gastaron IA / total | los 6 casos del demo se eligieron por ser sospechosos: **no** es el % de una población real |
+| `llamadas_evitadas_por_memoria` | **estimación** E6: por cada P1, lo que costó investigar ese mismo destino antes | mostrar siempre con la palabra «estimado»; `null` si no hubo investigación previa comparable |
+| `trazabilidad.citas_inexistentes` | citas a un `E-xx` que no existe en el caso | es la alucinación detectable; debería ser 0 |
+| `ttpa.con_pausa_preventiva` | ms entre que llega la transacción y la pausa | mide esta capa, no la latencia de un LLM real |
+| `friccion.tasa_de_retencion` | decisiones que retienen dinero | **no** es tasa de falsos positivos: el caso no sabe si era fraude de verdad. Esa cifra sale de los evals (E7) |
+
+**`registro_reciente`** son las últimas 20 entradas del registro del doc 19
+§9: una por agente que corrió (llamadas, tokens, latencia, `ok`/`error`) y una
+por decisión. **No contiene texto del cliente** ni atributos de la persona: los
+campos son una lista cerrada y un test lo verifica.
 
 ---
 
 ## 9. `POST /api/demo/reset`
 
-Vacía casos y Memoria para repetir el demo desde cero. Sin cuerpo.
+Vacía casos, Memoria y registro para repetir el demo desde cero. Sin cuerpo.
 
 ```json
 { "ok": true, "reiniciado": true }
@@ -336,7 +398,7 @@ explicabilidad es un criterio de aceptación de los tres casos de uso *must*.
 ```bash
 npm run dev          # servidor en :3000
 npm run demo         # los 5 casos de uso en consola, con sus reglas
-npm test             # 227 tests
+npm test             # 271 tests
 npm run typecheck
 ```
 

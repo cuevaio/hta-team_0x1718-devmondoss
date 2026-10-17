@@ -40,7 +40,7 @@ forma más rápida de ver qué hace el sistema.
 
 ```bash
 npm run dev        # servidor en http://localhost:3000
-npm test           # 227 tests
+npm test           # 271 tests
 npm run typecheck
 npm run seed       # regenera lib/data/seed.json (determinista)
 ```
@@ -102,11 +102,11 @@ Salida real de `npm run demo`:
 
 | Caso | Escenario | Resultado | Regla | IA |
 |---|---|---|:-:|:-:|
-| **CU-01** | Rosa transfiere S/4,800 guiada por una llamada del «banco» | ESCALAR | P4 | 3 |
+| **CU-01** | Rosa transfiere S/4,800 guiada por una llamada del «banco» | ESCALAR | P4 | 2 |
 | **CU-02** | Alerta AML sobre la cuenta destino → expediente para el analista | ESCALAR | P5 | 1 |
 | **CU-03** | Jorge transfiere a la misma mula, ya confirmada | ESCALAR | **P1** | **0** |
 | **CU-05** | Primer pago grande a Bodega Don Pepe (negocio legítimo) | PERMITIR | P8 | 1 |
-| **CU-04** | Atacante desde dispositivo nuevo; Lucía viaja sin señal | PAUSAR | P7 | 0 |
+| **CU-04** | Atacante desde dispositivo nuevo; Lucía viaja sin señal | PAUSAR | P7 | 1 |
 | | …y su pago recurrente al hotel sigue pasando | PERMITIR | P2 | 0 |
 
 **CU-05 es el control de falsos positivos y el caso más instructivo.** La
@@ -120,7 +120,8 @@ la bodega **no reenvía nada**. Por eso `esMulaProbable()` exige el par
 sin investigar de nuevo y sin gastar una sola llamada de modelo.
 
 > **5 llamadas de IA en total**, y Jorge cuesta 0: ese es el ahorro que produce
-> la Memoria. Sin `ANTHROPIC_API_KEY` el runtime corre en modo simulado
+> la Memoria (`/api/stats` lo estima en 1.5 llamadas: lo que costó investigar
+> M-01 antes). Sin `ANTHROPIC_API_KEY` el runtime corre en modo simulado
 > (determinista) y cuenta las llamadas que gastaría con el modelo real, así el
 > embudo del demo es honesto en ambos modos.
 
@@ -139,12 +140,13 @@ lib/
   evidence/ledger.ts  ids E-xx emitidos por el sistema
   analytics/          fan-in, reenvío rápido, estructuración, ciclos, canales…
   cases/store.ts      objeto Caso + timeline + contador de IA
+  observability/      métricas del doc 14 (TTPA, trazabilidad, E6) + registro
   pipeline.ts         orquestación
   agents/             agentes con LLM (Tony_dev)
 scripts/
   seed.ts             genera los datos
   demo.ts             los 5 casos de uso en consola
-tests/                227 tests
+tests/                271 tests
 ```
 
 ---
@@ -185,8 +187,15 @@ identidad.
 ## Estado
 
 **Backend completo y verificado**: datos, reglas, policy, memoria, ledger de
-evidencia, analytics, pipeline, las 8 rutas y el script de demo. 227 tests,
-typecheck y lint limpios, `next build` correcto.
+evidencia, analytics, observabilidad, pipeline, las 8 rutas y el script de
+demo. 271 tests, typecheck y lint limpios, `next build` correcto, y la
+secuencia del demo verificada por HTTP contra el build de producción
+(`next start`).
+
+**Métricas medidas, no supuestas** (`GET /api/stats`): TTPA, % de afirmaciones
+del expediente con cita válida (12/12 en el demo), llamadas evitadas por la
+Memoria (estimado), tasa de modo seguro y fricción. Ver la tabla «Cómo leer
+las métricas» en [docs/work/API.md](docs/work/API.md) antes de mostrar una cifra.
 
 **Agentes integrados**: el pipeline usa el orquestador de `lib/agents`
 (Tony_dev). `npm run demo` da 8/8 con los agentes reales en modo simulado.

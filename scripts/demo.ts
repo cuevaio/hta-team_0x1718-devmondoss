@@ -184,6 +184,27 @@ async function main() {
   console.log(`  mulas en Memoria        : ${stats.mulas_en_memoria}`);
   console.log(`  decisiones por regla    : ${JSON.stringify(stats.por_regla)}`);
 
+  const m = stats.metricas;
+  const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`);
+  const ms = (x: number | null) => (x === null ? '—' : `${x} ms`);
+  const ahorro = m.eficiencia_ia.llamadas_evitadas_por_memoria;
+  console.log(`\n  ${C.bold}Métricas (doc 14)${C.reset}`);
+  console.log(
+    `  TTPA con pausa preventiva: p50 ${ms(m.ttpa.con_pausa_preventiva.p50_ms)} · máx ${ms(m.ttpa.con_pausa_preventiva.max_ms)} (${m.ttpa.con_pausa_preventiva.casos} casos)`,
+  );
+  console.log(
+    `  afirmaciones citadas     : ${pct(m.trazabilidad.pct_afirmaciones_citadas)} (${m.trazabilidad.afirmaciones_con_cita_valida}/${m.trazabilidad.afirmaciones}) · citas inexistentes: ${m.trazabilidad.citas_inexistentes}`,
+  );
+  // Los casos del demo se eligieron por ser interesantes: casi todos son
+  // sospechosos. Este porcentaje NO es el de una población real.
+  console.log(
+    `  transacciones con IA     : ${pct(m.eficiencia_ia.pct_transacciones_con_ia)} ${C.dim}(de ${stats.transacciones_evaluadas} casos elegidos para el demo, no una población real)${C.reset}`,
+  );
+  console.log(
+    `  llamadas evitadas (E6)   : ${ahorro.estimado ?? '—'} ${C.dim}(estimado: ${ahorro.base})${C.reset}`,
+  );
+  console.log(`  ${C.dim}${m.ttpa.nota}${C.reset}`);
+
   // ── Veredicto ────────────────────────────────────────────────
   const ok = resultados.filter(Boolean).length;
   const total = resultados.length;

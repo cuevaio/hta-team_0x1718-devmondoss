@@ -2,6 +2,7 @@ import type {
   AgentsApi,
   Caso,
   ContextoOperacion,
+  NombreAgente,
   Transaccion,
 } from '@/lib/contracts';
 import { aplicarConsistenciaDetective, MAX_LLAMADAS_POR_CASO } from '@/lib/contracts';
@@ -21,6 +22,7 @@ import {
   obtenerAgentes,
 } from '@/lib/agents';
 import { MAX_TURNOS as MAX_TURNOS_GUARDIAN } from '@/lib/agents/decisiones/guardian';
+import { embudo, metricas, registro } from '@/lib/observability';
 
 /**
  * Pipeline de orquestación.
@@ -168,6 +170,7 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
     inv = await investigar(caso, ctx, agentes);
   } catch (error) {
     degradado = true;
+    registro.agente(id, 'orquestador', undefined, 'error');
     storeCasos.registrarEvento(id, 'sistema', 'error_agentes', {
       agente: 'orquestador',
       mensaje: error instanceof Error ? error.message : String(error),
@@ -176,6 +179,7 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
 
   caso.salidas = { ...caso.salidas, ...inv.salidas };
   caso.ia = acumularIA(caso.ia, inv.uso);
+  registrarUsoInvestigacion(id, inv);
 
   if (inv.salidas.coordinador) {
     storeCasos.registrarEvento(id, 'coordinador', 'plan', inv.salidas.coordinador);
@@ -231,6 +235,7 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
       r = await continuarGuardian(caso, ctx, agentes, respuesta);
     } catch (error) {
       degradado = true;
+      registro.agente(id, 'guardian', undefined, 'error');
       storeCasos.registrarEvento(id, 'sistema', 'error_agentes', {
         agente: 'guardian',
         mensaje: error instanceof Error ? error.message : String(error),
@@ -238,6 +243,7 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
       break;
     }
     caso.ia = acumularIA(caso.ia, { guardian: r.uso });
+    registro.agente(id, 'guardian', r.uso, r.error ? 'error' : 'ok');
     if (r.error) {
       degradado = true;
       storeCasos.registrarEvento(id, 'sistema', 'error_agentes', { agente: 'guardian', mensaje: r.error });
@@ -290,6 +296,7 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
       error: error instanceof Error ? error.message : String(error),
     }));
     caso.ia = acumularIA(caso.ia, { auditor: a.uso });
+    registro.agente(id, 'auditor', a.uso, a.salida ? 'ok' : 'error');
     if (a.salida) {
       caso.salidas.auditor = a.salida;
       storeCasos.registrarEvento(id, 'auditor', 'expediente', {
@@ -314,9 +321,38 @@ function finalizar(
 ): ResultadoPipeline {
   const { caso } = vivo;
   storeCasos.sincronizarEvidencia(caso.id);
-  caso.decision = { accion: resultado.accion, regla: resultado.regla, t: new Date().toISOString() };
+  // Si la decisión ya se tomó antes del Auditor, se conserva SU hora: el
+  // expediente corre después y no debe sumarse al tiempo de la decisión (TTPA).
+  const previa = caso.decision;
+  const misma = previa && previa.accion === resultado.accion && previa.regla === resultado.regla;
+  caso.decision = {
+    accion: resultado.accion,
+    regla: resultado.regla,
+    t: misma ? previa.t : new Date().toISOString(),
+  };
   storeCasos.registrarEvento(caso.id, 'policy', 'decision', resultado);
+  registro.decision(caso.id, {
+    regla: resultado.regla,
+    accion: resultado.accion,
+    degradado: resultado.regla === 'P10',
+    llamadas_ia_del_caso: caso.ia.llamadas,
+  });
   return { caso, buzon };
+}
+
+/** Una entrada de registro por agente que corrió en la investigación (doc 19 §9). */
+function registrarUsoInvestigacion(
+  id: string,
+  inv: Awaited<ReturnType<typeof investigar>>,
+): void {
+  const fallidos = new Set<NombreAgente>(inv.errores.map((e) => e.agente));
+  const agentes = new Set<NombreAgente>([
+    ...(Object.keys(inv.uso) as NombreAgente[]),
+    ...fallidos,
+  ]);
+  for (const agente of agentes) {
+    registro.agente(id, agente, inv.uso[agente], fallidos.has(agente) ? 'error' : 'ok');
+  }
 }
 
 /**
@@ -351,6 +387,7 @@ export async function responderGuardian(
   try {
     r = await continuarGuardian(caso, ctx, agentes, texto);
   } catch (error) {
+    registro.agente(casoId, 'guardian', undefined, 'error');
     storeCasos.registrarEvento(casoId, 'sistema', 'error_agentes', {
       agente: 'guardian',
       mensaje: error instanceof Error ? error.message : String(error),
@@ -359,6 +396,7 @@ export async function responderGuardian(
   }
 
   caso.ia = acumularIA(caso.ia, { guardian: r.uso });
+  registro.agente(casoId, 'guardian', r.uso, r.error ? 'error' : 'ok');
   storeCasos.sincronizarEvidencia(casoId);
 
   if (r.error) {
@@ -387,6 +425,12 @@ export async function responderGuardian(
   });
   caso.decision = { accion: resultado.accion, regla: resultado.regla, t: new Date().toISOString() };
   storeCasos.registrarEvento(casoId, 'policy', 'decision', resultado);
+  registro.decision(casoId, {
+    regla: resultado.regla,
+    accion: resultado.accion,
+    degradado: resultado.regla === 'P10',
+    llamadas_ia_del_caso: caso.ia.llamadas,
+  });
 
   if (debeAuditar(caso) && !caso.salidas.auditor) {
     const a = await auditar(caso, ctx, agentes).catch((error: unknown) => ({
@@ -395,6 +439,7 @@ export async function responderGuardian(
       error: error instanceof Error ? error.message : String(error),
     }));
     caso.ia = acumularIA(caso.ia, { auditor: a.uso });
+    registro.agente(casoId, 'auditor', a.uso, a.salida ? 'ok' : 'error');
     if (a.salida) {
       caso.salidas.auditor = a.salida;
       storeCasos.registrarEvento(casoId, 'auditor', 'expediente', {
@@ -412,25 +457,22 @@ function clienteDe(caso: Caso): string {
   return repo.clientePorCuenta(caso.transaccion.origen)?.id ?? '';
 }
 
-/** Embudo y consumo de IA para `/api/stats`. */
+/**
+ * Embudo, consumo de IA y métricas del doc 14 para `/api/stats`.
+ *
+ * Las claves de primer nivel históricas (embudo, `mulas_en_memoria`,
+ * `nota_datos`) no cambian: las consumen el demo y la Fase 2. Lo nuevo es
+ * aditivo: `metricas` y `registro_reciente` (lib/observability).
+ */
 export function estadisticas() {
   const casos = storeCasos.todos();
-  const sospechosas = casos.filter((c) => c.nivel0.score >= 3);
-  const conIA = casos.filter((c) => c.ia.llamadas > 0);
   return {
-    transacciones_evaluadas: casos.length,
-    sospechosas: sospechosas.length,
-    con_llamadas_de_ia: conIA.length,
-    llamadas_de_ia_totales: casos.reduce((s, c) => s + c.ia.llamadas, 0),
-    costo_estimado_total: Math.round(casos.reduce((s, c) => s + c.ia.costo_estimado, 0) * 1e6) / 1e6,
-    por_regla: casos.reduce<Record<string, number>>((acc, c) => {
-      const r = c.decision?.regla ?? 'sin_decision';
-      acc[r] = (acc[r] ?? 0) + 1;
-      return acc;
-    }, {}),
+    ...embudo(casos),
     mulas_en_memoria: memoria.cantidad,
     nota_datos: repo.notaDatos(),
+    metricas: metricas(casos),
+    registro_reciente: registro.recientes(20),
   };
 }
 
-export { analytics, memoria, storeCasos };
+export { analytics, memoria, registro, storeCasos };

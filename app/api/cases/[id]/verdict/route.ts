@@ -12,7 +12,8 @@ import { repo } from '@/lib/data/repo';
  */
 const Cuerpo = z.object({
   veredicto: z.enum(['mula_confirmada', 'descartada']),
-  validado_por: z.string().min(1, 'se requiere el analista que valida'),
+  // trim: un nombre hecho de espacios no identifica a ningún humano (R10).
+  validado_por: z.string().trim().min(1, 'se requiere el analista que valida'),
 });
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -34,7 +35,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     hoy: repo.ahora(),
   });
 
-  memoria.confirm(cuenta, veredicto);
+  try {
+    memoria.confirm(cuenta, veredicto);
+  } catch (error) {
+    // La Memoria tiene sus propias guardas (R10). Si rechaza, es un error del
+    // cliente de la API, no del servidor, y nada entró a la Memoria.
+    return NextResponse.json(
+      { error: 'veredicto rechazado', detalle: error instanceof Error ? error.message : String(error) },
+      { status: 400 },
+    );
+  }
   storeCasos.registrarEvento(id, 'analista', 'veredicto', veredicto);
 
   return NextResponse.json({ caso: vivo.caso.id, veredicto });
