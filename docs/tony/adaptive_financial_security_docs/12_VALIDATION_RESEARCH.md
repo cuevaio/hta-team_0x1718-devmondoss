@@ -7,11 +7,12 @@ Validar el problema antes de construir una arquitectura compleja.
 ## Entrevistas — orden sugerido
 
 1. fraude/risk;
-2. customer support;
-3. digital product;
-4. usuarios que hayan sufrido operación no reconocida/scam;
-5. usuarios con barreras de accesibilidad;
-6. compliance/consumer protection.
+2. analistas AML / oficial de cumplimiento;
+3. customer support;
+4. digital product;
+5. usuarios que hayan sufrido operación no reconocida/scam;
+6. usuarios con barreras de accesibilidad;
+7. compliance/consumer protection.
 
 ## Preguntas para fraud/risk
 
@@ -23,6 +24,16 @@ Validar el problema antes de construir una arquitectura compleja.
 - ¿Cómo detectan usuario legítimo manipulado por un scammer?
 - ¿Qué señales tienen pero no logran combinar a tiempo?
 - ¿Qué parte sigue siendo manual?
+
+## Preguntas para analistas AML
+
+- Cuéntame cómo investigaste la última alerta, paso a paso.
+- ¿Cuántos sistemas abriste? ¿Cuánto tiempo te tomó reunir el contexto vs decidir?
+- ¿Cuántas alertas tienes en cola hoy?
+- ¿Qué patrones aparecen más (fan-in, reenvío rápido, estructuración, circulares)?
+- ¿Cómo distingues una mula de un negocio con muchos ingresos?
+- ¿Lo que confirmas como mula llega al equipo de fraude? ¿Cuánto tarda?
+- ¿Qué tendría que traer un resumen automático para que confíes en él?
 
 ## Preguntas para soporte
 
@@ -61,7 +72,8 @@ Al menos 3 de 5 deben cumplirse:
 - workaround manual frecuente;
 - costo claro;
 - casos donde user response delay empeora resultado;
-- willingness to pilot / provide sandbox data.
+- willingness to pilot / provide sandbox data;
+- analistas confirman que reunir contexto domina su tiempo (H7).
 
 ## Kill criteria
 
@@ -71,4 +83,19 @@ Matar o pivotar si:
 2. no puede accederse a ninguna señal adicional útil;
 3. el costo de falsos positivos supera ampliamente fraude evitado;
 4. regulación impide cualquier intervención autónoma propuesta;
-5. el “agent” solo agrega conversación, no decisión/operación útil.
+5. el “agent” solo agrega conversación, no decisión/operación útil;
+6. un solo agente (o reglas) logra la misma calidad con menor costo y latencia que el sistema multiagente (H9);
+7. las mulas en los datos reciben de una sola víctima, por lo que la Memoria no protege a nadie más (H8).
+
+---
+
+## Validación posible dentro del hackathon
+
+Con 30h no hay tiempo para un estudio completo. Mínimo viable:
+
+1. **2–3 conversaciones de 10 min** con mentores o jurados de banca/fraude/AML usando las preguntas de arriba.
+2. **Datos sintéticos:** revisar en una muestra de SAML-D / IBM AML si las cuentas lavadoras reciben de múltiples orígenes (H8).
+3. **Experimento E5** (`14`): mismo set de casos con 1 agente vs multiagente → comparar evidencia citada, llamadas y latencia.
+4. **Embudo real del demo:** cuántas transacciones simuladas llegan a IA (H10).
+
+Todo resultado se presenta como **simulación / sintético**, nunca como dato de producción.

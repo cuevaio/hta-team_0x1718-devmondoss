@@ -1,6 +1,6 @@
 # 06 — Current System
 
-## Arquitectura simplificada actual
+## Arquitectura simplificada actual — fraude (lado emisor)
 
 ```text
 LOGIN / DEVICE
@@ -22,6 +22,25 @@ Rules / model
                notification
                     ↓
                   user
+```
+
+## Arquitectura simplificada actual — AML (lado receptor)
+
+```text
+Transacciones ya ejecutadas
+     ↓
+Monitoreo transaccional (reglas / escenarios)
+     ↓
+ALERTA → cola de alertas (backlog)
+     ↓
+Analista abre varios sistemas
+(core, KYC, historial, contrapartes, listas, normativa)
+     ↓
+Reconstruye el caso a mano
+     ↓
+Decide: descartar / escalar
+     ↓
+Si escala → ROS a la UIF-Perú
 ```
 
 ## Controles clásicos útiles
@@ -65,11 +84,28 @@ Mobile app ─────────┤
 Contact center ─────┤──> incident
 Security / SIEM ────┤
 Complaints ─────────┤
-Accessibility ──────┘
+Accessibility ──────┤
+AML / Compliance ───┘   ← ve al receptor, días después
 ```
 
-Cada equipo ve una parte distinta.
+Cada equipo ve una parte distinta. En particular, **fraude ve a la víctima y AML ve a la mula**, aunque sea la misma transacción.
 
 ## Hipótesis de gap
 
-La información existe, pero la organización no siempre convierte señales dispersas en una **política contextual de protección** antes de que el dinero salga.
+La información existe, pero la organización no siempre convierte señales dispersas en una **política contextual de protección** antes de que el dinero salga, ni reutiliza lo que AML confirma para proteger a la siguiente víctima.
+
+## Dónde se inserta nuestra capa
+
+No reemplaza nada: se agrega **entre el risk engine y la ejecución**, y **sobre la cola de alertas AML**.
+
+```text
+Risk engine existente ──▶ [ NUESTRA CAPA ] ──▶ ejecución / pausa
+                               │   ▲
+Cola de alertas AML ──────────▶│   │ Memoria de riesgo
+                               ▼   │
+                     Consola del analista
+```
+
+- **Entrada:** transacciones marcadas por el risk engine + alertas AML.
+- **Salida:** decisión `PERMITIR / PAUSAR / VERIFICAR / ESCALAR` + expediente.
+- **Integración mínima:** API de lectura de historial y una API para retener/liberar una operación pendiente.

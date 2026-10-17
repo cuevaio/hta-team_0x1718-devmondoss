@@ -1,8 +1,25 @@
 # 09 — Solution Space
 
-> Este documento NO elige una solución. Define opciones a validar.
+> Este documento lista las opciones exploradas y marca cuáles entran al MVP. La decisión se basa en el criterio del final y en el alcance de 30h.
 
-## S1 — Adaptive Challenge Engine
+**Leyenda:** ✅ en el MVP · 🟡 versión mínima · ⏭️ futuro / fuera del MVP
+
+| Opción | Estado | Dónde vive (ver `19`) |
+|---|:-:|---|
+| S1 — Adaptive Challenge Engine | 🟡 | 🛡️ Guardián elige canal |
+| S2 — Protective Hold (pausa) | ✅ | Policy Engine |
+| S3 — User-defined safety policies | 🟡 | 1–2 reglas de ejemplo (beneficiarios habituales siempre pasan) |
+| S4 — Trusted recovery graph | ⏭️ | — |
+| S5 — Scam-intent interruption | ✅ | 🛡️ Guardián |
+| S6 — Post-breach heightened mode | ⏭️ | — |
+| S7 — Evidence timeline / expediente | ✅ | 📋 Auditor |
+| S8 — Cross-institution signal sharing | 🟡 | Versión interna: 🧠 Memoria de riesgo dentro de una institución |
+| S9 — AML alert investigation (B1) | ✅ | 🔍 Detective + 📋 Auditor |
+| S10 — Feedback fraude ↔ AML | ✅ | 🧠 Memoria de riesgo |
+
+---
+
+## S1 — Adaptive Challenge Engine 🟡
 
 Selecciona challenge según:
 - riesgo;
@@ -15,19 +32,19 @@ No depende de una sola modalidad.
 
 ---
 
-## S2 — Protective Hold
+## S2 — Protective Hold ✅
 
-Ante riesgo alto + usuario no alcanzable:
+Ante riesgo alto + usuario no alcanzable o manipulado:
 
 ```text
-ALLOW → HOLD TEMPORAL → VERIFY → RELEASE / BLOCK
+ALLOW → PAUSA TEMPORAL → VERIFY → RELEASE / BLOCK
 ```
 
 No todo debe ser “aprobar o bloquear para siempre”.
 
 ---
 
-## S3 — User-defined safety policies
+## S3 — User-defined safety policies 🟡
 
 Ejemplos voluntarios:
 
@@ -38,7 +55,7 @@ Ejemplos voluntarios:
 
 ---
 
-## S4 — Trusted recovery graph
+## S4 — Trusted recovery graph ⏭️
 
 Métodos preestablecidos de recuperación:
 - segundo dispositivo;
@@ -53,7 +70,7 @@ Nunca asumir que un tercero es obligatorio.
 
 ---
 
-## S5 — Scam-intent interruption
+## S5 — Scam-intent interruption ✅
 
 Para operación legítimamente autenticada pero contextualmente peligrosa:
 
@@ -65,7 +82,7 @@ Para operación legítimamente autenticada pero contextualmente peligrosa:
 
 ---
 
-## S6 — Post-breach heightened mode
+## S6 — Post-breach heightened mode ⏭️
 
 Tras exposición de datos / dispositivo / identidad:
 - elevar vigilancia;
@@ -75,7 +92,7 @@ Tras exposición de datos / dispositivo / identidad:
 
 ---
 
-## S7 — Evidence timeline
+## S7 — Evidence timeline / expediente ✅
 
 Construcción automática de:
 
@@ -83,11 +100,11 @@ Construcción automática de:
 login → device → beneficiary → amount → alerts → responses → blocks
 ```
 
-Útil para soporte, fraude, auditoría y reclamo.
+Útil para soporte, fraude, auditoría y reclamo. En el MVP lo produce el 📋 Auditor, con cada afirmación citando su evidencia.
 
 ---
 
-## S8 — Cross-institution signal sharing
+## S8 — Cross-institution signal sharing 🟡
 
 A más largo plazo, señales sobre:
 - cuenta mula;
@@ -96,7 +113,25 @@ A más largo plazo, señales sobre:
 - dispositivo;
 - scam campaign.
 
-Requiere gobernanza y privacidad fuertes.
+Requiere gobernanza y privacidad fuertes. **En el MVP solo existe la versión interna (S10).**
+
+---
+
+## S9 — AML alert investigation (B1) ✅
+
+Dada una alerta o una cuenta destino sospechosa:
+- arma el perfil transaccional;
+- identifica tipologías (fan-in, reenvío rápido / pass-through, estructuración, circular);
+- cruza contra listas de riesgo;
+- genera recomendación `descartar / escalar` con justificación trazable para que el analista valide.
+
+---
+
+## S10 — Feedback fraude ↔ AML ✅
+
+Una cuenta confirmada como mula por un analista entra a la Memoria de riesgo. Las transferencias futuras hacia esa cuenta se pausan **sin investigación nueva y sin llamadas de IA**.
+
+Es a la vez el diferencial de producto y la principal optimización de recursos.
 
 ---
 
@@ -107,6 +142,12 @@ La solución ganadora debe demostrar mejor:
 1. reducción de riesgo;
 2. menor dependencia de reacción inmediata;
 3. mínima fricción legítima;
-4. accesibilidad;
-5. explicabilidad;
-6. viabilidad de integración.
+4. menor tiempo de investigación;
+5. accesibilidad;
+6. explicabilidad;
+7. costo de IA controlado;
+8. viabilidad de integración.
+
+## Decisión
+
+El MVP combina **S2 + S5 + S7 + S9 + S10** sobre un núcleo multiagente compartido. Es la combinación mínima que cubre Track 04 (estafa, suplantación, extorsión) y B1 (investigación AML), y que muestra un efecto que ninguna de las dos por separado tiene: **la investigación de una víctima protege a la siguiente.**

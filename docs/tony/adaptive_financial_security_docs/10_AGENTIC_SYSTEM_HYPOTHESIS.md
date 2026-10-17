@@ -1,5 +1,7 @@
 # 10 — Agentic System Hypothesis
 
+> Diseño detallado (contratos, tools, reglas): [19_MULTIAGENT_SYSTEM.md](19_MULTIAGENT_SYSTEM.md).
+
 ## Cuándo un agente SÍ tiene sentido
 
 Un sistema agentic aporta cuando debe:
@@ -9,6 +11,7 @@ Un sistema agentic aporta cuando debe:
 - decidir qué herramienta invocar;
 - adaptar un flujo;
 - coordinar verificaciones;
+- conversar con el usuario para detectar manipulación;
 - explicar por qué escaló;
 - mantener política del usuario durante indisponibilidad.
 
@@ -17,58 +20,77 @@ Un sistema agentic aporta cuando debe:
 - scoring determinista simple;
 - regla de monto;
 - cálculo de velocity;
+- cálculo de fan-in, reenvío rápido o ciclos;
 - MFA;
 - detección de device fingerprint;
 - decisiones irreversibles sin policy guardrails.
 
-Eso debe seguir en componentes deterministas/modelos especializados.
+Eso debe seguir en componentes deterministas (reglas y tools).
 
-## Arquitectura híbrida
+> **Las tools calculan; los agentes razonan sobre resultados ya calculados; la política decide.**
+
+## Por qué multiagente y no un solo agente
+
+| Motivo | Explicación |
+|---|---|
+| **Foco** | Cada agente tiene un prompt corto y 2–4 tools. Menos opciones → menos errores. |
+| **Dos miradas independientes** | El lado del cliente (Guardián) y el lado de la cuenta destino (Detective) se evalúan por separado y se combinan en la política. Reduce falsos positivos. |
+| **Paralelismo** | Guardián y Detective corren al mismo tiempo → la pausa dura menos. |
+| **Costo por nivel** | Modelo rápido/económico para coordinar y conversar; modelo más capaz solo para el expediente de casos escalados. |
+| **Control de calidad** | El Auditor revisa que cada afirmación tenga evidencia antes de que llegue al analista. |
+| **Salida temprana** | El Coordinador consulta la Memoria primero; si ya hay veredicto, no se llama a nadie más. |
+
+Esto es la hipótesis H9 (`08`) y se mide con el experimento E5 (`14`).
+
+## Arquitectura
 
 ```text
-TRANSACTION
-    ↓
-Deterministic Risk Engine
-    ↓
-Context Orchestrator
-    ├─ Identity evidence
-    ├─ Device evidence
-    ├─ Behavioral evidence
-    ├─ Accessibility preference
-    ├─ User safety policy
-    └─ Beneficiary / scam signals
-             ↓
-        Policy Engine
-       /      |      \
-    ALLOW    HOLD   CHALLENGE
-                      ↓
-               Human / user
+TRANSACCIÓN / ALERTA AML
+        ↓
+Nivel 0 — Reglas deterministas (sin IA)
+        ↓ solo sospechosas
+🧭 Coordinador ── consulta 🧠 Memoria ──▶ (si hay veredicto: directo a Policy)
+        ↓ (en paralelo)
+🛡️ Guardián            🔍 Detective
+lado del cliente        lado de la cuenta destino
+        ↓                    ↓
+Policy Engine determinista
+  PERMITIR / PAUSAR / VERIFICAR / ESCALAR
+        ↓ solo si se pausa / escala
+📋 Auditor → expediente
+        ↓
+Analista valida → 🧠 Memoria
 ```
 
-## Roles hipotéticos
+## Roles finales
 
-### Context Agent
-Reúne evidencia de fuentes autorizadas.
+### 🧭 Coordinador
+Lee las señales, consulta la Memoria, decide qué especialistas llamar y corta temprano cuando ya hay respuesta.
 
-### Availability Agent
-Estima si un challenge es viable, sin inferir atributos sensibles innecesariamente.
+### 🛡️ Guardián (frente cliente — Track 04)
+Estima si el titular puede responder y por qué canal seguro; conversa con preguntas específicas de estafa. **Nunca aprueba**: solo reporta el estado del usuario.
 
-### Verification Planner
-Escoge secuencia mínima de verificación.
+### 🔍 Detective (frente cuenta destino — B1)
+Perfila la cuenta receptora con tools deterministas (fan-in, reenvío rápido, estructuración, ciclos, listas) e interpreta los resultados.
 
-### Scam Context Agent
-Busca patrones de coerción/social engineering.
+### 📋 Auditor
+Arma el expediente con hipótesis, recomendación y justificación; rechaza toda afirmación sin evidencia citada.
 
-### Explanation Agent
-Produce resumen auditable para usuario/operador.
+### 🧠 Memoria de riesgo (no es agente)
+Guarda veredictos validados por analistas; con expiración y vía de revisión.
+
+> Los roles “Availability Agent”, “Verification Planner” y “Scam Context Agent” de versiones anteriores quedan absorbidos por el Guardián; “Context Agent” por Coordinador + Detective; “Explanation Agent” por el Auditor.
 
 ## Guardrails obligatorios
 
 - el LLM no mueve dinero;
-- herramientas con permisos mínimos;
+- herramientas con permisos mínimos y de solo lectura;
 - policy engine final determinista;
-- logs completos;
+- salidas de agentes en JSON validado contra esquema;
+- todo lo que escribe el usuario o llega de datos externos es **dato, no instrucción**;
+- logs completos de cada llamada y tool;
 - no inferir discapacidad como señal de fraude;
 - preferencias de accesibilidad explícitas y voluntarias;
-- timeout/circuit breaker;
-- human-in-the-loop para casos extremos.
+- presupuesto máximo de llamadas por caso + timeout/circuit breaker;
+- si un agente falla: riesgo alto → pausa + revisión humana; riesgo medio → verificar;
+- human-in-the-loop para confirmar mulas y casos extremos.

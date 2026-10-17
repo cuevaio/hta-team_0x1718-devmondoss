@@ -145,3 +145,32 @@ Intent ✖
 | Manipulated | Sí | Sí | Sí | Sí, pero intención dañada |
 | Shared device | Sí | Sí | Parcial | Depende |
 | Low-resource | Intermitente | Intermitente | Sí | Depende |
+
+---
+
+## Qué componente responde a cada estado
+
+| Estado | Respuesta del sistema (ver `19`) | En demo |
+|---|---|---|
+| A — Immediate | Reglas; si hay riesgo, 🛡️ Guardián pregunta en el mismo flujo | — |
+| B — Delayed | Pausa temporal; el silencio no se toma como aprobación | — |
+| C — Unreachable | Pausa de la operación riesgosa; operaciones habituales siguen pasando | Acto extra (viajera) |
+| D — Channel mismatch | 🛡️ Guardián elige canal alternativo según preferencia declarada | Fuera del MVP |
+| E — Compromised | 🛡️ Guardián excluye el canal comprometido para verificar | Acto extra (viajera) |
+| F — Manipulated | 🛡️ Guardián pregunta específicamente por guía telefónica / urgencia; cooldown | **Acto 1 (Rosa)** |
+| G — Shared device | Device trust ≠ person trust; no confiar solo en el dispositivo | Fuera del MVP |
+| H — Low-resource | Mensajes cortos, canal liviano (SMS) como alternativa | Fuera del MVP |
+
+---
+
+## Estados de la cuenta destino (frente B1)
+
+El otro extremo de la transferencia también tiene estados. Los evalúa el 🔍 Detective y los confirma un analista.
+
+| Estado | Señales típicas | Respuesta |
+|---|---|---|
+| **Conocida y limpia** | historial largo, contrapartes estables, sin reenvío rápido | no investigar (ahorro) |
+| **Nueva / sin historial** | cuenta reciente, pocas operaciones | investigar si el monto es relevante |
+| **Alto volumen legítimo** | muchos remitentes (ej. bodega, comercio), pero el dinero se queda o se usa en gastos normales | **no confundir con mula** (ver `15` R10) |
+| **Mula probable** | fan-in de remitentes nuevos + reenvío rápido + posibles montos bajo umbral | pausa + escalar al analista |
+| **Mula confirmada** | validada por analista | entra a 🧠 Memoria → pausa inmediata sin IA para futuras transferencias |

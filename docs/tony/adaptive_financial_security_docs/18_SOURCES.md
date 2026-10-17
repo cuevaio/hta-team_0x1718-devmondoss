@@ -68,6 +68,30 @@
 19. OAS/IDB — Cybersecurity Report 2025  
     https://www.oas.org/en/media_center/press_release.asp?sCodigo=E-092%2F25
 
+## Hackathon
+
+20. Track 04 — Seguridad: extorsión, estafas, suplantación y desinformación (brief oficial del hackathon).
+
+21. Reto B1 — Investigación de alertas AML (brief oficial del hackathon).
+
+## Datasets (sintéticos)
+
+22. IBM Transactions for Anti-Money Laundering (AML) — Kaggle  
+    https://www.kaggle.com/datasets/ealtman2019/ibm-transactions-for-anti-money-laundering-aml  
+    Paper: Altman et al., *Realistic Synthetic Financial Transactions for Anti-Money Laundering Models*, NeurIPS 2023 Datasets & Benchmarks.
+
+23. SAML-D — Synthetic Transaction Monitoring Dataset — Kaggle  
+    https://www.kaggle.com/datasets/berkanoztas/synthetic-transaction-monitoring-dataset-aml  
+    Paper: Oztas et al., *Enhancing Anti-Money Laundering: Development of a Synthetic Transaction Monitoring Dataset*, IEEE ICEBE 2023.
+
+> Links de datasets tomados del brief B1 / conocimiento previo: **verificar que abran** antes de citarlos en el pitch. Ambos son sintéticos y no representan el mercado peruano.
+
+## Pendientes de fuente
+
+- Normativa peruana de reporte de operaciones sospechosas (ROS) y deber de reserva — UIF-Perú / SBS. **URL por agregar.**
+- Fuente del 41% de adultos impactados y pérdida mediana de USD 1,973 (`02` §5) — probablemente #3, **confirmar**.
+- Reclutamiento de mulas mediante ofertas de empleo falsas (`02` §10) — **buscar fuente**.
+
 ## Nota metodológica
 
 Las cifras de fraude dependen de definición y dataset: “scam exposure”, “suspected digital fraud”, “fraud attempt”, “reported loss” y “confirmed fraud” no son equivalentes. Evitar mezclar porcentajes como si midieran el mismo fenómeno.

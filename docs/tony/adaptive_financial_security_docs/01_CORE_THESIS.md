@@ -67,6 +67,39 @@ Cuando cualquiera de esas condiciones falla, el sistema puede seguir “funciona
 
 Una operación puede pasar Identity + Authorization y aun fallar Intent o Availability.
 
+---
+
+## La cadena del dinero
+
+El dinero de una estafa no desaparece: llega a una cuenta receptora y desde ahí se mueve.
+
+```text
+VÍCTIMA ──transferencia──▶ CUENTA MULA ──reenvío rápido──▶ más cuentas (layering)
+   ↑                            ↑
+Track 04: estafa,         B1: alerta AML,
+suplantación, extorsión   lavado de activos
+```
+
+Es **la misma transacción vista desde dos extremos**. Del lado del emisor es fraude contra un cliente; del lado del receptor es una alerta AML. Hoy suelen investigarlo equipos distintos, con herramientas distintas y en momentos distintos.
+
+## Dos gaps, un sistema
+
+| Gap | Quién lo sufre | Definición |
+|---|---|---|
+| **Availability Gap** | Titular de la cuenta | Tiempo entre que una operación se vuelve riesgosa y que el titular puede participar de forma segura en la protección |
+| **Investigation Gap** | Analista de fraude / AML | Tiempo y trabajo manual entre que se genera una alerta y que existe una decisión con evidencia trazable |
+
+Ambos gaps comparten causa: **señales dispersas que nadie convierte a tiempo en una decisión**. Ambos se atacan con el mismo núcleo: agentes que reúnen contexto, una política determinista que decide y una memoria que reutiliza lo aprendido.
+
+## Cómo se traduce en producto
+
+```text
+PAUSA      → la operación riesgosa no sale, pero tampoco se bloquea todo
+PREGUNTA   → se verifica con el titular por un canal seguro; el silencio no es un “sí”
+INVESTIGA  → se perfila la cuenta destino y se arma un expediente con evidencia
+APRENDE    → la mula confirmada protege a la siguiente víctima sin costo extra
+```
+
 ## Principio de diseño
 
 > **No maximizar bloqueos. Maximizar protección útil minimizando daño por falsos positivos y exclusión.**
@@ -77,9 +110,10 @@ Una solución defendible debe optimizar simultáneamente:
 Fraud prevented ↑
 Legitimate operations blocked ↓
 Time to protective action ↓
+Analyst time per alert ↓
 User autonomy ↑
 Accessible verification ↑
-Operational cost ↓
+Operational cost (incl. IA) ↓
 ```
 
 ## Lo que NO estamos afirmando
@@ -87,7 +121,8 @@ Operational cost ↓
 - No afirmamos que los bancos “no tengan seguridad”. Tienen múltiples controles.
 - No afirmamos que toda operación fraudulenta deba ser reembolsada automáticamente.
 - No afirmamos que discapacidad, edad o pobreza sean señales de riesgo.
-- No afirmamos que IA deba decidir unilateralmente sobre fondos.
+- No afirmamos que IA deba decidir unilateralmente sobre fondos: los agentes recomiendan, una política determinista decide.
+- No afirmamos que toda cuenta receptora sospechosa sea criminal: muchas mulas son a su vez personas reclutadas o engañadas, y muchas cuentas con muchos ingresos son negocios legítimos.
 - No afirmamos que Latinoamérica tenga universalmente “la mayor tasa de fraude del mundo”; diferentes métricas producen rankings distintos.
 
-La afirmación defendible es más precisa: **la región presenta alta exposición a estafas, fuerte crecimiento de ataques de ingeniería social y brechas estructurales de conectividad, habilidades y madurez de ciberseguridad.**
+La afirmación defendible es más precisa: **la región presenta alta exposición a estafas, fuerte crecimiento de ataques de ingeniería social y de cuentas mula, y brechas estructurales de conectividad, habilidades y madurez de ciberseguridad.**

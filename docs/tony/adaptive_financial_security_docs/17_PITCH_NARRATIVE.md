@@ -2,7 +2,7 @@
 
 ## Hook
 
-> Tu banco puede detectar una operación sospechosa en segundos. Pero si tú estás cuatro días sin señal, ¿quién protege tu dinero durante esos cuatro días?
+> Tu banco puede detectar una operación sospechosa en segundos. Pero si alguien te está guiando por teléfono —o si estás cuatro días sin señal—, ¿quién protege tu dinero?
 
 ## Problem
 
@@ -14,26 +14,27 @@ Pero muchas defensas terminan en:
 alert → wait for user → user reacts
 ```
 
-Eso funciona solo si el usuario está disponible.
+Eso funciona solo si el usuario está disponible y no está siendo manipulado.
+
+Y cuando el fraude ocurre, el dinero llega a una cuenta mula que otro equipo —AML— investiga a mano, días después, mientras esa misma cuenta sigue recibiendo de nuevas víctimas.
 
 ## Human reality
 
 El usuario puede:
-- estar viajando;
-- no tener señal;
+- estar siendo manipulado por un scammer;
+- estar viajando o sin señal;
 - dormir;
 - perder el celular;
 - compartir dispositivo;
-- no poder usar el canal estándar;
-- estar siendo manipulado por un scammer.
+- no poder usar el canal estándar.
 
 ## Regional urgency
 
-La región se digitaliza rápido mientras scams, vishing, remote-access fraud y fraude desde dispositivos robados crecen.
+La región se digitaliza rápido mientras scams, vishing, remote-access fraud, fraude desde dispositivos robados y cuentas mula crecen.
 
 El reto ya no es solamente verificar **quién** hace clic.
 
-Es verificar si la acción sigue siendo segura cuando el contexto humano falla.
+Es verificar si la acción sigue siendo segura cuando el contexto humano falla — y que lo aprendido proteja a la siguiente persona.
 
 ## Thesis
 
@@ -41,33 +42,34 @@ Es verificar si la acción sigue siendo segura cuando el contexto humano falla.
 
 ## Product primitive
 
-Una capa de protección adaptativa que combina:
-- riesgo;
-- disponibilidad;
-- confiabilidad del canal;
-- políticas del usuario;
-- contexto de la operación.
+**Pausa → Pregunta → Investiga → Aprende.**
 
-Y decide:
+Un equipo de agentes de IA, cada uno con un trabajo:
+- 🧭 **Coordinador** — decide a quién llamar y corta temprano;
+- 🛡️ **Guardián** — protege al cliente: pregunta, verifica por canal seguro;
+- 🔍 **Detective** — investiga la cuenta que recibe el dinero;
+- 📋 **Auditor** — arma el expediente; nada sin evidencia.
+
+La IA recomienda. Una política determinista decide:
 
 ```text
-ALLOW / HOLD / CHALLENGE / ESCALATE
+PERMITIR / PAUSAR / VERIFICAR / ESCALAR
 ```
 
-## Demo story
+## Demo story (3 actos)
 
-Un usuario viaja y queda sin señal.
-Un atacante entra desde un dispositivo nuevo y agrega un beneficiario.
+1. **Rosa.** Recibe la llamada de un “falso banco” y transfiere S/4,800. FaceID ✔, OTP ✔. El Guardián pregunta: *“¿alguien te está guiando por teléfono?”* — sí. **Pausa.**
+2. **La mula.** El Detective revisa la cuenta destino: 14 remitentes nuevos en 48h, 90% reenviado en menos de 2h. El Auditor arma el expediente. El analista confirma en un clic.
+3. **Jorge.** Intenta transferir a la misma cuenta. **Pausa inmediata. Cero llamadas de IA.** El sistema aprendió.
 
-El sistema detecta la anomalía.
-El usuario no responde.
+## Por qué es eficiente
 
-En lugar de tratar el silencio como ausencia de problema, entra en protective hold.
-
-Cuando el usuario vuelve, verifica por un canal seguro y recupera control.
+- La mayoría de transacciones nunca toca la IA.
+- Cada mula se investiga una vez y protege a todas sus siguientes víctimas.
+- Modelo barato para conversar; modelo capaz solo para el expediente.
 
 ## Closing
 
 > Hoy la seguridad financiera pregunta: “¿puedes confirmar esto ahora?”
 >
-> Nosotros preguntamos: **“¿cómo protegemos tu intención cuando no puedes responder?”**
+> Nosotros preguntamos: **“¿cómo protegemos tu intención cuando no puedes responder… y cómo hacemos que tu caso proteja al siguiente?”**

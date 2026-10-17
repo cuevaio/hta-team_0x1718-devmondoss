@@ -28,7 +28,8 @@ Eso aumenta extensibilidad y defensibilidad.
 ## 3. AI donde aporta
 
 AI sirve para:
-- orquestar evidencia;
+- orquestar evidencia entre agentes especializados;
+- conversar para detectar manipulación;
 - comprender contexto;
 - adaptar flujo;
 - generar explicación;
@@ -80,3 +81,27 @@ Mejor:
 
 Peor:
 > “Nuestro agente usa IA para prevenir fraude en LATAM.”
+
+## 8. Encaje con Track 04 y con el reto B1
+
+| Exigencia | Cómo la cubrimos |
+|---|---|
+| Track 04 — estafas | 🛡️ Guardián: interrupción con preguntas específicas + pausa |
+| Track 04 — suplantación | Dispositivo nuevo / SIM swap + titular sin respuesta → pausa; canal comprometido excluido |
+| Track 04 — extorsión | Cooldown, verificación fuera del canal, la víctima no puede “autoaprobar” bajo presión |
+| Track 04 — desinformación | Solo indirecta (impersonación del banco); no la forzamos |
+| B1 — reconstruir el caso | 🔍 Detective con tools deterministas |
+| B1 — patrones de lavado | fan-in, reenvío rápido, estructuración, ciclos |
+| B1 — cruzar listas | tool de listas + 🧠 Memoria |
+| B1 — recomendación trazable | 📋 Auditor con evidencia citada |
+| B1 — el analista valida | consola del analista |
+
+Mensaje: **un núcleo, dos frentes.** Protege al cliente en tiempo real y le ahorra trabajo al analista; lo que aprende uno protege al otro.
+
+## 9. IA con criterio de recursos
+
+Un jurado técnico valora que la IA sea **necesaria y barata**, no omnipresente:
+- embudo: reglas → pocas sospechosas → IA;
+- modelo según la tarea;
+- memoria que vuelve gratis los casos repetidos;
+- métricas de costo visibles en el demo.

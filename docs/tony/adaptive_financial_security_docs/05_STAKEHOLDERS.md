@@ -120,6 +120,48 @@ El pitch empresarial debe traducir seguridad en impacto económico.
 
 ---
 
+## 10. Analista AML / Oficial de cumplimiento
+
+### Job
+Investigar alertas del monitoreo transaccional y decidir si se descartan o se reportan (ROS), con debida diligencia.
+
+### Pains (brief B1 + HIPÓTESIS)
+- información dispersa en varios sistemas;
+- reconstrucción manual del perfil y contrapartes;
+- backlog creciente y fatiga de alertas;
+- inconsistencia entre analistas;
+- riesgo regulatorio si una alerta real se cierra sin diligencia.
+
+### Success
+“Valido un expediente ya armado, con evidencia citada, en vez de investigar desde cero.”
+
+### Usuario de
+La **consola del analista** (ver `13`).
+
+---
+
+## 11. UIF-Perú
+
+### Interés
+Reportes de operaciones sospechosas oportunos, fundamentados y de calidad.
+
+### Implicación de diseño
+El expediente debe poder servir como **borrador** de la justificación; la decisión y el reporte siguen siendo responsabilidad humana.
+
+---
+
+## 12. Titular de la cuenta receptora
+
+Puede ser un criminal, una persona reclutada/engañada o un negocio legítimo con muchos ingresos.
+
+### Riesgo
+Etiquetarlo erróneamente como mula le congela fondos y le causa daño real.
+
+### Principio
+Ninguna cuenta entra a la Memoria de riesgo sin validación humana, con expiración y vía de revisión (ver `15`).
+
+---
+
 ## Mapa de tensiones
 
 ```text
@@ -128,7 +170,8 @@ Fraud team:     quiero bloquear más fraude SIN falsos positivos
 Product:        quiero menos fricción
 Security:       quiero más verificación
 Compliance:     quiero trazabilidad y accesibilidad
-CFO:            quiero menor costo total de riesgo
+Analista AML:   quiero menos backlog SIN cerrar alertas reales
+CFO:            quiero menor costo total de riesgo (incluido el costo de IA)
 ```
 
 Un producto fuerte alinea estas tensiones; no optimiza solo una.
