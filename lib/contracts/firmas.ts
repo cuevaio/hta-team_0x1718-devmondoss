@@ -7,23 +7,30 @@ import type {
   ReglaPolicy,
   Transaccion,
 } from './caso';
-import type { NombreAgente } from './agentes';
+import type {
+  NombreAgente,
+  SalidaAuditor,
+  SalidaCoordinador,
+  SalidaDetective,
+  SalidaGuardian,
+} from './agentes';
 import type { Veredicto } from './memoria';
 
 /**
  * Firmas acordadas entre Tony_dev y Ale_dev.
  *
- * Fuente: docs/work/00_WORK_BLUEPRINT.md §4
+ * Fuente: docs/work/00_WORK_BLUEPRINT.md §3
  *
- * Esto es lo único que NO se cambia sin avisar. Cada uno implementa su lado
- * contra estos tipos y nadie queda esperando al otro.
+ * Esto es lo único que NO se cambia sin avisar (commit con `CONTRACT:`).
+ * Cada uno implementa su lado contra estos tipos y nadie queda esperando al otro.
  *
- *   Tony implementa: evaluateRules, decide, memory, Tool
- *   Ale  implementa: runAgent, runPipeline
+ * Reparto vigente (re-split):
+ *   Ale  implementa: evaluateRules, decide, Memoria, Tool/analytics, ToolContext, runPipeline
+ *   Tony implementa: runAgent, AgentsApi (los 4 agentes + mocks)
  */
 
 // ─────────────────────────────────────────────────────────────
-// Implementa Tony_dev
+// Implementa Ale_dev — plataforma determinista
 // ─────────────────────────────────────────────────────────────
 
 /** Contexto de la cuenta y el dispositivo en el momento de la operación. */
@@ -55,13 +62,13 @@ export type Tool<Args extends unknown[] = unknown[], Data = unknown> = (
 ) => Promise<{ data: Data; evidencia: Evidencia[] }>;
 
 // ─────────────────────────────────────────────────────────────
-// Implementa Ale_dev
+// Implementa Tony_dev — agentes (todo lo que llama a un LLM)
 // ─────────────────────────────────────────────────────────────
 
 /**
  * Niveles de modelo del runtime.
  *
- * Decisión de stack (SPRINTS.md):
+ * Decisión de stack (docs/context/tony_dev/AGENTS_RUNTIME_NOTES.md):
  *   rapido → claude-haiku-5-5   (Coordinador, Guardián, Detective)
  *   capaz  → claude-opus-5-5    (Auditor; corre solo en casos pausados)
  */
@@ -112,3 +119,46 @@ export const LIMITES_AGENTE = {
   detective: { maxLlamadas: 6 },
   auditor: { maxLlamadas: 2 },
 } as const;
+
+// ─────────────────────────────────────────────────────────────
+// Frontera entre los dos bloques
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Lo que Ale expone a los agentes de Tony. Los agentes NUNCA leen datos
+ * por otra vía ni inventan ids de evidencia.
+ */
+export interface ToolContext {
+  /** Cuenta/historial. Ale define el detalle de los datos en lib/data/repo.ts. */
+  data: Record<string, (...args: never[]) => unknown>;
+  /** Funciones deterministas: fanIn, reenvioRapido, estructuracion, ciclos, listasRiesgo, disponibilidad, canalesSeguros. */
+  analytics: Record<string, Tool>;
+  /** Solo lectura para los agentes. */
+  memoria: Pick<Memoria, 'get'>;
+  /** Asigna ids E-xx. */
+  evidencia: { registrar(fuente: string, dato: unknown): Evidencia };
+  /** Canal simulado con el cliente (Guardián). */
+  mensajes: {
+    enviar(cliente: string, texto: string): Promise<void>;
+    esperar(cliente: string, ms: number): Promise<string | null>;
+  };
+}
+
+export interface AgentResult<T> {
+  salida: T;
+  uso: UsoAgente;
+}
+
+/**
+ * Lo que Tony expone a Ale. Con AGENTS_MOCK=1 devuelve salidas fijas por escenario.
+ */
+export interface AgentsApi {
+  coordinador(caso: Caso, ctx: ToolContext): Promise<AgentResult<SalidaCoordinador>>;
+  detective(caso: Caso, ctx: ToolContext): Promise<AgentResult<SalidaDetective>>;
+  guardianTurno(
+    caso: Caso,
+    ctx: ToolContext,
+    mensajeCliente?: string,
+  ): Promise<AgentResult<SalidaGuardian>>;
+  auditor(caso: Caso, ctx: ToolContext): Promise<AgentResult<SalidaAuditor>>;
+}

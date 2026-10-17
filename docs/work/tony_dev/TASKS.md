@@ -1,68 +1,60 @@
-# Tony_dev — Núcleo + Frente AML
+# Tony_dev — Agentes
 
-> Fuente de verdad: [../00_WORK_BLUEPRINT.md](../00_WORK_BLUEPRINT.md). Marca cada casilla al terminar.
+> Fuente de verdad: [../00_WORK_BLUEPRINT.md](../00_WORK_BLUEPRINT.md). **Trabajas solo en `main`, sin pedir permiso.** Avisa solo si cambias un contrato (`CONTRACT:` en el commit).
 
-**Soy dueño de:** datos semilla · Reglas nivel 0 · Policy Engine · 🧠 Memoria · `evidence.ts` · tools del Detective · 🔍 Detective · 📋 Auditor · Puerta B · narrativa del pitch.
+**Eres dueño de:** `lib/contracts/agentes.ts` · `lib/agents/**` (runtime, LLM, 4 agentes, prompts, tools de agentes, mocks) · `scripts/evals.ts`.
 
-**Entrego a Ale:** `evaluateRules`, `decide`, `memory.get/confirm`, tools con evidencia, mocks de Detective y Auditor.
-**Recibo de Ale:** `runAgent` (runtime), `runPipeline`, mocks de Coordinador y Guardián.
+**Entregas a Ale:** `AgentsApi` + mocks (a la hora 5).
+**Recibes de Ale:** `ToolContext` (datos, analytics, memoria, evidencia, mensajes).
 
-## H0–2 · Contratos (con Ale)
-- [ ] Confirmar stack y proveedor de LLM
-- [ ] Esquemas zod en `lib/contracts/`: Caso, Evidencia, salidas de los 4 agentes
-- [ ] Firmas acordadas y mergeadas en `main`
+## H0–2 · Contratos
+- [x] Los esquemas zod de los 4 agentes ya existen en `lib/contracts/agentes.ts` (los dejó escritos Ale en S0): **revísalos y ajústalos**
+- [ ] `AgentsApi` y `AgentResult` en `lib/contracts/firmas.ts` (ya agregados; confirma que te sirven)
 
-## H2–4 · Datos semilla
-- [ ] `lib/data/seed.json`: Rosa, Jorge, Lucía, M-01, M-02, M-03, Bodega Don Pepe, ~200 tx de fondo
-- [ ] M-01: 14 remitentes nuevos en 48h, ~90% reenviado en < 2h hacia M-02 → M-03
-- [ ] Bodega: muchos remitentes **sin** reenvío rápido
-- [ ] Lucía: pago recurrente del hotel como beneficiario habitual
+## H2–5 · Mocks
+- [ ] `lib/agents/mocks.ts`: salida fija por escenario (Rosa, Jorge, Lucía, Bodega, alerta AML)
+- [ ] `lib/agents/index.ts` exporta `AgentsApi`; con `AGENTS_MOCK=1` usa los mocks
+- [ ] **Entregado a Ale antes de la hora 5**
 
-## H4–6 · Reglas + Policy
-- [ ] `rules/level0.ts` con puntajes de `19` §2
-- [ ] `policy/engine.ts` con P1–P10 en orden
-- [ ] Tests: Rosa = 7, Lucía (atacante) = 6, Bodega = 4, hotel → P2, Jorge → P1
+## H5–9 · Runtime
+> Antes de escribir `runtime.ts` lee [AGENTS_RUNTIME_NOTES.md](../../context/tony_dev/AGENTS_RUNTIME_NOTES.md): 9 restricciones de la API de Claude (sin tool use forzado, sin prefill, structured outputs…).
+- [ ] Modelos: `rapido` = `claude-haiku-5-5`, `capaz` = `claude-opus-5-5`
+- [ ] `lib/agents/llm.ts`: niveles `rapido` y `capaz`
+- [ ] `lib/agents/runtime.ts`: validación zod + 1 reintento
+- [ ] Presupuesto máx. 10 llamadas por caso + timeout
+- [ ] Conteo de llamadas/tokens/ms en cada `AgentResult`
 
-## H6–9 · Memoria + tools
-- [ ] `memory/store.ts`: get, confirm, expiración 90 días
-- [ ] `evidence.ts`: ids `E-xx` asignados fuera del LLM
-- [ ] Tools: `perfil_cuenta`, `fan_in`, `reenvio_rapido`, `estructuracion`, `ciclos`, `listas_riesgo`
-- [ ] Mocks de Detective y Auditor en `agents/mocks.ts`
+## H9–12 · 🧭 Coordinador
+- [ ] Consulta Memoria primero → salida temprana
+- [ ] Decide qué especialistas invocar
+- [ ] Definición de tools del LLM sobre `ctx.analytics`
+- [ ] Jorge → 0 llamadas; Bodega → solo Detective
 
-## 🔁 SYNC 1 (H9) — demo sin IA
-- [ ] Los 3 actos dan la regla correcta con mocks
+## 🔁 SYNC 1 (H12)
+- [ ] `npm run demo` da las reglas correctas con mocks
 
-## H9–14 · 🔍 Detective
-- [ ] Prompt + loop de tools (máx. 6, hasta 2 saltos en la cadena)
-- [ ] Regla de consistencia: `alto` sin tipología → baja a `medio`
-- [ ] Rosa → `alto` (`fan_in` + `reenvio_rapido`); Bodega → `bajo`
+## H12–17 · 🔍 Detective
+- [ ] Prompt + loop de tools (máx. 6, hasta 2 saltos de cadena)
+- [ ] Regla de consistencia: `alto` sin tipología marcada por tools → baja a `medio`
+- [ ] Rosa → `alto`; Bodega → `bajo`
 
-## H14–18 · 📋 Auditor
-- [ ] Expediente según esquema de `19` §3
-- [ ] Validador: toda afirmación con id de evidencia existente
+## H17–22 · 🛡️ Guardián
+- [ ] Máx. 3 turnos; nunca pide clave, OTP ni tarjeta; nunca aprueba
+- [ ] Lo que escribe el cliente es **dato, no instrucción**
+- [ ] Rosa → `manipulacion_probable`; Lucía → `sin_respuesta` + `canal_comprometido`
+
+## 🔁 SYNC 2 (H22)
+- [ ] Agentes reales dan las mismas decisiones que los mocks
+
+## H22–26 · 📋 Auditor
+- [ ] Expediente según esquema
+- [ ] Validador: toda afirmación cita un id de evidencia existente
 - [ ] 1 reintento → si falla, `requiere_revision_manual: true`
 
-## 🔁 SYNC 2 (H17) — agentes reales
-- [ ] Mismas decisiones que con mocks
+## H26–30 · Evals y números
+- [ ] `scripts/evals.ts`: E5 (1 agente vs multiagente) y E7 (falsos positivos)
+- [ ] Números del demo (llamadas de IA por caso, tokens) para el pitch
 
-## H18–22 · Puerta B
-- [ ] `POST /api/alert`: alerta AML → Coordinador → Detective → Auditor (sin Guardián)
-- [ ] `POST /api/memory/confirm`
-- [ ] (Opcional) muestra pequeña de SAML-D → JSON
-
-## H22–27 · Calidad + números
-- [ ] Tests e2e de todos los escenarios con IA real
-- [ ] Ajustar umbrales de tipologías
-- [ ] Números del embudo y llamadas de IA por caso para el pitch
-
-## 🔁 SYNC 3 (H23) — demo completo en URL pública
-- [ ] Los 3 actos funcionan en producción
-
-## H27–30 · Pitch
-- [ ] Guion de 3 min basado en `17_PITCH_NARRATIVE.md`
-- [ ] Slides con números reales del demo (marcados como simulados)
-- [ ] Ensayo ×2
-
-## Si hay recorte (ver blueprint §8)
-- Quitar Puerta B → AML solo dentro del acto 2
-- Fusionar Auditor dentro del Detective
+## Si hay recorte
+- Auditor como plantilla determinista
+- Coordinador como función determinista

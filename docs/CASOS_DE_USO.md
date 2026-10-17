@@ -61,11 +61,11 @@ flowchart TD
 
 | ID | Caso de uso | Reto | Prioridad | Dueño principal |
 |---|---|---|:-:|---|
-| **CU-01** | Frenar una estafa a un cliente autenticado | Track 04 — estafa / extorsión | 🔴 Must | Ale (Guardián) + Tony (Detective) |
-| **CU-02** | Investigar la cuenta destino y entregar el expediente al analista | B1 — investigación AML | 🔴 Must | Tony |
-| **CU-03** | Proteger a la siguiente víctima de una mula confirmada | Ambos — diferencial | 🔴 Must | Tony (Memoria) + Ale (Coordinador) |
-| **CU-05** | No bloquear un pago legítimo a una cuenta de alto volumen | Control de falsos positivos | 🟡 Should | Tony |
-| **CU-04** | Frenar una suplantación cuando el titular no puede responder | Track 04 — suplantación | 🟢 Could | Ale |
+| **CU-01** | Frenar una estafa a un cliente autenticado | Track 04 — estafa / extorsión | 🔴 Must | Tony (Guardián, Detective) + Ale (reglas, policy) |
+| **CU-02** | Investigar la cuenta destino y entregar el expediente al analista | B1 — investigación AML | 🔴 Must | Tony (Detective, Auditor) + Ale (analytics, API) |
+| **CU-03** | Proteger a la siguiente víctima de una mula confirmada | Ambos — diferencial | 🔴 Must | Ale (Memoria, P1) + Tony (Coordinador) |
+| **CU-05** | No bloquear un pago legítimo a una cuenta de alto volumen | Control de falsos positivos | 🟡 Should | Ale (policy) + Tony (Detective) |
+| **CU-04** | Frenar una suplantación cuando el titular no puede responder | Track 04 — suplantación | 🟢 Could | Ale (reglas, policy) + Tony (Guardián) |
 
 **Must** = sin esto no hay demo. **Should** = una línea en el demo, cuesta poco. **Could** = solo si sobra tiempo (primer recorte).
 
