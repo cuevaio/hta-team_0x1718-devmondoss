@@ -5,7 +5,9 @@ import {
   ResultadoFanIn,
   ResultadoListas,
   ResultadoPerfil,
+  ResultadoRed,
   ResultadoReenvio,
+  ResultadoTransfronterizo,
 } from '@/lib/contracts';
 import {
   ensamblarDetective,
@@ -53,6 +55,14 @@ async function ejecutar(
     case 'ciclos': {
       const r = await llamarTool(ctx, tool, cuenta, ResultadoCiclos);
       return { h: r ? { ciclos: r.data } : {}, ev: r?.evidencia ?? [] };
+    }
+    case 'reenvio_transfronterizo': {
+      const r = await llamarTool(ctx, tool, cuenta, ResultadoTransfronterizo);
+      return { h: r ? { transfronterizo: r.data } : {}, ev: r?.evidencia ?? [] };
+    }
+    case 'red_regional': {
+      const r = await llamarTool(ctx, tool, cuenta, ResultadoRed);
+      return { h: r ? { red: r.data } : {}, ev: r?.evidencia ?? [] };
     }
   }
 }
@@ -111,6 +121,14 @@ export async function detective(
     }
   }
 
+  // Red regional: solo si otro banco tiene algo sobre la cuenta. Así la
+  // evidencia `red_regional` aparece cuando importa y el caso común no cambia.
+  if (ctx.red?.get(cuenta)) {
+    const r = await ejecutar('red_regional', cuenta, caso, ctx);
+    h = { ...h, ...r.h };
+    evidencia.push(...r.ev);
+  }
+
   const ids = [...new Set(evidencia.map((e) => e.id))];
 
   // Ninguna tool respondió: modo seguro, no se puede afirmar nada sobre la cuenta
@@ -132,7 +150,7 @@ export async function detective(
 
   let llm: DetectiveLLM | undefined;
   let uso = USO_CERO;
-  if (requiereLLMDetective(base)) {
+  if (requiereLLMDetective(base, tipologias)) {
     try {
       const r = await deps.runAgent(
         'detective',
@@ -146,6 +164,10 @@ export async function detective(
             fan_in: h.fan_in && { remitentes_nuevos: h.fan_in.remitentes_nuevos, horas: h.fan_in.ventana_horas },
             reenvio: h.reenvio && { porcentaje: h.reenvio.porcentaje_reenviado, horas: h.reenvio.ventana_horas },
             estructuracion: h.estructuracion && { operaciones: h.estructuracion.operaciones_cercanas_umbral },
+            transfronterizo: h.transfronterizo && {
+              porcentaje: h.transfronterizo.porcentaje_al_exterior,
+              paises: [...new Set(h.transfronterizo.destinos.map((d) => d.pais))],
+            },
           },
           evidencia: evidencia.map((e) => ({ id: e.id, fuente: e.fuente })),
         },

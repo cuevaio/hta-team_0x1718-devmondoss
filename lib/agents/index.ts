@@ -12,6 +12,7 @@ import { runAgentSimulado } from './llm-simulado';
 import type { DepsAgentes } from './util';
 
 export { crearAgentesMock, detectarEscenario } from './mocks';
+export { fichaCompartible } from './decisiones/auditor';
 export { runAgentSimulado } from './llm-simulado';
 export { AgentError, crearRunAgent } from './runtime';
 export {

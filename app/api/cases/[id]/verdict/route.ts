@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { storeCasos } from '@/lib/cases/store';
 import { crearVeredicto, memoria } from '@/lib/memory/store';
+import { red } from '@/lib/memory/red';
+import { fichaCompartible } from '@/lib/agents';
 import { repo } from '@/lib/data/repo';
 import { exigirToken } from '@/lib/seguridad/token';
 
@@ -10,6 +12,10 @@ import { exigirToken } from '@/lib/seguridad/token';
  *
  * Es el único camino hacia la Memoria: sin un humano aquí, nada entra
  * (doc 15, R10). Si descarta, la cuenta NO queda marcada como mula (CU-02).
+ *
+ * Red regional: una mula confirmada se publica también en la red, con una
+ * ficha de los hechos de la cuenta (sin datos del cliente). Un descarte
+ * retira la publicación propia, si la había.
  */
 const Cuerpo = z.object({
   veredicto: z.enum(['mula_confirmada', 'descartada']),
@@ -51,5 +57,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
   storeCasos.registrarEvento(id, 'analista', 'veredicto', veredicto);
 
-  return NextResponse.json({ caso: vivo.caso.id, veredicto });
+  const publicado = red.publicar(veredicto, fichaCompartible(vivo.caso));
+  if (publicado) {
+    storeCasos.registrarEvento(id, 'red_regional', 'veredicto_publicado', {
+      emisor: publicado.veredicto.emisor,
+      afirmaciones: publicado.ficha?.afirmaciones.length ?? 0,
+      basado_en_red: publicado.ficha?.basado_en_red ?? false,
+    });
+  }
+
+  return NextResponse.json({ caso: vivo.caso.id, veredicto, red: publicado });
 }

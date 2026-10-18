@@ -9,6 +9,7 @@ import { aplicarConsistenciaDetective, MAX_LLAMADAS_POR_CASO } from '@/lib/contr
 import { evaluateRules, requierePausaPreventiva } from '@/lib/rules/level0';
 import { decide } from '@/lib/policy/engine';
 import { memoria } from '@/lib/memory/store';
+import { BANCO_PROPIO, red } from '@/lib/memory/red';
 import { movimientosEnVivoActivos, repo } from '@/lib/data/repo';
 import { analytics } from '@/lib/analytics';
 import { storeCasos, type CasoVivo } from '@/lib/cases/store';
@@ -148,9 +149,31 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
     return finalizar(vivo, buzon, decide({ mulaEnMemoria: true, score: caso.nivel0.score }));
   }
 
+  // ── 3b. Red regional: ¿otro banco ya la confirmó? ───────────
+  //
+  // Se sabe antes de cualquier IA, igual que la Memoria, así que el dinero se
+  // retiene aquí aunque el score no alcance la pausa preventiva. No es P1: un
+  // veredicto ajeno no escala solo; se investiga y decide P1R (o P4/P5).
+  const enRed = red.deOtroBanco(caso.transaccion.destino, repo.ahora());
+  const mulaEnRed = enRed !== null;
+  if (enRed) {
+    storeCasos.registrarEvento(id, 'red_regional', 'mula_confirmada_en_red', {
+      cuenta: caso.transaccion.destino,
+      emisor: enRed.veredicto.emisor,
+      expediente: enRed.veredicto.expediente,
+    });
+    if (!requierePausaPreventiva(caso.nivel0.score)) {
+      storeCasos.registrarEvento(id, 'sistema', 'pausa_preventiva', {
+        score: caso.nivel0.score,
+        nota: 'destino confirmado como mula por otro banco de la red: se retiene antes de consultar a ningún agente',
+      });
+    }
+  }
+
   // ── 4. Atajos deterministas: P2 y P3 tampoco gastan IA ──────
   const preliminar = decide({
     mulaEnMemoria: false,
+    mulaEnRed,
     atajo: caso.nivel0.atajo,
     score: caso.nivel0.score,
   });
@@ -285,6 +308,7 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
   // ── 7. Policy Engine determinista ───────────────────────────
   const resultado = decide({
     mulaEnMemoria: false,
+    mulaEnRed,
     atajo: caso.nivel0.atajo,
     score: caso.nivel0.score,
     riesgoDestino: caso.salidas.detective?.riesgo_destino,
@@ -474,6 +498,7 @@ export async function responderGuardian(
   // El Guardián cerró (o falló): se decide de nuevo con la información nueva.
   const resultado = decide({
     mulaEnMemoria: memoria.esMulaConfirmada(caso.transaccion.destino, repo.ahora()),
+    mulaEnRed: red.esMulaDeOtroBanco(caso.transaccion.destino, repo.ahora()),
     atajo: caso.nivel0.atajo,
     score: caso.nivel0.score,
     riesgoDestino: caso.salidas.detective?.riesgo_destino,
@@ -516,10 +541,15 @@ export function estadisticas() {
   return {
     ...embudo(casos),
     mulas_en_memoria: memoria.cantidad,
+    red_regional: {
+      banco_propio: BANCO_PROPIO,
+      veredictos: red.cantidad,
+      paises: [...new Set(red.todos().map((r) => r.veredicto.emisor.pais))],
+    },
     nota_datos: repo.notaDatos(),
     metricas: metricas(casos),
     registro_reciente: registro.recientes(20),
   };
 }
 
-export { analytics, memoria, registro, storeCasos };
+export { analytics, memoria, red, registro, storeCasos };

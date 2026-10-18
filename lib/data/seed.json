@@ -278,6 +278,52 @@
       "nombre": "Proveedor mayorista",
       "tipo": "comercio",
       "abierta": "2016-02-02"
+    },
+    {
+      "id": "CO-M-11",
+      "nombre": "Cuenta CO-M-11",
+      "tipo": "desconocido",
+      "abierta": "2026-10-05",
+      "pais": "co",
+      "banco": "co-banco-cafetero"
+    },
+    {
+      "id": "BO-Q-02",
+      "nombre": "Cuenta BO-Q-02",
+      "tipo": "desconocido",
+      "abierta": "2026-10-08",
+      "pais": "bo",
+      "banco": "bo-banco-altiplano"
+    },
+    {
+      "id": "M-04",
+      "nombre": "Cuenta M-04",
+      "tipo": "desconocido",
+      "abierta": "2026-10-12"
+    },
+    {
+      "id": "C-ANA",
+      "nombre": "Ana Torres",
+      "tipo": "persona",
+      "abierta": "2020-09-14"
+    },
+    {
+      "id": "C-REG-01",
+      "nombre": "Cliente regional 1",
+      "tipo": "persona",
+      "abierta": "2021-03-03"
+    },
+    {
+      "id": "C-REG-02",
+      "nombre": "Cliente regional 2",
+      "tipo": "persona",
+      "abierta": "2021-03-03"
+    },
+    {
+      "id": "C-REG-03",
+      "nombre": "Cliente regional 3",
+      "tipo": "persona",
+      "abierta": "2021-03-03"
     }
   ],
   "clientes": [
@@ -329,6 +375,20 @@
         "app"
       ],
       "alcanzable": false
+    },
+    {
+      "id": "ana",
+      "nombre": "Ana Torres",
+      "cuenta": "C-ANA",
+      "promedio_90d": 520,
+      "beneficiarios_habituales": [],
+      "dispositivo_habitual": "dev-ana-01",
+      "canales_disponibles": [
+        "app",
+        "sms"
+      ],
+      "canales_comprometidos": [],
+      "alcanzable": true
     }
   ],
   "movimientos": [
@@ -1885,12 +1945,28 @@
       "t": "2026-10-16T20:07:00.000Z"
     },
     {
+      "id": "T-0201",
+      "origen": "C-REG-01",
+      "destino": "M-04",
+      "monto": 2300,
+      "moneda": "PEN",
+      "t": "2026-10-16T21:13:00.000Z"
+    },
+    {
       "id": "T-0042",
       "origen": "C-COMP-22",
       "destino": "B-PEPE",
       "monto": 178.15,
       "moneda": "PEN",
       "t": "2026-10-16T22:01:00.000Z"
+    },
+    {
+      "id": "T-0202",
+      "origen": "C-REG-02",
+      "destino": "M-04",
+      "monto": 1900,
+      "moneda": "PEN",
+      "t": "2026-10-16T22:13:00.000Z"
     },
     {
       "id": "T-0014",
@@ -1901,6 +1977,14 @@
       "t": "2026-10-16T22:37:00.000Z"
     },
     {
+      "id": "T-0203",
+      "origen": "C-REG-03",
+      "destino": "M-04",
+      "monto": 2600,
+      "moneda": "PEN",
+      "t": "2026-10-16T23:13:00.000Z"
+    },
+    {
       "id": "T-0043",
       "origen": "C-COMP-23",
       "destino": "B-PEPE",
@@ -1909,12 +1993,28 @@
       "t": "2026-10-16T23:55:00.000Z"
     },
     {
+      "id": "T-0204",
+      "origen": "M-04",
+      "destino": "CO-M-11",
+      "monto": 3740,
+      "moneda": "PEN",
+      "t": "2026-10-17T00:49:00.000Z"
+    },
+    {
       "id": "T-0015",
       "origen": "M-01",
       "destino": "M-02",
       "monto": 26335.9,
       "moneda": "PEN",
       "t": "2026-10-17T01:01:00.000Z"
+    },
+    {
+      "id": "T-0205",
+      "origen": "M-04",
+      "destino": "BO-Q-02",
+      "monto": 2244,
+      "moneda": "PEN",
+      "t": "2026-10-17T01:25:00.000Z"
     },
     {
       "id": "T-0016",
@@ -1931,6 +2031,46 @@
       "monto": 23362.49,
       "moneda": "PEN",
       "t": "2026-10-17T01:49:00.000Z"
+    }
+  ],
+  "red_regional": [
+    {
+      "veredicto": {
+        "cuenta": "CO-M-11",
+        "veredicto": "mula_confirmada",
+        "validado_por": "analista-co-07",
+        "fecha": "2026-10-14",
+        "expira": "2027-01-12",
+        "expediente": "CO-EXP-0042",
+        "apelacion_abierta": false,
+        "emisor": {
+          "banco": "co-banco-cafetero",
+          "pais": "co"
+        }
+      },
+      "ficha": {
+        "cuenta": "CO-M-11",
+        "tipologias": [
+          "fan_in",
+          "reenvio_rapido"
+        ],
+        "hipotesis": "Cuenta de paso (posible mula): recibe de varios remitentes nuevos y reenvía rápido",
+        "afirmaciones": [
+          {
+            "texto": "La cuenta CO-M-11 recibió de 9 remitentes nuevos en 48 h",
+            "evidencia": [
+              "E-02"
+            ]
+          },
+          {
+            "texto": "Reenvió el 87% de lo recibido en menos de 2 h",
+            "evidencia": [
+              "E-03"
+            ]
+          }
+        ],
+        "basado_en_red": false
+      }
     }
   ]
 }

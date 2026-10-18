@@ -179,6 +179,11 @@ const EXPLICACIONES: Record<ReglaPolicy, { titulo: string; detalle: string }> = 
     detalle:
       "Un analista ya confirmó esta cuenta como mula. Nadie tuvo que investigar: 0 llamadas de IA.",
   },
+  P1R: {
+    titulo: "Retenido por la red regional",
+    detalle:
+      "Otro banco de la red ya confirmó esta cuenta como mula. Un veredicto ajeno no escala solo: el dinero se retiene hasta verificar.",
+  },
   P2: {
     titulo: "Pasó: es un destino de siempre",
     detalle: "El cliente ya le paga a esta cuenta y no hubo señales de riesgo.",

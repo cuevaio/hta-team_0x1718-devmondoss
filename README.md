@@ -144,6 +144,34 @@ sin investigar de nuevo y sin gastar una sola llamada de modelo.
 
 ---
 
+## 🌎 Red regional
+
+Los pagos inmediatos se están interconectando entre países (TAPP en Perú,
+Bre-B en Colombia, QR en Bolivia, PIX en Brasil). Una mula que un banco ya
+confirmó puede recibir mañana desde otro país. La Memoria deja de ser de un
+banco y pasa a la red:
+
+| Caso | Escenario | Resultado | Regla |
+|---|---|---|:-:|
+| **CU-06** | Ana (Perú) transfiere a CO-M-11, que un banco de Colombia ya confirmó como mula | retenida antes de cualquier IA; ESCALAR si la guían por teléfono | **P1R** |
+| **CU-07** | M-04 recibe de 3 personas y saca el 88% a Colombia y Bolivia en menos de 2 h | ESCALAR; al confirmarla se publica en la red | P5 |
+
+Reglas de la red (`lib/memory/red.ts`):
+
+- **Confianza graduada.** Un veredicto de otro banco retiene, pero no escala
+  solo (P1R). Escalar exige evidencia propia (P4/P5) o un cliente en riesgo.
+- **Nada del cliente sale del banco.** Se publica una ficha con los hechos de
+  la cuenta (`FichaCompartible`), sin la conversación del Guardián.
+- **Sin eco.** Una ficha basada en un veredicto de la red queda marcada
+  `basado_en_red`: repetir lo que dijo otro no es una confirmación nueva.
+- **R10 también aquí.** Solo se publica lo que confirmó un analista.
+
+`GET /api/red` muestra los veredictos de la red. En el MVP la red vive en el
+proceso con veredictos sintéticos; conectarla a un servicio compartido no
+cambia la interfaz.
+
+---
+
 ## Estructura
 
 ```

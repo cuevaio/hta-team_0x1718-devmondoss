@@ -3,6 +3,7 @@ import type { Fuente } from '@/lib/contracts/analytics';
 import { analytics } from '@/lib/analytics';
 import { repo } from '@/lib/data/repo';
 import { memoria } from '@/lib/memory/store';
+import { red } from '@/lib/memory/red';
 import type { LedgerEvidencia } from '@/lib/evidence/ledger';
 
 /**
@@ -73,6 +74,8 @@ export function construirToolContext(
       estructuracion: tool('estructuracion', analytics.estructuracion),
       ciclos: tool('ciclos', analytics.ciclos),
       listas_riesgo: tool('listas_riesgo', analytics.listasRiesgo),
+      red_regional: tool('red_regional', analytics.redRegional),
+      reenvio_transfronterizo: tool('reenvio_transfronterizo', analytics.reenvioTransfronterizo),
       // Contexto operativo, no hallazgo: no está en FUENTES.
       cadena_reenvio: sinEvidencia(analytics.cadenaReenvio),
       disponibilidad: sinEvidencia(analytics.disponibilidad),
@@ -83,6 +86,11 @@ export function construirToolContext(
     // Solo lectura: escribir en la Memoria requiere un analista (doc 15, R10).
     memoria: {
       get: (cuenta: string) => memoria.get(cuenta, repo.ahora()),
+    },
+
+    // Solo lectura y sin evidencia: para que el Coordinador sepa a quién invocar.
+    red: {
+      get: (cuenta: string) => red.deOtroBanco(cuenta, repo.ahora())?.veredicto ?? null,
     },
 
     // Única vía para obtener un id de evidencia válido.

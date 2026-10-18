@@ -6,11 +6,14 @@ import {
   type ResultadoFanIn,
   type ResultadoListas,
   type ResultadoPerfil,
+  type ResultadoRed,
   type ResultadoReenvio,
+  type ResultadoTransfronterizo,
   type TipoCuenta,
 } from '@/lib/contracts/analytics';
 import type { Canal } from '@/lib/data/types';
 import { repo } from '@/lib/data/repo';
+import { red } from '@/lib/memory/red';
 
 /**
  * Analytics deterministas.
@@ -172,6 +175,56 @@ export function listasRiesgo(cuentaId: string): ResultadoListas {
   return { cuenta: cuentaId, en_lista: false, listas: [] };
 }
 
+/**
+ * Red regional: ¿otro banco ya confirmó esta cuenta como mula?
+ *
+ * Solo veredictos AJENOS y vigentes; los de este banco están en la Memoria.
+ * Es un hallazgo con evidencia propia (`red_regional`), así el expediente
+ * puede citarlo, pero la Policy lo pesa menos que un veredicto propio (P1R).
+ */
+export function redRegional(cuentaId: string): ResultadoRed {
+  const r = red.deOtroBanco(cuentaId, repo.ahora());
+  return {
+    cuenta: cuentaId,
+    en_red: r !== null,
+    emisor: r?.veredicto.emisor ?? null,
+    fecha: r?.veredicto.fecha ?? null,
+    expediente: r?.veredicto.expediente ?? null,
+    tipologias: r?.ficha?.tipologias ?? [],
+  };
+}
+
+/**
+ * ¿La cuenta saca del país lo que recibe, y rápido?
+ *
+ * Es la mula regional: recibe aquí y en menos de 2 h el dinero ya está en
+ * otro país, donde este banco no ve nada más. Mide qué parte de lo recibido
+ * (ventana de fan-in) salió hacia cuentas de OTRO país dentro de la ventana
+ * de reenvío.
+ */
+export function reenvioTransfronterizo(
+  cuentaId: string,
+  horas: number = UMBRALES.reenvio_ventana_horas,
+): ResultadoTransfronterizo {
+  const pais = repo.paisDe(cuentaId);
+  const recibido = repo
+    .entrantes(cuentaId, UMBRALES.fan_in_ventana_horas)
+    .reduce((s, m) => s + m.monto, 0);
+  const alExterior = repo.salientes(cuentaId, horas).filter((m) => repo.paisDe(m.destino) !== pais);
+  const monto = alExterior.reduce((s, m) => s + m.monto, 0);
+  const pct = recibido > 0 ? Math.min(1, monto / recibido) : 0;
+  const destinos = [...new Set(alExterior.map((m) => m.destino))].map((c) => ({ cuenta: c, pais: repo.paisDe(c) }));
+
+  return {
+    cuenta: cuentaId,
+    pais_cuenta: pais,
+    porcentaje_al_exterior: Math.round(pct * 1000) / 1000,
+    ventana_horas: horas,
+    destinos,
+    marcado: pct >= UMBRALES.transfronterizo_porcentaje,
+  };
+}
+
 /** Cadena de reenvío hacia adelante, hasta N saltos (19 §3: hasta 2 saltos). */
 export function cadenaReenvio(cuentaId: string, saltos = 2): string[] {
   const cadena = [cuentaId];
@@ -248,6 +301,8 @@ export function tipologiasMarcadas(cuentaId: string): Tipologia[] {
   if (estructuracion(cuentaId).marcado) marcadas.push('estructuracion');
   if (ciclos(cuentaId).marcado) marcadas.push('circular');
   if (listasRiesgo(cuentaId).en_lista) marcadas.push('en_lista');
+  if (reenvioTransfronterizo(cuentaId).marcado) marcadas.push('transfronterizo');
+  if (redRegional(cuentaId).en_red) marcadas.push('en_red');
   return marcadas;
 }
 
@@ -258,6 +313,8 @@ export const analytics = {
   estructuracion,
   ciclos,
   listasRiesgo,
+  redRegional,
+  reenvioTransfronterizo,
   cadenaReenvio,
   disponibilidad,
   canalesSeguros,

@@ -85,6 +85,11 @@ export function cliente(id: string): Cliente | null {
   return semilla.clientes.find((c) => c.id === id) ?? null;
 }
 
+/** País de la cuenta en la red regional. Sin dato, es de este banco: Perú. */
+export function paisDe(cuentaId: string): NonNullable<Cuenta['pais']> {
+  return cuenta(cuentaId)?.pais ?? 'pe';
+}
+
 /** Cliente dueño de una cuenta, si existe. */
 export function clientePorCuenta(cuentaId: string): Cliente | null {
   return semilla.clientes.find((c) => c.cuenta === cuentaId) ?? null;
@@ -137,6 +142,7 @@ export const repo = {
   clientes,
   cliente,
   clientePorCuenta,
+  paisDe,
   movimientos,
   entrantes,
   salientes,

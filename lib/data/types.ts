@@ -20,6 +20,13 @@ export interface Cuenta {
   tipo: TipoCuenta;
   /** Fecha de apertura, ISO corta. Una cuenta recién abierta es señal débil. */
   abierta: string;
+  /**
+   * País de la cuenta en la red regional (mismos valores que `Pais` en
+   * lib/contracts/memoria.ts). Ausente = Perú, el país de este banco.
+   */
+  pais?: 'pe' | 'co' | 'bo' | 'br';
+  /** Banco de la cuenta, si no es este. Sintético. */
+  banco?: string;
 }
 
 export interface Movimiento {
@@ -68,4 +75,9 @@ export interface Semilla {
   cuentas: Cuenta[];
   clientes: Cliente[];
   movimientos: Movimiento[];
+  /**
+   * Veredictos que OTROS bancos ya publicaron en la red regional (sintéticos).
+   * Forma de `VeredictoRed` (lib/contracts/memoria.ts); se valida al cargar.
+   */
+  red_regional?: unknown[];
 }

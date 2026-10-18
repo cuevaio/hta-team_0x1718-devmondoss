@@ -105,11 +105,14 @@ describe('🔍 Detective', () => {
     expect(riesgoBase(['fan_in', 'reenvio_rapido'], false)).toBe('medio');
     expect(riesgoBase(['en_lista'], false)).toBe('alto');
   });
-  it('plan de tools: paso 1 completo, paso 2 (ciclos si hay reenvío + estructuración siempre), y termina', () => {
+  it('plan de tools: paso 1 completo, paso 2 (ciclos y destino del reenvío si reenvía + estructuración siempre), y termina', () => {
     expect(siguientesTools({})).toEqual(['perfil_cuenta', 'listas_riesgo', 'fan_in', 'reenvio_rapido']);
-    expect(siguientesTools(m01)).toEqual(['ciclos', 'estructuracion']);
+    expect(siguientesTools(m01)).toEqual(['ciclos', 'estructuracion', 'reenvio_transfronterizo']);
     const sinEstructuracion = { cuenta: 'M-01', operaciones_cercanas_umbral: 0, marcado: false };
-    expect(siguientesTools({ ...m01, ciclos: { cuenta: 'M-01', ciclo: null, marcado: false }, estructuracion: sinEstructuracion })).toEqual([]);
+    const local = { cuenta: 'M-01', pais_cuenta: 'pe' as const, porcentaje_al_exterior: 0, ventana_horas: 2, destinos: [], marcado: false };
+    expect(
+      siguientesTools({ ...m01, ciclos: { cuenta: 'M-01', ciclo: null, marcado: false }, estructuracion: sinEstructuracion, transfronterizo: local }),
+    ).toEqual([]);
     expect(siguientesTools(bodega)).toEqual(['estructuracion']); // siempre: no depende del monto actual
   });
   it('estructuración marcada sola → medio (el LLM decide si es falso positivo)', () => {
