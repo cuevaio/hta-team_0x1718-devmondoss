@@ -1425,10 +1425,36 @@ input {
 
 @theme {
   --animate-entra: entra 0.3s ease-out backwards;
+  /* Un documento que viaja de un agente al siguiente (/demo): --desde y --hasta en %. */
+  --animate-viaje: viaje 0.7s ease-in-out forwards;
+  /* Barra que se vacía mientras un diálogo espera (--dura en ms). */
+  --animate-vaciar: vaciar var(--dura, 5000ms) linear forwards;
   @keyframes entra {
     from {
       opacity: 0;
       transform: translateY(4px);
+    }
+  }
+  @keyframes viaje {
+    0% {
+      left: var(--desde);
+      opacity: 0;
+    }
+    15%,
+    85% {
+      opacity: 1;
+    }
+    100% {
+      left: var(--hasta);
+      opacity: 0;
+    }
+  }
+  @keyframes vaciar {
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
     }
   }
 }
