@@ -5,7 +5,8 @@ import { borrarFilas, cargarFilas, guardarFila, supabaseActivo } from '@/lib/per
 import { Alias } from './alias';
 
 /**
- * Jugadas de los modos arcade del juego (¿REAL O ESTAFA?, SIGUE EL DINERO)
+ * Jugadas de los modos arcade del juego (¿REAL O ESTAFA?, SIGUE EL DINERO,
+ * ATRAPA LA MULA, ¿PAUSA O PASA?)
  * y las preguntas de encuesta de un toque que van dentro del juego.
  *
  * Es aparte de `partidas.ts` (las rondas A/B contra el motor): aquí no hay
@@ -21,7 +22,7 @@ import { Alias } from './alias';
  */
 
 export const PAISES_JUEGO = ['pe', 'co', 'mx', 'ar'] as const;
-export const MODOS = ['real_o_estafa', 'sigue_el_dinero'] as const;
+export const MODOS = ['real_o_estafa', 'sigue_el_dinero', 'atrapa_la_mula', 'pausa_o_pasa'] as const;
 export type Modo = (typeof MODOS)[number];
 
 /** Preguntas de un toque y sus respuestas posibles. */
@@ -54,20 +55,39 @@ const Base = {
   encuesta: Encuesta.optional(),
 };
 
+const Respuestas = z
+  .array(
+    z.object({
+      carta: Clave,
+      categoria: Clave,
+      estafa: z.boolean(),
+      dijo_estafa: z.boolean(),
+      ms: z.number().int().min(0).max(120_000),
+    }),
+  )
+  .max(80);
+
 export const EntradaRealOEstafa = z.object({
   modo: z.literal('real_o_estafa'),
   ...Base,
-  respuestas: z
-    .array(
-      z.object({
-        carta: Clave,
-        categoria: Clave,
-        estafa: z.boolean(),
-        dijo_estafa: z.boolean(),
-        ms: z.number().int().min(0).max(120_000),
-      }),
-    )
-    .max(80),
+  respuestas: Respuestas,
+});
+
+/** ¿PAUSA O PASA?: `estafa` = la transferencia era riesgosa, `dijo_estafa` = la pausó. */
+export const EntradaPausaOPasa = z.object({
+  modo: z.literal('pausa_o_pasa'),
+  ...Base,
+  respuestas: Respuestas,
+});
+
+export const EntradaAtrapaLaMula = z.object({
+  modo: z.literal('atrapa_la_mula'),
+  ...Base,
+  aciertos: z.number().int().min(0).max(500),
+  /** Cuentas normales tocadas por error. */
+  errores: z.number().int().min(0).max(500),
+  /** Mulas que se escaparon. */
+  escapados: z.number().int().min(0).max(500),
 });
 
 export const EntradaSigueElDinero = z.object({
@@ -81,7 +101,12 @@ export const EntradaSigueElDinero = z.object({
   segundos: z.number().int().min(0).max(600),
 });
 
-export const EntradaArcade = z.discriminatedUnion('modo', [EntradaRealOEstafa, EntradaSigueElDinero]);
+export const EntradaArcade = z.discriminatedUnion('modo', [
+  EntradaRealOEstafa,
+  EntradaSigueElDinero,
+  EntradaAtrapaLaMula,
+  EntradaPausaOPasa,
+]);
 export type EntradaArcade = z.infer<typeof EntradaArcade>;
 export type JugadaArcade = EntradaArcade & { id: string; t: string };
 
@@ -93,10 +118,14 @@ export type ResumenArcade = {
   por_pais: Record<string, number>;
   por_modo: Record<string, number>;
   ranking: Record<Modo, FilaRanking[]>;
+  /** Suma del mejor puntaje de cada alias en cada modo. */
+  general: FilaRanking[];
   /** Por tipo de estafa: cuántas veces salió y cuántas veces la creyeron real. */
   caidas: Array<{ categoria: string; vistas: number; cayeron: number; pct: number }>;
   /** Mensajes reales marcados como estafa (desconfianza: el costo de un falso positivo). */
   reales_rechazados_pct: number | null;
+  /** ¿PAUSA O PASA?: transferencias riesgosas que el jugador dejó pasar y legítimas que pausó. */
+  pausa_o_pasa: { riesgosas_pasadas_pct: number | null; legitimas_pausadas_pct: number | null };
   encuesta: Record<PreguntaEncuesta, Record<string, number>>;
 };
 
@@ -159,6 +188,19 @@ export class RegistroArcade {
     return mejores.filter((f) => f.puntaje > puntaje).length + 1;
   }
 
+  /** Ranking general: suma del mejor puntaje de cada alias en cada modo. */
+  general(): FilaRanking[] {
+    const total = new Map<string, FilaRanking>();
+    for (const modo of MODOS) {
+      for (const f of this.mejoresPorAlias(modo)) {
+        const clave = f.alias.toLowerCase();
+        const previa = total.get(clave);
+        total.set(clave, { alias: previa?.alias ?? f.alias, pais: previa?.pais ?? f.pais, puntaje: (previa?.puntaje ?? 0) + f.puntaje });
+      }
+    }
+    return [...total.values()].sort((a, b) => b.puntaje - a.puntaje);
+  }
+
   resumen(top = 10): ResumenArcade {
     const j = this.jugadas;
     const contar = (claves: string[]) =>
@@ -182,6 +224,23 @@ export class RegistroArcade {
       }
     }
 
+    let riesgosas = 0;
+    let riesgosasPasadas = 0;
+    let legitimas = 0;
+    let legitimasPausadas = 0;
+    for (const x of j) {
+      if (x.modo !== 'pausa_o_pasa') continue;
+      for (const r of x.respuestas) {
+        if (r.estafa) {
+          riesgosas++;
+          if (!r.dijo_estafa) riesgosasPasadas++;
+        } else {
+          legitimas++;
+          if (r.dijo_estafa) legitimasPausadas++;
+        }
+      }
+    }
+
     const encuesta = Object.fromEntries(
       (Object.keys(ENCUESTA) as PreguntaEncuesta[]).map((p) => [
         p,
@@ -194,14 +253,16 @@ export class RegistroArcade {
       jugadores: new Set(j.map((x) => x.alias.toLowerCase())).size,
       por_pais: contar(j.map((x) => x.pais)),
       por_modo: contar(j.map((x) => x.modo)),
-      ranking: {
-        real_o_estafa: this.mejoresPorAlias('real_o_estafa').slice(0, top),
-        sigue_el_dinero: this.mejoresPorAlias('sigue_el_dinero').slice(0, top),
-      },
+      ranking: Object.fromEntries(MODOS.map((m) => [m, this.mejoresPorAlias(m).slice(0, top)])) as Record<Modo, FilaRanking[]>,
+      general: this.general().slice(0, top),
       caidas: [...categorias.entries()]
         .map(([categoria, c]) => ({ categoria, ...c, pct: pct(c.cayeron, c.vistas) }))
         .sort((a, b) => b.pct - a.pct || b.vistas - a.vistas),
       reales_rechazados_pct: reales === 0 ? null : pct(realesRechazados, reales),
+      pausa_o_pasa: {
+        riesgosas_pasadas_pct: riesgosas === 0 ? null : pct(riesgosasPasadas, riesgosas),
+        legitimas_pausadas_pct: legitimas === 0 ? null : pct(legitimasPausadas, legitimas),
+      },
       encuesta,
     };
   }

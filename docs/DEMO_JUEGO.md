@@ -399,3 +399,46 @@ Reglas:
 - La persistencia es opcional con `ARCADE_ARCHIVO`. No se borra con el reset del demo.
 
 El monitor muestra el panel **«Tracción y encuesta»** con todo esto en vivo.
+
+## 13. Versión 4: más minijuegos, más puntos y que se entienda
+
+**Feedback:** «Me encanta, pero necesito más minijuegos, mejores formas de ganar puntos, una intro más corta y emocionante, sonidos según el escenario. Algunos juegos no se entienden».
+
+**Cuatro arcades** (menú principal):
+
+| Juego | Mecánica | Qué enseña |
+|---|---|---|
+| ¿REAL O ESTAFA? | Tocar ESTAFA o REAL, 45 s | Reconocer las 16 modalidades |
+| **ATRAPA LA MULA** (`atrapaLaMula.ts`, nuevo) | Golpea al topo: asoman cuentas con etiqueta (NUEVA, REENVÍA, RETIRA… o BODEGA, MAMÁ, SUELDO) | Qué es una cuenta mula y no prestar la tuya |
+| **¿PAUSA O PASA?** (`pausaOPasa.ts`, nuevo) | Eres el sistema: llega una transferencia con señales rojas y verdes y decides antes de que se acabe su reloj. Si no decides, el dinero sale | Que una señal sola no basta, que la cuenta destino importa (Detective) y que la Memoria protege |
+| SIGUE EL DINERO | Congelar la red de mulas | Investiga + Aprende |
+
+**Que se entienda:**
+- **CÓMO SE JUEGA** (`tutorial.ts`): antes de cada juego, 3 pasos con dibujo y un botón «¡A JUGAR!». Sale la primera vez en la sesión.
+- **LO QUE TE LLEVAS**: al terminar, 3 consejos prácticos. En ¿REAL O ESTAFA? son las pistas de las estafas en las que caíste.
+- En SIGUE EL DINERO:
+  - La evidencia sale en colores: rojo es señal de mula, ámbar pide ojo y verde es normal.
+  - Debajo aparece un veredicto sugerido («2 rojas: ¡es MULA!»).
+  - Una flecha «¡TOCA AQUÍ!» marca la primera cuenta.
+
+**Puntos y progresión** (`progreso.ts`, guardado en el celular por apodo):
+- **Estrellas** (1 a 3) por juego, según umbrales de puntaje. Se ven en el menú.
+- **Rangos** por puntos totales: NOVATO → ALERTA → DETECTIVE → GUARDIÁN → LEYENDA. Aparecen en la barra superior y en el resultado.
+- **11 logros** con bonus de puntos, como Ojo de halcón, Imparable, Red desarmada, Cazamulas, Guardián perfecto o Todoterreno.
+- Las historias también suman: ganar da +600 y jugar +200. En La Banda son +300 más +400 por cada hueco.
+- **Ranking general** (suma de lo mejor en cada juego) y un ranking por juego.
+
+**Intro:** dura unos 13 s en vez de 33. Los cortes son: llamada, voz, saldo a cero, «¡TE ROBARON!», tres titulares y «¿QUIÉN TE PROTEGE?». Tocar salta cada plano. En ese celular solo se ve la primera vez; después se puede repetir desde MÁS.
+
+**Sonido** (`audio.ts`):
+- Batería en las pistas.
+- Pistas nuevas: `suspenso`, `mula`, `jefe` e `intro`.
+- Efectos: latido, alarma, golpe de aire, explosión, interferencia, dinero que se drena, tensión, cuenta regresiva, estrella, logro, subir de nivel y congelar.
+- En los últimos 10 s de cada arcade sube el tempo y suena un latido.
+- Las historias usan suspenso en el chat del falso familiar, interferencia sin señal, el sonido del dinero que se drena en cada robo y una alarma cuando el sistema frena a la banda.
+
+**Datos** (`/api/juego/arcade`):
+- `atrapa_la_mula` guarda aciertos, errores y mulas que escaparon.
+- `pausa_o_pasa` guarda cada decisión. El resumen calcula `% de robos que dejaron pasar` y `% de pagos normales que pausaron`, que mide cuánto les molesta la fricción.
+- El ranking `general` se calcula con estos datos.
+- El monitor muestra todo esto.

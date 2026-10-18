@@ -16,6 +16,7 @@ type Plano =
   | { tipo: "app"; pasos: string[] }
   | { tipo: "titular"; titulo: string; detalle: string; fuente: string }
   | { tipo: "dato"; dato: Dato; n: number; total: number }
+  | { tipo: "golpe"; lineas: string[]; sub?: string; color: string }
   | { tipo: "lema" };
 
 type Estado = { plano: Plano; inicio: number };
@@ -92,7 +93,7 @@ function dibujar(e: Estado): (p: Pincel, t: number) => void {
       p.caja(10, Math.round(h * 0.18) + 84, W - 20, 70, PAL.blanco, PAL.tinta, PAL.rojo);
       const lineas = envolver(pl.texto, 20);
       const total = lineas.join("").length;
-      let resto = Math.floor(total * Math.min(1, f / 60));
+      let resto = Math.floor(total * Math.min(1, f / 30));
       lineas.forEach((l, i) => {
         p.texto(l.slice(0, Math.max(0, resto)), 18, Math.round(h * 0.18) + 94 + i * 13, PAL.tinta);
         resto -= l.length;
@@ -105,7 +106,7 @@ function dibujar(e: Estado): (p: Pincel, t: number) => void {
       p.rect(PAL.navy, 34, cy + 6, 124, 18);
       p.texto("TRANSFERIR", 56, cy + 11, PAL.crema);
       pl.pasos.forEach((paso, i) => {
-        const aparece = f - i * 28;
+        const aparece = f - i * 14;
         if (aparece < 0) return;
         p.alfa(Math.min(1, aparece / 8), () => {
           const y = cy + 36 + i * 22;
@@ -113,9 +114,9 @@ function dibujar(e: Estado): (p: Pincel, t: number) => void {
           p.texto(paso, 46, y + 5, PAL.tinta);
         });
       });
-      const fin = f - pl.pasos.length * 28;
+      const fin = f - pl.pasos.length * 14;
       if (fin > 0) {
-        const saldo = Math.max(0, 4800 - Math.round(fin * 120));
+        const saldo = Math.max(0, 4800 - Math.round(fin * 160));
         p.centrado(`S/ ${saldo.toLocaleString("en-US")}`, h - 70, saldo === 0 ? PAL.rojo : PAL.tinta, 16);
         if (saldo === 0 && f % 20 < 14) p.centrado("SALDO", h - 84, PAL.rojo);
       }
@@ -132,6 +133,16 @@ function dibujar(e: Estado): (p: Pincel, t: number) => void {
       p.rect(PAL.tinta, x + 8, y + off - 4, W - 16, 1);
       envolver(pl.detalle, 21).forEach((l, i) => p.texto(l, x + 8, y + off + 4 + i * 12, "#4a5a6e"));
       p.texto(pl.fuente, x + 8, h - 24, PAL.gris);
+    } else if (pl.tipo === "golpe") {
+      const parpadeo = f < 10 && f % 4 < 2;
+      p.rect(parpadeo ? PAL.blanco : "#12040a", 0, 0, W, h);
+      for (let y = 0; y < h; y += 3) p.alfa(0.12, () => p.rect(pl.color, 0, y, W, 1));
+      const k = facil.salida(Math.min(1, f / 8));
+      const cy = Math.round(h * 0.36);
+      p.escalado(W / 2, cy + pl.lineas.length * 10, 1 + (1 - k) * 2.5, () =>
+        pl.lineas.forEach((l, i) => p.centrado(l, cy + i * 22, pl.color, 16, PAL.negro)),
+      );
+      if (pl.sub) p.alfa(Math.min(1, (f - 14) / 10), () => p.centrado(pl.sub!, cy + pl.lineas.length * 22 + 14, PAL.crema, 8, PAL.negro));
     } else if (pl.tipo === "dato") {
       p.degradado(0, h, "#0b1640", "#1d2f73");
       p.texto(`${pl.n}/${pl.total}`, 8, 6, PAL.gris);
@@ -172,45 +183,58 @@ async function mostrar(m: Motor, e: Estado, plano: Plano, ms: number) {
   await m.esperarToque(ms);
 }
 
-/** El «video» de intro: esto pasa de verdad. Tocar adelanta. */
+const INTRO_VISTA = "ter-intro-vista";
+
+/** ¿Ya vio la intro en este celular? Entonces el juego arranca en el título. */
+export function introVista(): boolean {
+  try {
+    return window.localStorage.getItem(INTRO_VISTA) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** El «video» de intro (~13 s): esto pasa de verdad. Tocar salta cada plano. */
 export async function videoIntro(m: Motor) {
   const e: Estado = { plano: { tipo: "texto", lineas: [] }, inicio: m.t };
   m.barraSuperior = null;
   m.escena = dibujar(e);
-  m.musica("noche");
-  await m.fundirA(false, 20);
-  await mostrar(m, e, { tipo: "texto", lineas: ["Lima. 6:02 p.m.", "", "Una bodega llena.", "Un celular que suena."] }, 3600);
-  m.musica("llamada");
+  m.musica("intro");
+  await m.fundirA(false, 10);
   m.audio.ring();
   m.vibrar([200, 100, 200]);
-  await mostrar(m, e, { tipo: "llamada" }, 2600);
-  m.audio.golpe();
-  m.sacudir(10);
-  await mostrar(m, e, { tipo: "voz", texto: "«Sus ahorros están en riesgo. Muévalos AHORA a una cuenta segura.»" }, 3600);
-  await mostrar(m, e, { tipo: "app", pasos: ["FaceID ... OK", "Token ... OK", "¿Continuar? SÍ", "ENVIADO"] }, 4200);
-  m.audio.monedas();
-  m.musica("triste");
-  await mostrar(m, e, { tipo: "texto", lineas: ["Te autenticaste bien.", "", "Igual te robaron."], color: PAL.rojo }, 3200);
-  await mostrar(
-    m,
-    e,
-    { tipo: "titular", titulo: "Indecopi sanciona a banco por transferencia inusual de S/ 10,000", detalle: "El banco alegó que la autenticación fue correcta. Igual tenía que monitorear.", fuente: "Puno · julio 2026" },
-    3600,
-  );
-  await mostrar(
-    m,
-    e,
-    { tipo: "titular", titulo: "19,602 denuncias por fraude informático en 7 meses", detalle: "Perú, enero a julio de 2026.", fuente: "Ministerio Público" },
-    3000,
-  );
-  await mostrar(
-    m,
-    e,
-    { tipo: "titular", titulo: "+155% de intentos de estafa en bancos de la región", detalle: "Y +42% de cuentas mula reportadas.", fuente: "BioCatch · Latinoamérica 2025" },
-    3000,
-  );
-  await mostrar(m, e, { tipo: "texto", lineas: ["Y si no puedes", "contestar a tiempo...", "", "¿quién te protege?"], color: PAL.ambar }, 3600);
-  await m.fundirA(true, 20);
+  await mostrar(m, e, { tipo: "llamada" }, 1800);
+  m.audio.glitch();
+  m.sacudir(8);
+  await mostrar(m, e, { tipo: "voz", texto: "«¡Sus ahorros están en riesgo! Muévalos YA a una cuenta segura.»" }, 2300);
+  m.audio.tension();
+  await mostrar(m, e, { tipo: "app", pasos: ["FaceID ... OK", "Token ... OK", "¿Continuar? SÍ", "ENVIADO"] }, 1400);
+  m.audio.drenar();
+  await m.esperar(1300);
+  m.musica(null);
+  m.audio.boom();
+  m.sacudir(20);
+  m.vibrar([100, 60, 300]);
+  await mostrar(m, e, { tipo: "golpe", lineas: ["¡TE ROBARON!"], sub: "Y te autenticaste bien.", color: PAL.rojo }, 2000);
+  const titulares: Array<Extract<Plano, { tipo: "titular" }>> = [
+    { tipo: "titular", titulo: "Banco sancionado: S/ 10,000 por transferencia inusual", detalle: "«La autenticación fue correcta.» Igual tenía que monitorear.", fuente: "Indecopi · Puno 2026" },
+    { tipo: "titular", titulo: "19,602 denuncias por fraude en 7 meses", detalle: "Perú, enero a julio de 2026.", fuente: "Ministerio Público" },
+    { tipo: "titular", titulo: "+155% de estafas a bancos de la región", detalle: "Y +42% de cuentas mula.", fuente: "BioCatch · LATAM 2025" },
+  ];
+  m.musica("suspenso");
+  for (const t of titulares) {
+    m.audio.whoosh();
+    await mostrar(m, e, t, 1100);
+  }
+  m.audio.boom();
+  m.destello = 8;
+  await mostrar(m, e, { tipo: "golpe", lineas: ["¿QUIÉN TE", "PROTEGE?"], color: PAL.ambar }, 1800);
+  try {
+    window.localStorage.setItem(INTRO_VISTA, "1");
+  } catch {
+    // sin almacenamiento: se verá otra vez
+  }
+  await m.fundirA(true, 12);
 }
 
 /** Epílogo: los datos que no se olvidan. */

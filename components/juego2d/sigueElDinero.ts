@@ -25,7 +25,8 @@ type Nodo = {
   fy: number;
   cuenta: boolean;
   mula: boolean;
-  pistas: string[];
+  /** Evidencia del Detective. `r` = señal de mula, `a` = ojo, `v` = normal. */
+  pistas: Array<[string, "r" | "a" | "v"]>;
   saldo: number;
   congelada: boolean;
   /** Cuadros que quedan de la marca roja por falso positivo. */
@@ -61,15 +62,15 @@ function nodos(): Record<IdNodo, Nodo> {
     id, codigo, fx, fy, cuenta: true, mula: false, pistas: [], saldo: 0, congelada: false, error: 0, hielo: 0, ritmo: 0, destinos: [], turno: 0, ...o,
   });
   return {
-    victimas: n("victimas", "14 VÍCTIMAS", 0.3, 0.06, { cuenta: false }),
-    m1: n("m1", "4471", 0.36, 0.3, { mula: true, ritmo: 26, destinos: ["m2", "m3"], pistas: ["Abierta hace 9 días", "14 remitentes NUEVOS", "Reenvía 91% en <2 h"] }),
-    m2: n("m2", "8820", 0.76, 0.2, { mula: true, ritmo: 34, destinos: ["m3"], pistas: ["Abierta hace 8 días", "Solo recibe de 4471", "Reenvía todo a 1093"] }),
-    m3: n("m3", "1093", 0.68, 0.6, { mula: true, ritmo: 22, destinos: ["salida"], pistas: ["Abierta hace 7 días", "Recibe de 2 cuentas", "Lo retira TODO"] }),
+    victimas: n("victimas", "VÍCTIMAS", 0.14, 0.08, { cuenta: false }),
+    m1: n("m1", "4471", 0.36, 0.3, { mula: true, ritmo: 26, destinos: ["m2", "m3"], pistas: [["Abierta hace 9 días", "r"], ["14 remitentes NUEVOS", "r"], ["Reenvía 91% en <2 h", "r"]] }),
+    m2: n("m2", "8820", 0.76, 0.2, { mula: true, ritmo: 34, destinos: ["m3"], pistas: [["Abierta hace 8 días", "r"], ["Solo recibe de 4471", "r"], ["Reenvía todo a 1093", "r"]] }),
+    m3: n("m3", "1093", 0.68, 0.6, { mula: true, ritmo: 22, destinos: ["salida"], pistas: [["Abierta hace 7 días", "r"], ["Recibe de 2 cuentas", "a"], ["Lo retira TODO", "r"]] }),
     salida: n("salida", "RETIRO", 0.88, 0.92, { cuenta: false }),
     vecinos: n("vecinos", "VECINOS", 0.1, 0.55, { cuenta: false }),
-    bodega: n("bodega", "5128", 0.26, 0.75, { ritmo: 200, destinos: ["prov"], pistas: ["Bodega, hace 9 años", "35 clientes de años", "Reenvía 2%: proveedor"] }),
-    prov: n("prov", "6642", 0.5, 0.94, { ritmo: 0, pistas: ["Mayorista, 6 años", "Le pagan 6 bodegas", "Paga sueldos"] }),
-    hotel: n("hotel", "3307", 0.88, 0.42, { ritmo: 0, pistas: ["Hotel, hace 11 años", "Pagos de huéspedes", "No reenvía nada"] }),
+    bodega: n("bodega", "5128", 0.26, 0.75, { ritmo: 200, destinos: ["prov"], pistas: [["Bodega, hace 9 años", "v"], ["Le pagan 35 vecinos", "a"], ["Solo paga a su", "v"], ["proveedor", "v"]] }),
+    prov: n("prov", "6642", 0.5, 0.94, { ritmo: 0, pistas: [["Mayorista, 6 años", "v"], ["Le pagan 6 bodegas", "a"], ["Paga sueldos", "v"]] }),
+    hotel: n("hotel", "3307", 0.88, 0.42, { ritmo: 0, pistas: [["Hotel, hace 11 años", "v"], ["Pagos de huéspedes", "v"], ["No reenvía nada", "v"]] }),
     turistas: n("turistas", "", 1.08, 0.3, { cuenta: false }),
   };
 }
@@ -86,6 +87,7 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
   let fase: "cuenta" | "juego" | "fin" = "cuenta";
   let inicioFase = m.t;
   let seleccion: IdNodo | null = null;
+  let investigoAlguna = false;
   let abierta = 0;
   let presionado: "congelar" | "cerrar" | null = null;
   let mensaje: { texto: string; sub: string; color: string; hasta: number } | null = null;
@@ -152,7 +154,7 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
       recuperado += nd.saldo;
       m.flotante(`+${dinero(pais, nd.saldo)}`, Math.max(4, p.x - 30), p.y - 16, PAL.celeste);
       nd.saldo = 0;
-      m.audio.sello();
+      m.audio.congelar();
       m.vibrar([20, 30, 20]);
       m.particulas_(p.x, p.y, 26, { colores: [PAL.celeste, PAL.blanco, "#bfe8ff"], vel: 2, g: 0, vida: 30 });
       mensaje = { texto: "¡MULA CONGELADA!", sub: `Cuenta ${nd.codigo}`, color: PAL.celeste, hasta: m.t + 90 };
@@ -198,6 +200,7 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
     }
     if (mejor && mejor !== seleccion) {
       seleccion = mejor;
+      investigoAlguna = true;
       abierta = m.t;
       m.audio.confirmar();
     }
@@ -213,7 +216,8 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
   const actualizar = (t: number) => {
     restante--;
     if (restante <= 0) return terminar();
-    if (restante <= 600 && restante % 60 === 0) m.audio.tic();
+    if (restante === 600) m.audio.ritmo = 1.2;
+    if (restante <= 600 && restante % 45 === 0) m.audio.latido();
     // víctimas → 4471
     if (emitidas < MONEDAS && t % 38 === 0) {
       emitidas++;
@@ -262,7 +266,9 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
   const dibujar = (p: Pincel, t: number) => {
     const h = p.h;
     const f = t - inicioFase;
+    if (fase === "cuenta" && f % 34 === 0 && f < 100) m.audio.cuenta(false);
     if (fase === "cuenta" && f >= 100) {
+      m.audio.cuenta(true);
       fase = "juego";
       inicioFase = t;
       m.musica("detective");
@@ -349,6 +355,15 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
       p.centrado(etiqueta, q.y + r + 3, nd.congelada ? PAL.celeste : PAL.crema, 8, undefined, q.x - 17, 34);
     }
 
+    // primera vez: flecha a la cuenta que recibe el dinero
+    if (fase === "juego" && !investigoAlguna) {
+      const q = pos("m1", h);
+      const rebote = Math.floor(t / 10) % 2 ? 3 : 0;
+      for (let i = 0; i < 6; i++) p.rect(PAL.ambar, q.x - 6 + i, q.y - 24 + i + rebote, 12 - i * 2, 1);
+      p.rect(PAL.ambar, q.x - 2, q.y - 32 + rebote, 4, 8);
+      p.textoSombra("¡TOCA AQUÍ!", q.x - 44, q.y + 26, PAL.ambar, PAL.tinta);
+    }
+
     // ── HUD ──
     const k = restante / (SEGUNDOS * 60);
     p.textoSombra("SIGUE EL DINERO", 4, 4, PAL.ambar, PAL.tinta);
@@ -381,19 +396,28 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
     } else if (seleccion) {
       const nd = red[seleccion];
       p.texto(`CUENTA ${nd.codigo}`, pn.x + 10, pn.y + 9, PAL.azul);
-      const reveladas = Math.min(nd.pistas.length, Math.floor((t - abierta) / 16) + 1);
+      const reveladas = Math.min(nd.pistas.length, Math.floor((t - abierta) / 12) + 1);
+      const sep = nd.pistas.length > 3 ? 11 : 13;
       for (let i = 0; i < reveladas; i++) {
-        const kk = Math.min(1, (t - abierta - i * 16) / 8);
+        const kk = Math.min(1, (t - abierta - i * 12) / 8);
+        const [texto, tono] = nd.pistas[i];
+        const color = tono === "r" ? PAL.rojo : tono === "a" ? PAL.ambar : PAL.verde;
         p.alfa(kk, () => {
-          p.rect(PAL.ambar, pn.x + 10, pn.y + 26 + i * 13, 3, 3);
-          p.texto(nd.pistas[i], pn.x + 17, pn.y + 23 + i * 13, PAL.tinta);
+          p.rect(color, pn.x + 9, pn.y + 23 + i * sep, 5, 7);
+          p.texto(texto, pn.x + 17, pn.y + 23 + i * sep, tono === "r" ? PAL.rojoOscuro : PAL.tinta);
         });
       }
-      if (reveladas < nd.pistas.length && Math.floor(t / 10) % 2 === 0) p.texto("investigando...", pn.x + 17, pn.y + 23 + reveladas * 13, PAL.gris);
+      const listo = reveladas >= nd.pistas.length;
+      if (!listo && Math.floor(t / 10) % 2 === 0) p.texto("investigando...", pn.x + 17, pn.y + 23 + reveladas * sep, PAL.gris);
+      const rojas = nd.pistas.filter(([, tono]) => tono === "r").length;
+      if (listo && !nd.congelada && nd.error === 0) {
+        p.texto(rojas >= 2 ? `${rojas} rojas: ¡es MULA!` : "Parece normal.", pn.x + 10, pn.y + 23 + nd.pistas.length * sep + 2, rojas >= 2 ? PAL.rojoOscuro : PAL.verdeOscuro);
+      }
       const b = botones(h);
       const bloqueada = nd.congelada || nd.error > 0;
-      p.alfa(bloqueada ? 0.4 : 1, () => p.boton(b.congelar, nd.congelada ? "CONGELADA" : "CONGELAR", { color: "#bfe8ff", presionado: presionado === "congelar" }));
-      p.boton(b.cerrar, "CERRAR", { presionado: presionado === "cerrar" });
+      const invita = listo && rojas >= 2 && !bloqueada && Math.floor(t / 12) % 2 === 0;
+      p.alfa(bloqueada ? 0.4 : 1, () => p.boton(b.congelar, nd.congelada ? "CONGELADA" : "CONGELAR", { color: invita ? PAL.celeste : "#bfe8ff", activo: invita, presionado: presionado === "congelar" }));
+      p.boton(b.cerrar, rojas >= 2 ? "CERRAR" : "ES NORMAL", { color: !bloqueada && listo && rojas < 2 ? "#bfe8c9" : undefined, presionado: presionado === "cerrar" });
     } else {
       p.texto("Toca una cuenta", pn.x + 10, pn.y + 12, PAL.tinta);
       p.texto("para investigarla.", pn.x + 10, pn.y + 24, PAL.tinta);

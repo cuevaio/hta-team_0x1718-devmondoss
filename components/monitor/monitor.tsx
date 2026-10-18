@@ -293,10 +293,20 @@ type Arcade = {
   jugadas: number;
   jugadores: number;
   por_pais: Record<string, number>;
-  ranking: Record<"real_o_estafa" | "sigue_el_dinero", Array<{ alias: string; pais: string; puntaje: number }>>;
+  ranking: Record<string, Array<{ alias: string; pais: string; puntaje: number }>>;
+  general: Array<{ alias: string; pais: string; puntaje: number }>;
+  por_modo: Record<string, number>;
+  pausa_o_pasa: { riesgosas_pasadas_pct: number | null; legitimas_pausadas_pct: number | null };
   caidas: Array<{ categoria: string; vistas: number; cayeron: number; pct: number }>;
   reales_rechazados_pct: number | null;
   encuesta: Record<string, Record<string, number>>;
+};
+
+const NOMBRE_MODO: Record<string, string> = {
+  real_o_estafa: "¿Real o estafa?",
+  atrapa_la_mula: "Atrapa la mula",
+  pausa_o_pasa: "¿Pausa o pasa?",
+  sigue_el_dinero: "Sigue el dinero",
 };
 
 const BANDERAS: Record<string, string> = { pe: "🇵🇪", co: "🇨🇴", mx: "🇲🇽", ar: "🇦🇷" };
@@ -377,6 +387,22 @@ function PanelTraccion({ a }: { a: Arcade | null }) {
           <span>Mensajes reales marcados como estafa</span>
           <strong>{a.reales_rechazados_pct === null ? "—" : `${a.reales_rechazados_pct}%`}</strong>
         </div>
+        <div className={s.kpi}>
+          <span>¿PAUSA O PASA?: dejaron pasar un robo</span>
+          <strong>{a.pausa_o_pasa?.riesgosas_pasadas_pct == null ? "—" : `${a.pausa_o_pasa.riesgosas_pasadas_pct}%`}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>¿PAUSA O PASA?: pausaron un pago normal</span>
+          <strong>{a.pausa_o_pasa?.legitimas_pausadas_pct == null ? "—" : `${a.pausa_o_pasa.legitimas_pausadas_pct}%`}</strong>
+        </div>
+        <div className={`${s.kpi} ${s.kpiAncho}`}>
+          <span>Partidas por juego</span>
+          <strong>
+            {Object.entries(a.por_modo ?? {})
+              .map(([k, n]) => `${NOMBRE_MODO[k] ?? k} ${n}`)
+              .join(" · ") || "—"}
+          </strong>
+        </div>
       </div>
       {a.caidas.length > 0 && (
         <>
@@ -393,12 +419,12 @@ function PanelTraccion({ a }: { a: Arcade | null }) {
           </ul>
         </>
       )}
-      {(["real_o_estafa", "sigue_el_dinero"] as const).map((modo) =>
-        a.ranking[modo].length > 0 ? (
+      {(["general", "real_o_estafa", "atrapa_la_mula", "pausa_o_pasa", "sigue_el_dinero"] as const).map((modo) =>
+        (modo === "general" ? a.general : a.ranking[modo])?.length ? (
           <div key={modo}>
-            <p className={s.nota}>🏆 {modo === "real_o_estafa" ? "¿REAL O ESTAFA?" : "SIGUE EL DINERO"}</p>
+            <p className={s.nota}>🏆 {modo === "general" ? "RANKING GENERAL" : NOMBRE_MODO[modo]}</p>
             <ul className={s.lista}>
-              {a.ranking[modo].slice(0, 5).map((f, i) => (
+              {(modo === "general" ? a.general : a.ranking[modo]).slice(0, modo === "general" ? 5 : 3).map((f, i) => (
                 <li key={f.alias}>
                   <span>#{i + 1}</span>
                   <span>

@@ -160,6 +160,7 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
   const terminar = () => {
     cambiar("fin");
     m.musica(null);
+    m.audio.boom();
     window.setTimeout(() => {
       m.minijuego(null);
       const caidas = [...new Set(respuestas.filter((r) => r.estafa && !r.dijo_estafa).map((r) => r.categoria))];
@@ -247,15 +248,17 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
     const f = t - inicioFase;
     // ── lógica por cuadro ──
     if (fase === "cuenta") {
-      if (f % 45 === 0 && f < 135) m.audio.tic();
+      if (f % 45 === 0 && f < 135) m.audio.cuenta(false);
       if (f >= 150) {
+        m.audio.cuenta(true);
         aparecio = t;
         m.musica("arcade");
         cambiar("juego");
       }
     } else if (fase === "juego") {
       restante--;
-      if (restante <= 600 && restante % 60 === 0) m.audio.tic();
+      if (restante === 600) m.audio.ritmo = 1.2;
+      if (restante <= 600 && restante % 45 === 0) m.audio.latido();
       if (restante <= 0) {
         restante = 0;
         terminar();

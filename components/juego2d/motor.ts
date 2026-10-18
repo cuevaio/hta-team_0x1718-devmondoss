@@ -23,6 +23,8 @@ export type Opcion = {
   sub?: string;
   bandera?: { colores: string[]; vertical: boolean };
   marca?: { texto: string; color: string };
+  /** Solo «tarjetas»: 0..3 estrellas ganadas (se dibujan en vez de la marca). */
+  estrellas?: number;
 };
 type EstiloMenu = "lista" | "combate" | "caras" | "tarjetas";
 
@@ -41,6 +43,7 @@ const ALTO_DIALOGO = 82;
 const LETRAS = ["ABCDEFG", "HIJKLMN", "ÑOPQRST", "UVWXYZ-"];
 const MAX_NOMBRE = 10;
 const BOTON_SONIDO: Caja = { x: W - 20, y: 2, w: 18, h: 16 };
+const AVISO_CUADROS = 130;
 
 type Dialogo = {
   paginas: string[][];
@@ -69,6 +72,7 @@ type Teclado = { nombre: string; idx: number; error: string | null; validar: (s:
 type Particula = { x: number; y: number; vx: number; vy: number; vida: number; max: number; color: string; tam: number; g: number };
 type Flotante = { texto: string; x: number; y: number; vida: number; color: string };
 type Sello = { texto: string; sub?: string; color: string; cuadro: number };
+type Aviso = { titulo: string; sub: string; color: string; cuadro: number };
 type Cortina = { tipo: "barras" | "iris"; k: number; cx: number; cy: number };
 
 export class Motor {
@@ -92,6 +96,7 @@ export class Motor {
   private particulas: Particula[] = [];
   private flotantes: Flotante[] = [];
   private sello: Sello | null = null;
+  private avisos: Aviso[] = [];
   private cortina: Cortina | null = null;
   private cola: Boton[] = [];
   private sostenidos = new Set<Boton>();
@@ -144,6 +149,8 @@ export class Motor {
 
   vibrar(patron: number | number[]) {
     if (this.audio.silencio) return;
+    // Chrome bloquea (y avisa en consola) la vibración antes del primer toque.
+    if (typeof navigator !== "undefined" && navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
     try {
       navigator.vibrate?.(patron);
     } catch {
@@ -435,11 +442,19 @@ export class Motor {
       });
       tx += bw + 7;
     }
-    const maxChars = Math.floor((r.x + r.w - 6 - tx) / 8) - (op.marca ? op.marca.texto.length + 1 : 0);
+    const maxChars = Math.floor((r.x + r.w - 6 - tx) / 8) - (op.estrellas !== undefined ? 3 : op.marca ? op.marca.texto.length + 1 : 0);
     const dosLineas = op.sub && r.h >= 26;
     p.texto(limpiar(op.texto).slice(0, maxChars), tx, y + (dosLineas ? 5 : Math.round((r.h - 8) / 2)), PAL.tinta);
     if (dosLineas) p.texto(limpiar(op.sub!).slice(0, Math.floor((r.x + r.w - 6 - tx) / 8)), tx, y + r.h - 13, PAL.gris);
-    if (op.marca) {
+    if (op.estrellas !== undefined) {
+      const g = ["..X..", "XXXXX", ".XXX.", ".X.X."];
+      for (let i = 0; i < 3; i++) p.sprite(g, { X: i < op.estrellas ? PAL.ambar : "#c9bfa9" }, r.x + r.w - 26 + i * 7, y + 5, 1);
+      if (op.marca) {
+        const mw = op.marca.texto.length * 8 + 6;
+        p.rect(op.marca.color, r.x + r.w - mw - 4, y + r.h - 15, mw, 12);
+        p.texto(op.marca.texto, r.x + r.w - mw - 1, y + r.h - 13, PAL.blanco);
+      }
+    } else if (op.marca) {
       const mw = op.marca.texto.length * 8 + 6;
       p.rect(op.marca.color, r.x + r.w - mw - 4, y + 4, mw, 12);
       p.texto(op.marca.texto, r.x + r.w - mw - 1, y + 6, PAL.blanco);
@@ -598,6 +613,16 @@ export class Motor {
     this.sello = null;
   }
 
+  /** Cartel que baja desde arriba (logros, récords, subir de rango). No bloquea. */
+  aviso(titulo: string, sub: string, color: string = PAL.ambar) {
+    this.avisos.push({ titulo, sub, color, cuadro: 0 });
+  }
+
+  /** Cuadros que faltan para que se vean todos los avisos en cola. */
+  get avisosPendientes() {
+    return this.avisos.reduce((s, a) => s + (AVISO_CUADROS - a.cuadro), 0);
+  }
+
   sacudir(cuadros = 16) {
     this.sacudida = cuadros;
   }
@@ -696,6 +721,7 @@ export class Motor {
       if (this.destello % 4 < 2) p.alfa(0.7, () => p.rect(PAL.blanco, 0, 0, W, this.h));
     }
     if (this.sello) this.dibujarSello(p, this.sello);
+    if (this.avisos.length > 0) this.dibujarAviso(p, this.avisos[0]);
     if (this.barraSuperior && !this.teclado) this.dibujarBarraSuperior(p);
     if (this.dialogo) this.dibujarDialogo(p, this.dialogo);
     if (this.menuActivo) this.dibujarMenu(p, this.menuActivo);
@@ -738,6 +764,36 @@ export class Motor {
         if (s.sub) p.centrado(s.sub, cy + 8, PAL.tinta);
       }),
     );
+  }
+
+  private dibujarAviso(p: Pincel, a: Aviso) {
+    if (a.cuadro === 0) {
+      this.audio.logro();
+      this.vibrar([20, 30, 20]);
+    }
+    a.cuadro++;
+    const entrada = facil.salida(Math.min(1, a.cuadro / 12));
+    const salida = Math.max(0, (a.cuadro - (AVISO_CUADROS - 12)) / 12);
+    const y = Math.round(-40 + 62 * entrada - 62 * salida);
+    const x = 10;
+    const w = W - 20;
+    p.alfa(0.4, () => p.rect(PAL.negro, x + 2, y + 3, w, 32));
+    p.rect(PAL.tinta, x, y, w, 32);
+    p.rect(a.color, x + 1, y + 1, w - 2, 30);
+    p.rect("rgba(255,255,255,0.35)", x + 2, y + 2, w - 4, 2);
+    // brillo que cruza
+    const bx = ((a.cuadro * 4) % (w + 60)) - 30;
+    p.alfa(0.35, () => p.rect(PAL.blanco, x + bx, y + 1, 6, 30));
+    // estrella
+    const sx = x + 8;
+    const sy = y + 8;
+    p.rect(PAL.blanco, sx + 6, sy, 4, 16);
+    p.rect(PAL.blanco, sx, sy + 6, 16, 4);
+    p.rect(PAL.blanco, sx + 3, sy + 3, 10, 10);
+    p.rect(a.color, sx + 6, sy + 6, 4, 4);
+    p.texto(limpiar(a.titulo).slice(0, 17), x + 30, y + 6, PAL.tinta);
+    p.texto(limpiar(a.sub).slice(0, 17), x + 30, y + 18, PAL.blanco);
+    if (a.cuadro >= AVISO_CUADROS) this.avisos.shift();
   }
 
   private dibujarBarraSuperior(p: Pincel) {
