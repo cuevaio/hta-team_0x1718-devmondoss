@@ -26,6 +26,8 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   await arcade.listo;
+  // Lo de otros servidores sobre el mismo Supabase llega en ≤ 20 s, sin hacer esperar.
+  void arcade.sincronizar();
   const crudo = new URL(req.url).searchParams.get('crudo') === '1';
   return NextResponse.json({ ...arcade.resumen(), ...(crudo ? { todas: arcade.todas() } : {}) });
 }

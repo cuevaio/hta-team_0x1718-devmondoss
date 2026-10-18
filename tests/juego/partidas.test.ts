@@ -247,6 +247,9 @@ describe('ids de caso que se reciclan (reset del demo y reinicio del proceso)', 
     expect((await registrar(json('/api/juego/partidas', 'POST', victima([viejo])))).status).toBe(201);
 
     await reset(json('/api/demo/reset', 'POST')); // los ids vuelven a CASO-0001
+    // En la vida real entre un reset y el siguiente caso pasan segundos; sin esta
+    // pausa ambos casos podían crearse en el mismo milisegundo (test intermitente).
+    await new Promise((r) => setTimeout(r, 5));
     const nuevo = await intentoFrenado();
     expect(nuevo).toBe(viejo); // mismo id, otro caso
 

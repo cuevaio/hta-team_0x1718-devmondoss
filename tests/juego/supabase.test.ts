@@ -26,8 +26,21 @@ describe('arcade con Supabase', () => {
     expect(r.cantidad).toBe(1);
 
     const j = r.registrar({ modo: 'sigue_el_dinero', alias: 'beto', pais: 'co', puntaje: 80, recuperado_pct: 80, falsos_positivos: 0, mulas: 2, segundos: 20 });
-    expect(j.id).toBe('ARCADE-00002');
+    expect(j.id).toMatch(/^ARCADE-[0-9A-Z]{9}-[0-9A-F]{12}$/);
+    expect(j.id).not.toBe('ARCADE-00001');
     await Promise.resolve();
     expect(filas.guardadas).toHaveLength(1);
+  });
+
+  it('sincroniza lo que guardó otro servidor sin perder lo propio', async () => {
+    filas.previas = [];
+    const r = new RegistroArcade(undefined, true);
+    await r.listo;
+    r.registrar({ modo: 'sigue_el_dinero', alias: 'propia', pais: 'pe', puntaje: 1, recuperado_pct: 0, falsos_positivos: 0, mulas: 0, segundos: 1 });
+    filas.previas = [
+      { id: 'ARCADE-OTRO-1', t: '2026-10-18T00:00:00Z', modo: 'sigue_el_dinero', alias: 'de-otro-servidor', pais: 'mx', puntaje: 9, recuperado_pct: 0, falsos_positivos: 0, mulas: 0, segundos: 1 },
+    ];
+    await r.sincronizar(0);
+    expect(r.todas().map((j) => j.alias).sort()).toEqual(['de-otro-servidor', 'propia']);
   });
 });

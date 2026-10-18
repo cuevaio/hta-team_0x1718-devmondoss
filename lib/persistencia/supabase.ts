@@ -51,12 +51,25 @@ export async function cargarFilas<T>(tabla: TablaJuego): Promise<T[]> {
   }
 }
 
-/** Upsert de una fila. Falla → lanza. */
-export async function guardarFila(tabla: TablaJuego, fila: FilaJuego): Promise<void> {
+/** Pausas entre reintentos: una caída corta de red (la Wi-Fi del evento) no pierde la fila. */
+export const ESPERAS_REINTENTO_MS = [1_000, 4_000, 15_000];
+
+/** Upsert de una fila, con reintentos. Si todos fallan → lanza (la fila sigue en RAM y en archivo). */
+export async function guardarFila(tabla: TablaJuego, fila: FilaJuego, esperas: number[] = ESPERAS_REINTENTO_MS): Promise<void> {
   const db = conectar();
   if (!db) return;
-  const { error } = await db.from(tabla).upsert(fila);
-  if (error) throw new Error(`Supabase ${tabla}: ${error.message}`);
+  let ultimo = '';
+  for (let i = 0; i <= esperas.length; i++) {
+    try {
+      const { error } = await db.from(tabla).upsert(fila);
+      if (!error) return;
+      ultimo = error.message;
+    } catch (e) {
+      ultimo = e instanceof Error ? e.message : String(e);
+    }
+    if (i < esperas.length) await new Promise((r) => setTimeout(r, esperas[i]));
+  }
+  throw new Error(`Supabase ${tabla}: ${ultimo}`);
 }
 
 export async function borrarFilas(tabla: TablaJuego): Promise<void> {

@@ -3,6 +3,7 @@ import { dirname } from 'node:path';
 import { z } from 'zod';
 import type { Caso, DecisionAccion, ReglaPolicy } from '@/lib/contracts';
 import { borrarFilas, cargarFilas, guardarFila, supabaseActivo } from '@/lib/persistencia/supabase';
+import { idUnico } from '@/lib/persistencia/id';
 import { Alias, motivoAliasInvalido } from './alias';
 
 /**
@@ -157,7 +158,9 @@ export class RegistroPartidas {
         destino: c.transaccion.destino,
       };
     };
-    const base = { id: `PARTIDA-${String(this.partidas.length + 1).padStart(4, '0')}`, t: new Date().toISOString() };
+    // Id único entre servidores (ver lib/persistencia/id.ts): con un contador, dos servidores
+    // sobre el mismo Supabase se pisaban las partidas.
+    const base = { id: idUnico('PARTIDA'), t: new Date().toISOString() };
     const partida: Partida =
       entrada.rol === 'victima'
         ? { ...entrada, ...base, hechos: entrada.ronda_b.casos.map(hecho) }

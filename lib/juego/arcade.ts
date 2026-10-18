@@ -3,6 +3,7 @@ import { dirname } from 'node:path';
 import { z } from 'zod';
 import { borrarFilas, cargarFilas, guardarFila, supabaseActivo } from '@/lib/persistencia/supabase';
 import { Alias } from './alias';
+import { idUnico } from '@/lib/persistencia/id';
 
 /**
  * Jugadas de los modos arcade del juego (¿REAL O ESTAFA?, SIGUE EL DINERO,
@@ -142,12 +143,31 @@ export class RegistroArcade {
   /** Se resuelve cuando terminó de cargar de Supabase (si está configurado). */
   readonly listo: Promise<void>;
 
+  private ultimaSync = Date.now();
+  private sincronizando: Promise<void> | null = null;
+
   constructor(
     private readonly archivo?: string,
-    nube = supabaseActivo(),
+    private readonly nube = supabaseActivo(),
   ) {
     if (archivo) this.cargar(archivo);
     this.listo = nube ? this.hidratar() : Promise.resolve();
+  }
+
+  /**
+   * Trae lo que otros servidores guardaron en el mismo Supabase (como mucho
+   * cada `cadaMs`). Sin esto, dos servidores encendidos a la vez mostraban
+   * rankings distintos hasta reiniciarse. No bloquea a quien consulta.
+   */
+  sincronizar(cadaMs = 20_000): Promise<void> {
+    if (!this.nube) return Promise.resolve();
+    if (this.sincronizando) return this.sincronizando;
+    if (Date.now() - this.ultimaSync < cadaMs) return Promise.resolve();
+    this.sincronizando = this.hidratar().finally(() => {
+      this.ultimaSync = Date.now();
+      this.sincronizando = null;
+    });
+    return this.sincronizando;
   }
 
   private async hidratar(): Promise<void> {
@@ -163,7 +183,7 @@ export class RegistroArcade {
   registrar(entrada: EntradaArcade): JugadaArcade {
     const jugada: JugadaArcade = {
       ...entrada,
-      id: `ARCADE-${String(this.jugadas.length + 1).padStart(5, '0')}`,
+      id: idUnico('ARCADE'),
       t: new Date().toISOString(),
     };
     this.jugadas.push(jugada);
