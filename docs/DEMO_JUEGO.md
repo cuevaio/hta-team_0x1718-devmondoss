@@ -334,3 +334,27 @@ Solo lo que el UX exige; la implementación queda en manos del dueño de cada bl
 1. Validar este diseño con 2–3 personas fuera del equipo: ¿la ronda A frustra sin aburrir?
 2. Confirmar las cifras marcadas ⚠️ si se van a decir en el pitch.
 3. Decidir si la variante Lucía entra en la primera versión (recomendado: **no**; primero víctima-Rosa, atacante y monitor).
+
+---
+
+## 11. El juego implementado: rutas y países (`components/juego2d/`)
+
+Recorrido: **video de intro** (casos y cifras reales) → título → apodo → **país** → **menú de rutas**. Todo a pantalla completa en el celular: se toca para avanzar, elegir y caminar.
+
+| Ruta | Rol | Desenlaces | Qué decide |
+|---|---|---|---|
+| La llamada | víctima | R1 (aviso genérico simulado): pierde o resiste · R2: gana | motor real (P4/P5) |
+| Sin señal | víctima | R1: pierde sin poder hacer nada · R2: gana sin contestar | motor real (P7; hotel P2) |
+| El familiar | víctima | gana si verifica por otro canal; si transfiere: R1 pierde, R2 retenido | motor real (P5, cuenta mula) |
+| El comprobante | víctima | gana si verifica en su app, pierde si entrega | **fuera del alcance de la capa** (no mueve dinero de su cuenta); se dice en el juego |
+| La banda | atacante | golpe clásico contra el «banco de hoy»: **gana** · luego 5 golpes contra la capa | motor real |
+
+**LOS DATOS** (epílogo, tras la primera ruta y en el menú): 47% / 21% (SBS–CGAP), +155% / +42% (BioCatch), el dato del país elegido, el caso de Puno (S/ 10,000, Indecopi), Tarapoto (S/ 1,550) y la brecha de disponibilidad (GSMA).
+
+**Países**: Perú, Colombia, México y Argentina cambian nombres, moneda, lugares y modalidades locales; la lógica es la misma. El banco y la billetera que «fallan» son **ficticios** (Banco Andino, ChaskiPay, Banco Cordillera…). Las billeteras reales (Yape, Plin, Nequi, Daviplata, Mercado Pago, Ualá, Lemon) solo se nombran como contexto de cómo paga la gente.
+
+Fuentes de contexto por país (prensa, verificar antes de citar en el pitch):
+- Perú: «Yape falso» con capturas contra comercios ([Perú Retail](https://www.peru-retail.com/cuidado-con-el-falso-yape-como-funciona-esta-nueva-modalidad-de-estafa-a-comerciantes/), [La República](https://larepublica.pe/economia/2024/11/29/evita-estafas-en-yape-aprende-a-identificar-comprobantes-falsos-y-protege-tu-dinero-atmp-1529808)).
+- Colombia: SMS de «pago pendiente» con el nombre de Bre-B ([Vanguardia](https://www.vanguardia.com/colombia/2026/08/05/no-caiga-en-la-trampa-asi-estan-usando-el-nombre-de-bre-b-para-estafar-a-usuarios/)); +64,000 denuncias por estafas digitales en 2025 ([Diario del Sur](https://www.diariodelsur.com.co/mas-del-36-de-los-colombianos-ha-sido-victima-de-fraude-digital-las-formas-mas-comunes-y-como-protegerse-en-2026/)).
+- México: 35,762 reclamaciones por posible fraude ene–may 2026, +18% en la banca; llamadas como vía principal ([El Imparcial](https://www.elimparcial.com/dinero/2026/08/27/fraude-bancario-en-mexico-aumenta-18-y-las-llamadas-siguen-siendo-una-de-las-principales-vias-de-engano-alerta-la-condusef/)).
+- Argentina: falsos operadores de billeteras y cuentas mula ([iProfesional](https://www.iprofesional.com/tecnologia/453048-tu-cuenta-de-mercado-pago-puede-estar-en-peligro-5-tips-para-protegerla), [El Ancasti](https://www.elancasti.com.ar/policiales/imputaron-tres-personas-el-uso-cuentas-mulas-la-venta-cubiertas-n606988)); UFECI 2024: 34,468 denuncias, 63% fraude en línea (según prensa).

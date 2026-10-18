@@ -62,6 +62,8 @@ export type ConfigMundo = {
   objetivo: string;
   npcs: Npc[];
   puertas: Record<string, string[]>;
+  /** Letrero de la tienda de Rosa según el país (BODEGA, TIENDA, ABARROTES…). */
+  letrero?: string;
 };
 
 const DELTA: Record<Direccion, [number, number]> = { arriba: [0, -1], abajo: [0, 1], izq: [-1, 0], der: [1, 0] };
@@ -164,7 +166,8 @@ export class Explorador {
     this.pisada = false;
     if (this.marca && --this.marca.vida <= 0) this.marca = null;
     if (this.resto > 0) {
-      this.resto -= 2;
+      // 1 px por cuadro: 16 cuadros por casilla, el ritmo clásico de caminar.
+      this.resto -= 1;
       if (this.resto === 8) this.paso = this.paso === 0 ? 1 : 0;
       return null;
     }
@@ -243,7 +246,7 @@ export class Explorador {
     p.rect("#2f7a3a", 0, 0, W, p.h);
     p.ctx.save();
     p.ctx.translate(0, -cam);
-    dibujarMapa(p, t, this.cfg.noche);
+    dibujarMapa(p, t, this.cfg.noche, this.cfg.letrero ?? "BODEGA");
 
     if (this.marca && this.marca.vida % 6 < 4) {
       const { x, y } = this.marca;
@@ -363,7 +366,7 @@ function puerta(p: Pincel, x: number, y: number, color: string = PAL.maderaOscur
   p.rect(PAL.ambar, x + 11, y + 9, 2, 2);
 }
 
-function dibujarMapa(p: Pincel, t: number, esNoche: boolean) {
+function dibujarMapa(p: Pincel, t: number, esNoche: boolean, letrero: string) {
   for (let y = 0; y < MAPA.length; y++) for (let x = 0; x < MAPA[y].length; x++) dibujarTile(p, MAPA[y][x], x, y, t);
 
   // Bodega de Rosa (0..80, 0..64)
@@ -371,9 +374,11 @@ function dibujarMapa(p: Pincel, t: number, esNoche: boolean) {
   for (let i = 0; i < 80; i += 8) p.rect("#9e4a31", i, 0, 1, 30);
   p.rect("#7d3a26", 0, 28, 80, 2);
   p.rect(PAL.crema, 0, 30, 80, 34);
-  p.rect(PAL.verdeOscuro, 14, 31, 52, 11);
-  p.rect(PAL.verde, 15, 32, 50, 9);
-  p.texto("BODEGA", 16, 33, PAL.crema);
+  const ancho = p.ancho(letrero) + 6;
+  const lx = Math.round((80 - ancho) / 2);
+  p.rect(PAL.verdeOscuro, lx, 31, ancho, 11);
+  p.rect(PAL.verde, lx + 1, 32, ancho - 2, 9);
+  p.texto(letrero, lx + 3, 33, PAL.crema);
   ventana(p, 6, 46, esNoche);
   ventana(p, 58, 46, esNoche);
   puerta(p, 32, 48);
