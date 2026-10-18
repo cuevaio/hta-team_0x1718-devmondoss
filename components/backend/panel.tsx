@@ -27,6 +27,16 @@ type Agentes = { modo: "claude" | "ollama" | "simulado"; modelo: string | null }
 
 /** Lo que se espera en pantalla con el resultado completo antes de pasar a la prueba siguiente. */
 const RESPIRO_MS = 800;
+/** Modo 90 s: la demo completa dura 1:30 (de 3 min de exposición, la mitad es esta). */
+const META_MS = 90_000;
+const RESPIRO_90_MS = 150;
+/** Cuenta regresiva antes de empezar: 3, 2, 1 y «YA». */
+const CUENTA = [3, 2, 1, 0];
+
+const reloj = (ms: number) => {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+};
 
 export default function PanelBackend() {
   const [pruebas, setPruebas] = useState<Prueba[]>([]);
@@ -37,8 +47,16 @@ export default function PanelBackend() {
   const [error, setError] = useState<string | null>(null);
   const [velocidad, setVelocidad] = useState(1);
   const [explicar, setExplicar] = useState(true);
+  const [meta90, setMeta90] = useState(true);
+  const [cuenta, setCuenta] = useState<number | null>(null);
+  const [inicio, setInicio] = useState<number | null>(null);
+  const [transcurrido, setTranscurrido] = useState(0);
   const vel = useRef(1);
   vel.current = velocidad;
+  const meta = useRef(true);
+  meta.current = meta90;
+  const explica = useRef(true);
+  explica.current = explicar;
   /** Lo resuelve la vista cuando terminó de reproducir la prueba en curso. */
   const fin = useRef<(() => void) | null>(null);
 
@@ -53,12 +71,29 @@ export default function PanelBackend() {
       .catch(() => setError("Sin conexión con el servidor."));
   }, []);
 
+  // Reloj de la demo: corre desde el «YA» hasta que termina la última prueba.
+  useEffect(() => {
+    if (inicio === null || !corriendo) return;
+    const id = setInterval(() => setTranscurrido(Date.now() - inicio), 200);
+    return () => clearInterval(id);
+  }, [inicio, corriendo]);
+
   const correr = useCallback(async () => {
     if (corriendo || !pruebas.length) return;
     setError(null);
     setResultados({});
+    setInicio(null);
+    setTranscurrido(0);
     setCorriendo(pruebas[0].id);
     setElegida(pruebas[0].id);
+    // Cuenta regresiva: así se sabe a qué hora empieza todo.
+    for (const n of CUENTA) {
+      setCuenta(n);
+      await new Promise((ok) => setTimeout(ok, n === 0 ? 600 : 900));
+    }
+    setCuenta(null);
+    const t0 = Date.now();
+    setInicio(t0);
     try {
       const res = await fetch("/api/demo/suite", { method: "POST" });
       if (!res.ok || !res.body) {
@@ -76,6 +111,14 @@ export default function PanelBackend() {
         resto = lineas.pop() ?? "";
         for (const l of lineas.filter(Boolean)) {
           const r = JSON.parse(l) as ResultadoPrueba;
+          if (meta.current) {
+            // Modo 90 s: a cada prueba le toca su parte del tiempo que queda,
+            // y la reproducción se acelera lo necesario para caber en ella.
+            const natural = lineasDe(r).reduce((t, x) => t + x.espera + (explica.current && x.nota?.modo === "dialogo" ? x.nota.dura : 0), 0);
+            const restantes = pruebas.length - pruebas.findIndex((p) => p.id === r.id);
+            const libre = META_MS - (Date.now() - t0) - restantes * RESPIRO_90_MS;
+            setVelocidad(Math.min(12, Math.max(1, natural / Math.max(1500, libre / restantes))));
+          }
           setResultados((prev) => ({ ...prev, [r.id]: r }));
           setElegida(r.id);
           // Se reproduce entera (con sus diálogos) antes de pasar a la siguiente.
@@ -84,7 +127,7 @@ export default function PanelBackend() {
             setTimeout(ok, 5 * 60_000);
           });
           fin.current = null;
-          await new Promise((ok) => setTimeout(ok, RESPIRO_MS / vel.current));
+          await new Promise((ok) => setTimeout(ok, meta.current ? RESPIRO_90_MS : RESPIRO_MS / vel.current));
           const i = pruebas.findIndex((p) => p.id === r.id);
           const siguiente = pruebas[i + 1]?.id ?? null;
           setCorriendo(siguiente);
@@ -94,6 +137,7 @@ export default function PanelBackend() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
+      setTranscurrido(Date.now() - t0);
       setCorriendo(null);
     }
   }, [corriendo, pruebas]);
@@ -106,6 +150,16 @@ export default function PanelBackend() {
 
   return (
     <div className="ui-oscuro dark bg-background text-foreground min-h-dvh font-sans antialiased">
+      {cuenta !== null && (
+        <div className="bg-background/90 fixed inset-0 z-50 grid place-items-center backdrop-blur-sm" role="status" aria-live="assertive">
+          <div className="text-center">
+            <div key={cuenta} className="animate-entra font-mono text-[14rem] leading-none font-semibold tracking-tighter text-amber-400 max-sm:text-[9rem]">
+              {cuenta === 0 ? "YA" : cuenta}
+            </div>
+            <p className="text-muted-foreground mt-2 font-mono text-sm">{meta90 ? "la demo dura 1:30" : "empieza la demo"}</p>
+          </div>
+        </div>
+      )}
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-8">
         <header className="flex items-center gap-3">
           <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 text-amber-400">
@@ -117,6 +171,15 @@ export default function PanelBackend() {
             {agentes && (
               <Badge variant="outline" className="text-muted-foreground mr-1 font-mono max-sm:hidden">
                 {agentes.modelo ?? agentes.modo}
+              </Badge>
+            )}
+            {inicio !== null && (
+              <Badge
+                variant="outline"
+                className={cn("mr-1 font-mono tabular-nums", transcurrido > META_MS ? "text-rose-400" : corriendo ? "text-amber-300" : "text-emerald-400")}
+                title="Tiempo de la demo (meta 1:30)"
+              >
+                {reloj(transcurrido)} / {reloj(META_MS)}
               </Badge>
             )}
             {hechas.length > 0 && (
@@ -134,9 +197,19 @@ export default function PanelBackend() {
               <MessageSquareText />
               {explicar ? "explicar" : "sin pausas"}
             </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground font-mono" onClick={() => setVelocidad((v) => (v === 1 ? 2 : 1))} title="Velocidad">
+            <Button variant="ghost" size="sm" className="text-muted-foreground font-mono" 
+              onClick={() => {
+                // 90 s → 1× → 2× → 90 s
+                if (meta90) {
+                  setMeta90(false);
+                  setVelocidad(1);
+                } else if (velocidad === 1) setVelocidad(2);
+                else setMeta90(true);
+              }}
+              title="Velocidad: 90 s ajusta todo para durar 1:30"
+            >
               <Gauge />
-              {velocidad}×
+              {meta90 ? "90 s" : `${velocidad}×`}
             </Button>
             <Button onClick={correr} disabled={Boolean(corriendo) || !pruebas.length} className="ml-1">
               {corriendo ? <Loader2 className="animate-spin" /> : <Play />}
@@ -144,6 +217,11 @@ export default function PanelBackend() {
             </Button>
           </div>
         </header>
+
+        <p className="text-muted-foreground -mt-3 text-sm">
+          Corre dentro del banco, entre el motor de riesgo y la ejecución del pago: <strong className="text-foreground font-medium">infraestructura, no una app</strong>.
+          Ejemplo para Perú: un banco como el BCP. Datos 100% sintéticos; sin relación con el banco.
+        </p>
 
         <Progress value={pruebas.length ? (hechas.length / pruebas.length) * 100 : 0} className="h-1" />
         {error && <p className="text-destructive text-sm">{error}</p>}
