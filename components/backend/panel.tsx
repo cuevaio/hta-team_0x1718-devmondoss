@@ -7,18 +7,18 @@ import s from "./panel.module.css";
 
 /**
  * Panel del backend para presentar (`/demo`): corre la suite en vivo
- * (lib/demo/suite.ts) contra el pipeline real y muestra, prueba por prueba,
- * qué agentes actuaron, en qué orden, con qué evidencia y qué se verificó.
- *
- * Minimalista a propósito: una lista de pruebas a la izquierda y la traza de
- * la prueba elegida a la derecha.
+ * (lib/demo/suite.ts) contra el pipeline real y la dibuja como un flujo: qué
+ * agentes actuaron, dónde quedó retenido el dinero y qué se verificó. La traza
+ * completa queda plegada debajo.
  */
 
 type Prueba = { id: string; titulo: string; demuestra: string };
 type Agentes = { modo: "claude" | "ollama" | "simulado"; modelo: string | null };
 type Estado = "espera" | "corriendo" | "ok" | "falla";
+type Detalle = Record<string, unknown>;
 
 const CLAVE_TOKEN = "afs-demo-token";
+const PASO_MS = 140;
 
 /** Token del operador: llega como `?token=`, se quita de la URL y queda en la pestaña. */
 function tokenOperador(): string | null {
@@ -41,80 +41,85 @@ function tokenOperador(): string | null {
   }
 }
 
-/** Las etapas del pipeline, en el orden del doc 19. `actor` es el del timeline. */
-const ETAPAS = [
-  { actor: "reglas", nombre: "Reglas" },
-  { actor: "memoria", nombre: "Memoria" },
-  { actor: "red_regional", nombre: "Red" },
-  { actor: "coordinador", nombre: "Coordinador" },
-  { actor: "detective", nombre: "Detective" },
-  { actor: "guardian", nombre: "Guardián" },
-  { actor: "policy", nombre: "Policy" },
-  { actor: "auditor", nombre: "Auditor" },
-] as const;
+const ESTADO_CLIENTE: Record<string, string> = {
+  manipulacion_probable: "manipulado",
+  canal_comprometido: "canal comprometido",
+  confirmado_seguro: "seguro",
+  sin_respuesta: "sin respuesta",
+};
 
-const PASO_MS = 120;
+/**
+ * Las etapas del pipeline (doc 19), en orden. `de` dice qué evento del
+ * timeline la enciende y `dato` resume en dos palabras lo que encontró.
+ * `retiene`: si se enciende, el dinero se queda ahí.
+ */
+const NODOS: Array<{
+  id: string;
+  nombre: string;
+  de: (e: EventoTimeline) => boolean;
+  dato: (d: Detalle, e: EventoTimeline) => string;
+  retiene?: boolean;
+}> = [
+  { id: "reglas", nombre: "Reglas", de: (e) => e.evento === "nivel0_evaluado", dato: (d) => `score ${d.score}` },
+  { id: "pausa", nombre: "Pausa", de: (e) => e.evento === "pausa_preventiva", dato: () => "antes de la IA", retiene: true },
+  { id: "memoria", nombre: "Memoria", de: (e) => e.actor === "memoria", dato: () => "mula conocida", retiene: true },
+  {
+    id: "red",
+    nombre: "Red",
+    de: (e) => e.actor === "red_regional",
+    dato: (d) => `banco ${String((d.emisor as { pais?: string } | undefined)?.pais ?? "").toUpperCase()}`,
+    retiene: true,
+  },
+  {
+    id: "coordinador",
+    nombre: "Coordinador",
+    de: (e) => e.actor === "coordinador",
+    dato: (d) => (Array.isArray(d.invocar) ? `${d.invocar.length} agente${d.invocar.length === 1 ? "" : "s"}` : ""),
+  },
+  { id: "detective", nombre: "Detective", de: (e) => e.actor === "detective", dato: (d) => (d.riesgo_destino ? `riesgo ${d.riesgo_destino}` : "") },
+  {
+    id: "guardian",
+    nombre: "Guardián",
+    de: (e) => e.actor === "guardian",
+    dato: (d, e) => (e.evento === "estado_usuario" ? (ESTADO_CLIENTE[String(d.estado_usuario)] ?? String(d.estado_usuario)) : e.evento === "turno_pendiente" ? "sin respuesta" : "pregunta"),
+  },
+  { id: "policy", nombre: "Policy", de: (e) => e.actor === "policy", dato: (d) => String(d.regla ?? "") },
+  { id: "auditor", nombre: "Auditor", de: (e) => e.evento === "expediente", dato: (d) => `${d.afirmaciones} citas` },
+];
 
-const texto = (v: unknown) => (typeof v === "string" ? v : "");
-const lista = (v: unknown) => (Array.isArray(v) ? v.join(", ") : "");
-
-/** Una línea legible por evento: lo que un ingeniero querría ver en el log. */
-function resumen(e: EventoTimeline): string {
-  const d = (e.detalle ?? {}) as Record<string, unknown>;
+/** Una línea de log por evento (la traza plegada). */
+function linea(e: EventoTimeline): string {
+  const d = (e.detalle ?? {}) as Detalle;
+  const l = (v: unknown) => (Array.isArray(v) ? v.join(", ") : "");
   switch (e.evento) {
-    case "caso_creado":
-      return texto(d.puerta);
     case "nivel0_evaluado":
-      return `score ${d.score} · ${lista(d.senales) || "sin señales"}`;
-    case "pausa_preventiva":
-      return "dinero retenido antes de consultar a ningún agente";
+      return `score ${d.score} · ${l(d.senales) || "sin señales"}`;
     case "plan":
-      return d.salida_temprana ? `salida temprana · ${texto(d.motivo)}` : `invoca ${lista(d.invocar)} · ${texto(d.motivo)}`;
+      return `invoca ${l(d.invocar) || "—"} · ${d.motivo}`;
     case "riesgo_destino":
-      return `riesgo ${d.riesgo_destino} · ${lista(d.tipologias)} · cita ${lista(d.evidencia)}`;
+      return `riesgo ${d.riesgo_destino} · ${l(d.tipologias)}`;
     case "pregunta":
     case "turno_pendiente":
-      return `«${texto(d.mensaje)}»`;
+      return `«${d.mensaje}»`;
     case "respuesta_guardian":
-      return `cliente: «${texto(d.texto) || "(sin respuesta)"}»`;
+      return `«${d.texto || "(sin respuesta)"}»`;
     case "estado_usuario":
-      return `${d.estado_usuario} · canal ${d.canal_usado ?? "—"}${lista(d.senales_manipulacion) ? ` · ${lista(d.senales_manipulacion)}` : ""}`;
-    case "mula_confirmada":
-      return `${d.cuenta} ya confirmada por un analista · sin IA`;
-    case "mula_confirmada_en_red": {
-      const em = d.emisor as { banco?: string; pais?: string } | undefined;
-      return `${d.cuenta} confirmada por ${em?.banco} (${em?.pais}) · ${texto(d.expediente)}`;
-    }
-    case "atajo_determinista":
+      return `${d.estado_usuario} · canal ${d.canal_usado ?? "—"}`;
     case "decision":
-      return `${d.accion} · ${d.regla} · ${texto(d.motivo)}`;
-    case "expediente":
-      return `recomienda ${d.recomendacion} · ${d.afirmaciones} afirmaciones citadas`;
+    case "atajo_determinista":
+      return `${d.accion} · ${d.regla} · ${d.motivo}`;
     case "error_agentes":
-      return `${texto(d.agente)}: ${texto(d.mensaje)}`;
-    case "alerta_recibida":
-      return texto(d.motivo);
+      return `${d.agente}: ${d.mensaje}`;
     default: {
-      const j = JSON.stringify(e.detalle ?? "");
-      return j.length > 90 ? `${j.slice(0, 90)}…` : j;
+      const j = e.detalle === undefined ? "" : JSON.stringify(e.detalle);
+      return j.length > 80 ? `${j.slice(0, 80)}…` : j;
     }
   }
 }
 
-/** El dato crudo de una tool, en una línea (sin la cuenta, que ya se ve). */
-function dato(v: unknown): string {
-  if (!v || typeof v !== "object") return String(v ?? "");
-  return Object.entries(v as Record<string, unknown>)
-    .filter(([k]) => k !== "cuenta" && k !== "pregunta")
-    .map(([k, x]) => `${k} ${typeof x === "object" ? JSON.stringify(x) : String(x)}`)
-    .join(" · ")
-    .slice(0, 120);
-}
-
 const ms = (a: string, b: string) => Math.max(0, new Date(b).getTime() - new Date(a).getTime());
-
-const claseAccion = (accion?: string) =>
-  accion === "PERMITIR" ? s.permitir : accion === "ESCALAR" ? s.escalar : accion === "VERIFICAR" ? s.verificar : s.pausar;
+const color = (accion?: string) =>
+  accion === "PERMITIR" ? s.permitir : accion === "ESCALAR" ? s.escalar : accion === "VERIFICAR" ? s.verificar : accion ? s.pausar : "";
 
 export default function PanelBackend() {
   const [pruebas, setPruebas] = useState<Prueba[]>([]);
@@ -123,7 +128,6 @@ export default function PanelBackend() {
   const [corriendo, setCorriendo] = useState<string | null>(null);
   const [elegida, setElegida] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [total, setTotal] = useState<{ ms: number } | null>(null);
   const token = useRef<string | null>(null);
 
   useEffect(() => {
@@ -135,17 +139,15 @@ export default function PanelBackend() {
         setAgentes(d.agentes);
         setElegida(d.pruebas[0]?.id ?? null);
       })
-      .catch(() => setError("No se pudo leer la suite del servidor."));
+      .catch(() => setError("Sin conexión con el servidor."));
   }, []);
 
   const correr = useCallback(async () => {
     if (corriendo || !pruebas.length) return;
     setError(null);
     setResultados({});
-    setTotal(null);
     setCorriendo(pruebas[0].id);
     setElegida(pruebas[0].id);
-    const t0 = performance.now();
     try {
       const res = await fetch("/api/demo/suite", {
         method: "POST",
@@ -153,7 +155,7 @@ export default function PanelBackend() {
       });
       if (!res.ok || !res.body) {
         const b = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(res.status === 401 || res.status === 403 ? "Falta el token del operador: abre /demo?token=…" : (b?.error ?? `error ${res.status}`));
+        throw new Error(res.status === 401 || res.status === 403 ? "Falta el token: /demo?token=…" : (b?.error ?? `error ${res.status}`));
       }
       const lector = res.body.getReader();
       const dec = new TextDecoder();
@@ -168,13 +170,14 @@ export default function PanelBackend() {
           const r = JSON.parse(l) as ResultadoPrueba;
           setResultados((prev) => ({ ...prev, [r.id]: r }));
           setElegida(r.id);
+          // Que se vea el flujo completo antes de pasar a la siguiente.
+          await new Promise((ok) => setTimeout(ok, 900 + (r.casos[0]?.timeline.length ?? 10) * PASO_MS));
           const i = pruebas.findIndex((p) => p.id === r.id);
-          setCorriendo(pruebas[i + 1]?.id ?? null);
-          // Un respiro para que se vea la traza antes de pasar a la siguiente.
-          await new Promise((ok) => setTimeout(ok, Math.min(2200, 500 + (r.casos[0]?.timeline.length ?? 6) * PASO_MS)));
+          const siguiente = pruebas[i + 1]?.id ?? null;
+          setCorriendo(siguiente);
+          if (siguiente) setElegida(siguiente);
         }
       }
-      setTotal({ ms: Math.round(performance.now() - t0) });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -184,10 +187,8 @@ export default function PanelBackend() {
 
   const hechas = Object.values(resultados);
   const ok = hechas.filter((r) => r.ok).length;
-  const chequeos = hechas.reduce((n, r) => n + r.chequeos.length, 0);
-  const llamadas = hechas.reduce((n, r) => n + r.casos.reduce((m, c) => m + c.ia.llamadas, 0), 0);
   const elegido = elegida ? resultados[elegida] : undefined;
-  const pruebaElegida = pruebas.find((p) => p.id === elegida);
+  const prueba = pruebas.find((p) => p.id === elegida);
 
   return (
     <main className={s.panel}>
@@ -197,29 +198,18 @@ export default function PanelBackend() {
             <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.4" />
             <path d="M6 18L18 6" stroke="currentColor" strokeWidth="2.4" />
           </svg>
-          Mule Zero <span>/ backend</span>
+          Mule Zero
         </div>
-        <div className={s.modo}>
-          agentes <b>{agentes ? (agentes.modelo ? `${agentes.modo} · ${agentes.modelo}` : agentes.modo) : "…"}</b>
-        </div>
+        {agentes && <span className={s.modo}>{agentes.modelo ?? agentes.modo}</span>}
+        {hechas.length > 0 && (
+          <span className={`${s.marcador} ${ok === hechas.length ? s.permitir : s.escalar}`} aria-live="polite">
+            {ok}/{pruebas.length}
+          </span>
+        )}
         <button className={s.correr} onClick={correr} disabled={Boolean(corriendo) || !pruebas.length}>
-          {corriendo ? "corriendo…" : hechas.length ? "volver a correr" : "▶ correr suite"}
+          {corriendo ? "corriendo" : "▶ correr"}
         </button>
       </header>
-
-      <p className={s.resumen} aria-live="polite">
-        {hechas.length === 0 && !corriendo && `${pruebas.length} pruebas contra el pipeline real · datos sintéticos`}
-        {(hechas.length > 0 || corriendo) && (
-          <>
-            <b className={ok === hechas.length ? s.verde : s.rojo}>
-              {ok}/{pruebas.length}
-            </b>{" "}
-            pruebas · {chequeos} chequeos · {llamadas} llamadas de IA
-            {resultados.matriz?.matriz && ` · ${resultados.matriz.matriz.combinaciones} ataques`}
-            {total && ` · ${(total.ms / 1000).toFixed(1)} s`}
-          </>
-        )}
-      </p>
       {error && <p className={s.error}>{error}</p>}
 
       <div className={s.cuerpo}>
@@ -227,15 +217,11 @@ export default function PanelBackend() {
           {pruebas.map((p, i) => {
             const r = resultados[p.id];
             const estado: Estado = r ? (r.ok ? "ok" : "falla") : corriendo === p.id ? "corriendo" : "espera";
-            const c = r?.casos.at(-1);
             return (
               <li key={p.id}>
                 <button className={`${s.fila} ${elegida === p.id ? s.elegida : ""}`} onClick={() => setElegida(p.id)} data-estado={estado}>
                   <span className={s.num}>{String(i + 1).padStart(2, "0")}</span>
-                  <span className={s.titulo}>{p.titulo}</span>
-                  <span className={`${s.decision} ${claseAccion(c?.decision?.accion)}`}>
-                    {c?.decision ? `${c.decision.accion} ${c.decision.regla}` : r?.matriz ? `${r.matriz.combinaciones}` : ""}
-                  </span>
+                  {p.titulo}
                   <span className={s.punto} aria-label={estado} />
                 </button>
               </li>
@@ -244,32 +230,56 @@ export default function PanelBackend() {
         </ol>
 
         <section className={s.detalle}>
-          {pruebaElegida && (
-            <>
-              <h2>{pruebaElegida.titulo}</h2>
-              <p className={s.demuestra}>{pruebaElegida.demuestra}</p>
-            </>
+          {prueba && (
+            <header className={s.cabeza}>
+              <div>
+                <h2>{prueba.titulo}</h2>
+                <p>{prueba.demuestra}</p>
+              </div>
+              {elegido?.casos.at(-1)?.decision && <Decision caso={elegido.casos.at(-1)!} ms={elegido.ms} />}
+              {elegido?.matriz && (
+                <div className={`${s.decision} ${elegido.ok ? s.permitir : s.escalar}`}>
+                  <b>{elegido.matriz.invariantes.reduce((n, v) => n + v.violaciones, 0)} huecos</b>
+                  <span>{elegido.matriz.combinaciones} ataques · {elegido.ms} ms</span>
+                </div>
+              )}
+            </header>
           )}
-          {!elegido && pruebaElegida && <p className={s.vacio}>{corriendo === elegida ? "corriendo…" : "Sin correr todavía."}</p>}
           {elegido?.error && <p className={s.error}>{elegido.error}</p>}
-          {elegido?.matriz && <Matriz r={elegido} />}
-          {elegido?.casos.map((c) => <Traza key={`${elegido.id}-${c.id}`} caso={c} agentes={elegido.agentes} />)}
-          {elegido && elegido.chequeos.length > 0 && <Chequeos r={elegido} />}
+          {elegido?.matriz ? (
+            <Matriz r={elegido} />
+          ) : elegido?.casos[0] ? (
+            <Flujo key={elegido.id} caso={elegido.casos[0]} chequeos={elegido} />
+          ) : (
+            <Flujo key={`vacio-${elegida}`} esperando={corriendo === elegida} />
+          )}
         </section>
       </div>
     </main>
   );
 }
 
-/** Revela los eventos uno a uno, como si se leyera el log en vivo. */
+function Decision({ caso, ms: t }: { caso: Caso; ms: number }) {
+  return (
+    // Aparece cuando el flujo terminó de dibujarse.
+    <div className={`${s.decision} ${color(caso.decision!.accion)}`} style={{ animationDelay: `${caso.timeline.length * PASO_MS}ms` }}>
+      <b>{caso.decision!.accion}</b>
+      <span>
+        {caso.decision!.regla} · {caso.ia.llamadas} IA · {t < 1000 ? `${t} ms` : `${(t / 1000).toFixed(1)} s`}
+      </span>
+    </div>
+  );
+}
+
+/** Revela los eventos de a uno, como si el caso corriera en ese momento. */
 function useRevelar(n: number) {
   const [visibles, setVisibles] = useState(0);
   useEffect(() => {
     setVisibles(0);
+    if (!n) return;
     let i = 0;
     const t = setInterval(() => {
-      i++;
-      setVisibles(i);
+      setVisibles(++i);
       if (i >= n) clearInterval(t);
     }, PASO_MS);
     return () => clearInterval(t);
@@ -277,122 +287,140 @@ function useRevelar(n: number) {
   return visibles;
 }
 
-function Traza({ caso, agentes }: { caso: Caso; agentes: string }) {
-  const visibles = useRevelar(caso.timeline.length);
-  const vistos = caso.timeline.slice(0, visibles);
-  const actores = new Set(vistos.map((e) => e.actor));
-  const t0 = caso.timeline[0]?.t ?? "";
-  const terminado = visibles >= caso.timeline.length;
-  const auditor = caso.salidas.auditor;
+function Flujo({ caso, chequeos, esperando }: { caso?: Caso; chequeos?: ResultadoPrueba; esperando?: boolean }) {
+  const total = caso?.timeline.length ?? 0;
+  const visibles = useRevelar(total);
+  const vistos = caso?.timeline.slice(0, visibles) ?? [];
+  const terminado = caso !== undefined && visibles >= total;
+
+  const fallidos = new Set(vistos.filter((e) => e.evento === "error_agentes").map((e) => String((e.detalle as Detalle)?.agente)));
+  const nodos = NODOS.map((n) => {
+    const ev = [...vistos].reverse().find(n.de);
+    const falla = fallidos.has(n.id) || (n.id === "coordinador" && fallidos.has("orquestador"));
+    return { ...n, activo: Boolean(ev) || falla, falla, texto: falla ? "falla" : ev ? n.dato((ev.detalle ?? {}) as Detalle, ev) : "" };
+  });
+  const ultimo = nodos.reduce((m, n, i) => (n.activo ? i : m), -1);
+
+  // Dónde queda el dinero: en la primera etapa que lo retiene; si se permite, llega al final.
+  const accion = terminado ? caso?.decision?.accion : undefined;
+  const conDinero = caso?.puerta === "transferencia";
+  const retenidoEn = nodos.findIndex((n) => n.retiene && n.activo);
+  const policy = nodos.findIndex((n) => n.id === "policy");
+  const posDinero =
+    accion === "PERMITIR" ? NODOS.length : retenidoEn >= 0 ? retenidoEn : accion ? policy : Math.max(0, ultimo);
+  const estadoDinero = accion === "PERMITIR" ? s.permitir : retenidoEn >= 0 || accion ? s.pausar : "";
 
   return (
-    <div className={s.traza}>
-      <div className={s.meta}>
-        <span>{caso.id}</span>
-        <span>
-          {caso.transaccion.origen} → {caso.transaccion.destino}
-          {caso.puerta === "transferencia" ? ` · S/ ${caso.transaccion.monto.toLocaleString("es-PE")}` : " · alerta AML"}
-        </span>
-        <span>
-          {caso.ia.llamadas} llamadas IA{caso.ia.tokens ? ` · ${caso.ia.tokens} tokens` : ""} · agentes {agentes}
-        </span>
-      </div>
-
-      <div className={s.etapas} aria-label="Etapas del pipeline">
-        {ETAPAS.map((e, i) => (
-          <span key={e.actor} className={`${s.etapa} ${actores.has(e.actor) ? s.activa : ""}`}>
-            {i > 0 && <i aria-hidden="true">→</i>}
-            {e.nombre}
-          </span>
-        ))}
-        {terminado && caso.decision && (
-          <b className={`${s.final} ${claseAccion(caso.decision.accion)}`}>
-            {caso.decision.accion} · {caso.decision.regla}
-          </b>
+    <div className={s.flujo}>
+      <div className={`${s.pista} ${esperando ? s.esperando : ""}`}>
+        <div className={s.linea} />
+        <div className={s.lineaLlena} style={{ width: `${(Math.max(0, ultimo) / NODOS.length) * 100}%` }} />
+        {conDinero && (
+          <div className={`${s.dinero} ${estadoDinero}`} style={{ left: `${((Math.min(posDinero, NODOS.length - 1) + 0.5) / NODOS.length) * 100}%` }}>
+            S/ {caso!.transaccion.monto.toLocaleString("es-PE")}
+            {accion && <small>{accion === "PERMITIR" ? "pagado" : "retenido"}</small>}
+          </div>
         )}
+        {nodos.map((n) => (
+          <div key={n.id} className={`${s.nodo} ${n.activo ? s.activo : ""} ${n.falla ? s.fallo : ""}`}>
+            <i />
+            <b>{n.nombre}</b>
+            <span>{n.texto}</span>
+          </div>
+        ))}
       </div>
 
-      <ol className={s.log}>
-        {vistos.map((e, i) => (
-          <li key={i} className={e.evento === "decision" ? s.lineaDecision : e.evento === "error_agentes" ? s.lineaError : ""}>
-            <span className={s.t}>+{ms(t0, e.t)}ms</span>
-            <span className={s.actor}>{e.actor}</span>
-            <span className={s.evento}>{e.evento}</span>
-            <span className={s.que}>{resumen(e)}</span>
-          </li>
-        ))}
-      </ol>
-
-      {terminado && caso.evidencia.length > 0 && (
-        <details className={s.bloque}>
-          <summary>evidencia · {caso.evidencia.length} hechos calculados por las tools</summary>
-          <ul>
-            {caso.evidencia.map((e) => (
-              <li key={e.id}>
-                <b>{e.id}</b> <span className={s.actor}>{e.fuente}</span> {dato(e.dato)}
-              </li>
-            ))}
-          </ul>
-        </details>
+      {caso && (
+        <p className={s.ruta}>
+          {caso.puerta === "alerta_aml" ? `alerta sobre ${caso.transaccion.destino}` : `${caso.transaccion.origen} → ${caso.transaccion.destino}`}
+        </p>
       )}
-      {terminado && auditor && (
-        <details className={s.bloque}>
-          <summary>expediente del auditor · {auditor.afirmaciones.length} afirmaciones</summary>
-          <ul>
-            {auditor.afirmaciones.map((a, i) => (
-              <li key={i}>
-                {a.texto} <b>[{a.evidencia.join(" ")}]</b>
-              </li>
-            ))}
-          </ul>
-        </details>
+
+      {terminado && chequeos && chequeos.chequeos.length > 0 && (
+        <ul className={s.chequeos}>
+          {chequeos.chequeos.map((c, i) => (
+            <li key={i} className={c.ok ? "" : s.malo} title={c.valor} style={{ animationDelay: `${i * 70}ms` }}>
+              {c.ok ? "✓" : "✗"} {c.texto}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {terminado && caso && (
+        <div className={s.pliegues}>
+          <details>
+            <summary>traza · {caso.timeline.length}</summary>
+            <ol className={s.log}>
+              {caso.timeline.map((e, i) => (
+                <li key={i}>
+                  <span>+{ms(caso.timeline[0].t, e.t)}ms</span>
+                  <span className={s.actor}>{e.actor}</span>
+                  <span>{linea(e)}</span>
+                </li>
+              ))}
+            </ol>
+          </details>
+          {caso.evidencia.length > 0 && (
+            <details>
+              <summary>evidencia · {caso.evidencia.length}</summary>
+              <ol className={s.log}>
+                {caso.evidencia.map((e) => (
+                  <li key={e.id}>
+                    <span>{e.id}</span>
+                    <span className={s.actor}>{e.fuente}</span>
+                    <span>{JSON.stringify(e.dato).slice(0, 110)}</span>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+          {caso.salidas.auditor && (
+            <details>
+              <summary>expediente · {caso.salidas.auditor.afirmaciones.length}</summary>
+              <ol className={s.log}>
+                {caso.salidas.auditor.afirmaciones.map((a, i) => (
+                  <li key={i}>
+                    <span className={s.actor}>{a.evidencia.join(" ")}</span>
+                    <span>{a.texto}</span>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          )}
+        </div>
       )}
     </div>
   );
 }
 
-function Chequeos({ r }: { r: ResultadoPrueba }) {
-  return (
-    <ul className={s.chequeos}>
-      {r.chequeos.map((c, i) => (
-        <li key={i} className={c.ok ? s.verde : s.rojo}>
-          <span>{c.ok ? "✓" : "✗"}</span> {c.texto}
-          {c.valor && <em>{c.valor}</em>}
-        </li>
-      ))}
-      <li className={s.tiempo}>{r.ms} ms en el servidor</li>
-    </ul>
-  );
-}
-
 function Matriz({ r }: { r: ResultadoPrueba }) {
   const m = r.matriz!;
-  const visibles = useRevelar(Math.ceil(m.celdas.length / 25));
+  const filas = Math.ceil(m.celdas.length / 50);
+  const visibles = useRevelar(filas);
+  const terminado = visibles >= filas;
   return (
     <div className={s.matriz}>
       <div className={s.grilla} aria-label={`${m.combinaciones} ataques`}>
-        {m.celdas.slice(0, visibles * 25).map((d, i) => (
-          <i key={i} className={claseAccion(d)} />
+        {m.celdas.slice(0, visibles * 50).map((d, i) => (
+          <i key={i} className={color(d)} />
         ))}
       </div>
       <p className={s.leyenda}>
         {Object.entries(m.por_decision).map(([d, n]) => (
-          <span key={d}>
-            <i className={claseAccion(d)} /> {d} {n}
+          <span key={d} className={color(d)}>
+            <i /> {d.toLowerCase()} {n}
           </span>
         ))}
       </p>
-      <ul className={s.chequeos}>
-        {m.invariantes.map((v) => (
-          <li key={v.id} className={v.violaciones === 0 ? s.verde : s.rojo}>
-            <span>{v.violaciones === 0 ? "✓" : "✗"}</span> {v.id} · {v.texto}
-            <em>{v.violaciones} violaciones</em>
-          </li>
-        ))}
-        <li className={s.tiempo}>
-          {r.ms} ms en el servidor · agentes {r.agentes}
-        </li>
-      </ul>
+      {terminado && (
+        <ul className={s.chequeos}>
+          {m.invariantes.map((v, i) => (
+            <li key={v.id} className={v.violaciones === 0 ? "" : s.malo} style={{ animationDelay: `${i * 70}ms` }}>
+              {v.violaciones === 0 ? "✓" : "✗"} {v.texto}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

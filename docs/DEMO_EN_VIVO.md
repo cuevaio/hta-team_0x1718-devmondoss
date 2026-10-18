@@ -13,7 +13,7 @@ Son **tres pantallas en el proyector, en este orden**. Conviene abrirlas antes e
 | # | Pantalla | URL | Tiempo |
 |---|---|---|---|
 | 1 | **Slides** (portada, problema, solución) | `npm run pitch` → http://localhost:4000 | ~1:30 |
-| 2 | **Backend en vivo**: la suite corre por el pipeline real y se ve qué hizo cada agente | `https://web-production-be4c9.up.railway.app/demo?token=TOKEN` | ~2:00 |
+| 2 | **Backend en vivo**: la suite corre por el pipeline real y se ve qué hizo cada agente | En la Mac: `http://localhost:3200/demo?token=TOKEN` (en Railway, el mismo `/demo`) | ~2:00 |
 | 3 | **Juego + monitor**: el público ataca | QR de la portada (`/play`) y `/monitor?token=TOKEN` | ~3:00 |
 | 4 | **Slides**: la oportunidad (última diapositiva) | pestaña 1 | ~0:30 |
 
@@ -23,10 +23,10 @@ El token es el `DEMO_TOKEN` del servidor y se borra de la barra de direcciones a
 
 Un solo botón: **▶ correr suite**. Son 11 pruebas (`lib/demo/suite.ts`, las mismas de `tests/scenarios`) contra el pipeline del servidor, con los agentes que tenga configurados. Cada prueba muestra:
 
-- las **etapas** que actuaron: Reglas → Memoria → Red → Coordinador → Detective → Guardián → Policy → Auditor. Las que no hicieron falta quedan apagadas;
-- el **log** del caso, con el tiempo de cada paso;
-- la **evidencia** que calcularon las tools y el **expediente** del Auditor, con cada afirmación citando su evidencia (se despliegan);
-- los **chequeos** que verifica, en verde o rojo.
+- el **flujo**: Reglas → Pausa → Memoria → Red → Coordinador → Detective → Guardián → Policy → Auditor. Se encienden las etapas que actuaron, cada una con su dato en dos palabras («score 7», «riesgo alto», «manipulado»), y en rojo si fallaron;
+- **el dinero** viaja por el flujo y se detiene donde lo retienen (en dorado) o llega al final («pagado»);
+- la **decisión** grande, arriba a la derecha, y los **chequeos** como píldoras verdes;
+- plegados: la traza, la evidencia de las tools y el expediente del Auditor con sus citas.
 
 | # | Prueba | Qué decir |
 |---|---|---|
