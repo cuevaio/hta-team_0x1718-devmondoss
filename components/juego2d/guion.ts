@@ -46,6 +46,7 @@ import {
   titulo,
   type EstadoBatalla,
   type EstadoBodega,
+  type TablaRecords,
 } from "./escenas";
 import { SalidaDelJugador, type Motor, type Opcion } from "./motor";
 import { TILE, posicionObjetivo, type ConfigMundo, type Npc } from "./mundo";
@@ -118,14 +119,27 @@ function salaDelEnlace(): string | null {
   }
 }
 
+/** Llena las tablas HI-SCORE del título con los récords guardados (sin hacer esperar). */
+function cargarRecords(destino: TablaRecords[]) {
+  void resumenArcade()
+    .then((r) => {
+      destino.length = 0;
+      destino.push({ titulo: "GENERAL", filas: r.general });
+      for (const modo of MODOS_ARCADE) destino.push({ titulo: ARCADES[modo].nombre, filas: r.ranking[modo] ?? [] });
+    })
+    .catch(() => undefined);
+}
+
 export async function jugar(m: Motor) {
   let sesion: Sesion | null = null;
+  const records: TablaRecords[] = [];
   let salaDirecta = salaDelEnlace();
   // Quien llega por el QR de una sala va al grano: sin video.
   if (!introVista() && !salaDirecta) await videoIntro(m);
   for (;;) {
     m.barraSuperior = null;
-    m.escena = titulo(m.t);
+    cargarRecords(records);
+    m.escena = titulo(m.t, records);
     m.musica("titulo");
     m.descubrirYa();
     await m.fundirA(false);

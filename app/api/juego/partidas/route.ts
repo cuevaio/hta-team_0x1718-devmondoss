@@ -8,7 +8,8 @@ import { exigirToken } from '@/lib/seguridad/token';
  *
  * POST   registra una partida al terminar. `201` | `400` | `409` (caso ya usado).
  * GET    lista las partidas (anónimas: solo alias).
- * DELETE borra todas. Es del operador: exige token si hay `DEMO_TOKEN`.
+ * DELETE vacía este servidor (operador: exige token si hay `DEMO_TOKEN`). Lo
+ *        guardado en Supabase se conserva salvo `?nube=BORRAR-RECORDS`.
  *
  * `POST /api/demo/reset` NO borra las partidas: se hace antes de presentar y
  * se llevaría los datos de validación del evento.
@@ -35,6 +36,8 @@ export async function DELETE(req: Request) {
   await partidas.listo;
   const denegado = exigirToken(req);
   if (denegado) return denegado;
-  partidas.limpiar();
-  return NextResponse.json({ ok: true, borradas: true });
+  // Los récords en Supabase se conservan; borrarlos exige pedirlo a propósito.
+  const nube = new URL(req.url).searchParams.get('nube') === 'BORRAR-RECORDS';
+  partidas.limpiar({ nube });
+  return NextResponse.json({ ok: true, borradas: true, nube });
 }

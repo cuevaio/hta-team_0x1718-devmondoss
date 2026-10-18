@@ -9,7 +9,8 @@ import { exigirToken } from '@/lib/seguridad/token';
  * POST   registra una jugada y devuelve su posición en el ranking. `201` | `400`.
  * GET    resumen: jugadores, países, ranking, en qué estafas cae la gente y
  *        la encuesta. `?crudo=1` devuelve además todas las jugadas (anónimas).
- * DELETE borra todas. Es del operador: exige token si hay `DEMO_TOKEN`.
+ * DELETE vacía este servidor (operador: exige token si hay `DEMO_TOKEN`). Lo
+ *        guardado en Supabase se conserva salvo `?nube=BORRAR-RECORDS`.
  *
  * Como las partidas, no se borra con `POST /api/demo/reset`.
  */
@@ -36,6 +37,8 @@ export async function DELETE(req: Request) {
   await arcade.listo;
   const denegado = exigirToken(req);
   if (denegado) return denegado;
-  arcade.limpiar();
-  return NextResponse.json({ ok: true, borradas: true });
+  // Los récords en Supabase se conservan; borrarlos exige pedirlo a propósito.
+  const nube = new URL(req.url).searchParams.get('nube') === 'BORRAR-RECORDS';
+  arcade.limpiar({ nube });
+  return NextResponse.json({ ok: true, borradas: true, nube });
 }

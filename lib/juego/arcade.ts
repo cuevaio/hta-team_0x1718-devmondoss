@@ -198,10 +198,15 @@ export class RegistroArcade {
     return this.jugadas.map((j) => structuredClone(j));
   }
 
-  limpiar(): void {
+  /**
+   * Vacía este servidor. Los récords en Supabase NO se tocan salvo `nube: true`:
+   * como en un arcade, el puntaje queda para siempre (y vuelve en la próxima
+   * sincronización).
+   */
+  limpiar(o: { nube?: boolean } = {}): void {
     this.jugadas = [];
     this.guardar();
-    void borrarFilas('jugadas_arcade').catch((e: Error) => console.error(`Arcade: no se borró en Supabase. ${e.message}`));
+    if (o.nube) void borrarFilas('jugadas_arcade').catch((e: Error) => console.error(`Arcade: no se borró en Supabase. ${e.message}`));
   }
 
   get cantidad(): number {
