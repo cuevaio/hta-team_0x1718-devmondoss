@@ -20,7 +20,10 @@ export type ResultadoSala = { puntaje: number; posicion: number; jugadores: numb
 
 const SONDEO_MS = 600;
 
-const NOMBRE_JUEGO = { real_o_estafa: "¿REAL O ESTAFA?", pausa_o_pasa: "¿PAUSA O PASA?" } as const;
+const NOMBRE_JUEGO: Record<VistaSala["juego"], string> = { real_o_estafa: "¿REAL O ESTAFA?", pausa_o_pasa: "¿PAUSA O PASA?", banda: "LA BANDA" };
+
+/** Esta pantalla es de cartas; LA BANDA tiene la suya (`salaBanda.ts`). */
+const cartasDe = (j: VistaSala["juego"]) => (j === "banda" ? [] : CARTAS[j]);
 
 export function pantallaSala(
   m: Motor,
@@ -75,7 +78,7 @@ export function pantallaSala(
       }
       // Guardar la respuesta propia de esta ronda para los datos.
       if (v.carta && v.verdad !== null && ultima && !respuestas.some((r) => r.carta === v.carta)) {
-        const verdad = CARTAS[v.juego].find((c) => c.id === v.carta);
+        const verdad = cartasDe(v.juego).find((c) => c.id === v.carta);
         respuestas.push({ carta: v.carta, categoria: verdad?.categoria ?? "real", estafa: v.verdad, dijo_estafa: ultima.dijo_estafa, ms: ultima.ms });
       }
     }

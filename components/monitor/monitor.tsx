@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Caso, DecisionAccion, ReglaPolicy } from "@/lib/contracts";
+import type { JuegoVivo, VistaBanda } from "@/lib/juego/salas";
 import { api, post } from "@/components/juego/api";
 import { SENALES, TACTICAS, explicar, retiene, soles } from "@/components/juego/datos";
 import { PAISES } from "@/components/juego2d/paises";
@@ -357,17 +358,63 @@ function Qr({ texto, tam }: { texto: string; tam: number }) {
 
 type SalaVivo = {
   codigo: string;
-  juego: "real_o_estafa" | "pausa_o_pasa";
+  juego: JuegoVivo;
   host: string;
   fase: string;
   ronda: number;
   rondas: number;
+  restante_ms: number | null;
   carta: string | null;
   verdad: boolean | null;
   reparto: { estafa: number; real: number; sin_responder: number } | null;
   respondieron: number;
   jugadores: Array<{ alias: string; pais: string; puntaje: number }>;
+  banda: VistaBanda | null;
 };
+
+const NOMBRE_SALA: Record<JuegoVivo, string> = {
+  real_o_estafa: "¿Real o estafa?",
+  pausa_o_pasa: "¿Pausa o pasa?",
+  banda: "LA BANDA (atacan de verdad)",
+};
+
+const TACTICA: Record<string, string> = {
+  falso_banco: "Falso banco",
+  link_falso: "Link falso",
+  falso_familiar: "Falso familiar",
+  app_falsa: "App falsa",
+  duplicado_chip: "Duplicado de chip",
+};
+
+const VICTIMA: Record<string, string> = { rosa: "Rosa", jorge: "Jorge", lucia: "Lucía" };
+
+/**
+ * Los golpes de una sala de LA BANDA: son casos reales del pipeline, así que
+ * esto es lo que demuestra el producto en el proyector.
+ */
+function GolpesEnVivo({ banda }: { banda: VistaBanda }) {
+  return (
+    <>
+      <p className={s.salaReparto}>
+        {banda.golpes} golpe(s) · <strong>{banda.frenados} frenados</strong> ·{" "}
+        {banda.huecos === 0 ? "ningún hueco" : `${banda.huecos} hueco(s)`}
+      </p>
+      {banda.ultimos.length > 0 && (
+        <ul className={s.lista}>
+          {banda.ultimos.slice(0, 5).map((g) => (
+            <li key={`${g.caso}-${g.orden}`}>
+              <span>{g.frenado ? "🛑" : "⚠️"}</span>
+              <span>
+                {g.alias} · {TACTICA[g.tactica] ?? g.tactica} → {VICTIMA[g.victima] ?? g.victima} · {soles(g.monto)} ·{" "}
+                {g.frenado ? `${g.accion} (${g.regla})` : "PASÓ"} · IA {g.llamadas_ia}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
 
 const CARTAS_PE = mazo(PAISES.pe);
 
@@ -383,6 +430,7 @@ function textoCarta(sala: SalaVivo): string {
 
 const FASE_SALA: Record<string, string> = {
   espera: "En espera",
+  ataque: "Atacando",
   cuenta: "Empieza…",
   responder: "Respondiendo",
   revelar: "Respuesta",
@@ -412,16 +460,20 @@ function PanelSalas({ salas }: { salas: SalaVivo[] }) {
               </div>
             )}
             <p className={s.salaCabecera}>
-              <strong>{sala.codigo}</strong> · {sala.juego === "pausa_o_pasa" ? "¿Pausa o pasa?" : "¿Real o estafa?"} · {FASE_SALA[sala.fase] ?? sala.fase}
+              <strong>{sala.codigo}</strong> · {NOMBRE_SALA[sala.juego] ?? sala.juego} · {FASE_SALA[sala.fase] ?? sala.fase}
               {sala.fase === "responder" || sala.fase === "revelar" ? ` · ronda ${sala.ronda + 1}/${sala.rondas}` : ""} · {sala.jugadores.length} jugando
             </p>
-            {sala.carta && <p className={s.salaCarta}>{textoCarta(sala)}</p>}
+            {sala.banda ? (
+              <GolpesEnVivo banda={sala.banda} />
+            ) : (
+              sala.carta && <p className={s.salaCarta}>{textoCarta(sala)}</p>
+            )}
             {sala.fase === "responder" && (
               <p className={s.nota}>
                 Respondieron {sala.respondieron}/{sala.jugadores.length}
               </p>
             )}
-            {r && (
+            {r && !sala.banda && (
               <p className={s.salaReparto}>
                 {sala.verdad ? "✅ Era " + (sala.juego === "pausa_o_pasa" ? "para pausar" : "estafa") : "✅ Era " + (sala.juego === "pausa_o_pasa" ? "para dejar pasar" : "real")} · {a}{" "}
                 {Math.round((r.estafa / tot) * 100)}% · {b} {Math.round((r.real / tot) * 100)}% · sin responder {r.sin_responder}

@@ -210,3 +210,43 @@ La tabla dice «máximo 3 por partida» (frustración, pausa, activaría), pero 
 fila de **Confianza** (CGAP) pide «1 pregunta por ronda» (¿seguirías usando tu
 banca digital?), lo que daría 4 o 5. Implementé las 3 de la tabla. Si la de
 confianza entra, es un campo más en `lib/juego/partidas.ts`.
+
+---
+
+## EN VIVO · LA BANDA — hecho el 18/10/2026
+
+El modo multijugador en el que la sala ataca la capa de verdad: cada golpe pasa
+por `evaluarTransferencia` y sale en el monitor. Documentado en
+`docs/DEMO_JUEGO.md §17` y `docs/work/API.md §13`.
+
+**Mío (nuevo):** `lib/juego/golpes.ts` (catálogo del servidor), el método
+`Salas.golpe()`, `components/juego2d/salaBanda.ts` (la pantalla),
+`tests/juego/salas-banda.test.ts` y `tests/api/salas-banda.test.ts`.
+
+**Toqué archivos de Tony** (poquito, y avisado):
+
+| Archivo | Qué le hice |
+|---|---|
+| `lib/juego/salas.ts` | juego `banda`, fase `ataque`, acción `golpe`, puntaje y `VistaSala.banda`. Las salas de cartas no cambian |
+| `components/juego2d/sala.ts` | solo tipos: la pantalla de cartas ignora `banda` |
+| `components/juego2d/guion.ts` | tercera tarjeta en «¿Qué juegan?» y `salaDeLaBanda()` |
+| `components/monitor/monitor.tsx` | el panel de salas proyecta los golpes reales |
+| `components/juego/datos.ts` | el catálogo de golpes ahora viene de `lib/juego/golpes.ts` (antes estaba duplicado en el cliente) |
+
+**Dos cosas que dejé decididas y se pueden discutir:**
+
+1. **El reloj de las salas** se envuelve (`() => Date.now()`), para que un test
+   que finge el reloj del sistema también mueva el de las salas.
+2. **El feed se ordena por `orden`** (un contador por sala), no por `t`: dos
+   golpes del mismo milisegundo empataban y el proyector los mostraba en orden
+   aleatorio. Es el mismo problema de resolución que el de `partidas.ts`.
+
+### Pendientes de este modo
+
+- Los puntos de una sala de LA BANDA **no entran al ranking del arcade**
+  (`/api/juego/arcade` no tiene un modo `banda`); sí quedan los intentos en
+  `/api/juego/partidas` como `rol: 'atacante'`. Si quieres que sume al ranking
+  general del evento, es un modo más en tu `lib/juego/arcade.ts`.
+- Un jugador que cierra el navegador antes del final no registra su partida de
+  atacante (los casos sí están en el monitor desde el primer golpe).
+- Las salas no se borran al terminar: siguen en RAM hasta las 2 h.

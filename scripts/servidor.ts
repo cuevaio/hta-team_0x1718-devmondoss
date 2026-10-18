@@ -262,17 +262,20 @@ async function main() {
   tunelProceso = tunel.proceso;
   const modos = salud.modos as Record<string, boolean>;
   const memoria = salud.memoria as { veredictos: number };
-  const conToken = (u: string) => (token ? `${u}/?token=${encodeURIComponent(token)}` : u);
+  // La consola del operador es /monitor: la raíz redirige a /play y, en el
+  // camino, Next descarta el ?token= (307 sin query).
+  const monitorDe = (u: string) => `${u}/monitor${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
   console.log('\n────────────────────────────────────────────────────────────');
   console.log(` ✓ Servidor listo · agentes: ${String(salud.agentes)}`);
   if (estadoOllama) console.log(`   ${estadoOllama}`);
   console.log(`   modos: ${JSON.stringify(modos)}`);
   console.log(o.persistir ? `   Memoria recuperada: ${memoria.veredictos} veredicto(s) (no se reinició)` : '   demo reiniciado: casos, Memoria y movimientos en cero');
-  console.log(`\n   Consola del operador: ${conToken(local)}`);
+  console.log(`\n   Consola del operador: ${monitorDe(local)}`);
+  console.log(`   Juego (celulares):    ${local}/play`);
   if (o.red) {
     console.log('   En la red (celulares) — usa la IP de tu Wi-Fi; las demás suelen ser adaptadores virtuales:');
-    for (const ip of ipsLocales()) console.log(`     http://${ip}:${o.puerto}`);
+    for (const ip of ipsLocales()) console.log(`     http://${ip}:${o.puerto}/play`);
   }
   if (token) {
     console.log(`\n   Token del operador${tokenGenerado ? ' (generado)' : ''}: ${token}`);
@@ -282,7 +285,7 @@ async function main() {
     if (tunel.url) {
       console.log(`\n   URL pública: ${tunel.url}`);
       console.log(`     Juego:   ${tunel.url}/play     (el QR del monitor ya apunta aquí)`);
-      console.log(`     Monitor: ${tunel.url}/monitor`);
+      console.log(`     Monitor: ${monitorDe(tunel.url)}`);
       console.log('   La URL cambia en cada arranque; mientras esté abierta, sirve con datos móviles.');
     } else {
       console.log('\n   No se pudo abrir el túnel. Instala cloudflared o ábrelo a mano:');

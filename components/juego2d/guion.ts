@@ -10,6 +10,7 @@ import {
   resumenArcade,
   transferir,
   type FilaRanking,
+  type JuegoVivo,
   type JugadaArcade,
 } from "@/components/juego/api";
 import {
@@ -71,6 +72,7 @@ import { comoSeJuega, icono, teLlevas, type Paso } from "./tutorial";
 import { frase } from "./jerga";
 import { menuHub, menuPaises } from "./hub";
 import { pantallaSala, type ResultadoSala } from "./sala";
+import { pantallaSalaBanda, type ResultadoBanda } from "./salaBanda";
 import type { Direccion } from "./sprites";
 
 /**
@@ -706,9 +708,9 @@ async function modoEnVivo(m: Motor, s: Sesion) {
       pasos: [
         { icono: icono.combo, texto: "Uno crea la sala y dicta el código." },
         { icono: icono.dedo, texto: "Los demás entran con ese código." },
-        { icono: icono.reloj, texto: "Misma carta para todos: ¡el más rápido gana!" },
+        { icono: icono.reloj, texto: "Cartas rápidas o atacar la capa." },
       ],
-      meta: "8 rondas · 10 s cada una",
+      meta: "8 rondas · o 2:30 atacando",
     });
     s.vistos.add("envivo");
     if (!jugar) return;
@@ -728,14 +730,15 @@ async function modoEnVivo(m: Motor, s: Sesion) {
   if (i === 0) {
     const j = await m.menu(
       [
+        { texto: "LA BANDA", sub: "Atacan de verdad", color: PAL.rojoOscuro, marca: { texto: "NUEVO", color: PAL.rojo } },
         { texto: "¿REAL O ESTAFA?", sub: "Mensajes y llamadas", color: PAL.rojo },
         { texto: "¿PAUSA O PASA?", sub: "Eres el sistema", color: PAL.ambarOscuro },
         { texto: "VOLVER", sub: "Atrás", color: PAL.gris },
       ],
       { estilo: "tarjetas", titulo: "¿Qué juegan?", cancelable: true },
     );
-    if (j < 0 || j > 1) return m.fundirA(true, 10);
-    const juego = j === 0 ? "real_o_estafa" : "pausa_o_pasa";
+    if (j < 0 || j > 2) return m.fundirA(true, 10);
+    const juego = (["banda", "real_o_estafa", "pausa_o_pasa"] as const)[j];
     const { codigo, token } = await crearSala({ alias: s.alias, pais: s.pais.id, juego });
     await m.fundirA(true, 10);
     await jugarSala(m, s, codigo, token, juego);
@@ -775,9 +778,10 @@ async function unirseASala(m: Motor, s: Sesion, primerCodigo: string) {
   }
 }
 
-async function jugarSala(m: Motor, s: Sesion, codigo: string, token: string | null, juego: "real_o_estafa" | "pausa_o_pasa") {
+async function jugarSala(m: Motor, s: Sesion, codigo: string, token: string | null, juego: JuegoVivo) {
   m.barraSuperior = null;
   m.descubrirYa();
+  if (juego === "banda") return salaDeLaBanda(m, s, codigo, token);
   const sala = pantallaSala(m, {
     codigo,
     token,
@@ -801,6 +805,53 @@ async function jugarSala(m: Motor, s: Sesion, codigo: string, token: string | nu
       const c = sumarPartida(s.prog, null, puntos, logros);
       guardarProgreso(s.alias, s.prog);
       m.aviso(`+${puntos + c.bonus} PUNTOS`, `Puesto #${r.posicion} de ${r.jugadores}`, PAL.ambar);
+      anunciarCosecha(m, c);
+    },
+  });
+  await m.fundirA(false, 10);
+  await m.atar(sala);
+  await m.fundirA(true, 10);
+}
+
+/**
+ * EN VIVO · LA BANDA: todos atacan a la vez contra la capa real. Los intentos
+ * son casos de verdad, así que se registran como partidas de atacante: son el
+ * dato que el equipo de seguridad mira después (y lo que proyecta el monitor).
+ */
+async function salaDeLaBanda(m: Motor, s: Sesion, codigo: string, token: string | null) {
+  if (!s.vistos.has("banda_vivo")) {
+    const jugar = await comoSeJuega(m, {
+      titulo: "LA BANDA",
+      color: PAL.rojoOscuro,
+      pasos: [
+        { icono: icono.banda, texto: "Todos atacan a la vez." },
+        { icono: icono.senales, texto: "Arma tu golpe y lánzalo." },
+        { icono: icono.combo, texto: "Pasar la capa: +1000." },
+      ],
+      meta: `${MAX_INTENTOS * 2} golpes · 2:30 · datos ficticios`,
+    });
+    s.vistos.add("banda_vivo");
+    if (!jugar) return;
+  }
+  m.barraSuperior = null;
+  m.descubrirYa();
+  const sala = pantallaSalaBanda(m, {
+    codigo,
+    token,
+    alias: s.alias,
+    pais: s.pais,
+    alTerminar: (r: ResultadoBanda) => {
+      if (r.intentos.length > 0) {
+        void registrarPartida({ rol: "atacante", alias: s.alias, intentos: r.intentos }).catch(() => undefined);
+      }
+      // Igual que la historia de LA BANDA: cada hueco vale 400.
+      const puntos = 200 + r.huecos * 400 + (r.posicion === 1 ? 600 : r.posicion === 2 ? 400 : r.posicion === 3 ? 250 : 0);
+      const logros: IdLogro[] = ["en_vivo"];
+      if (r.huecos > 0) logros.push("hacker_etico");
+      if (r.posicion === 1 && r.jugadores > 1) logros.push("campeon");
+      const c = sumarPartida(s.prog, null, puntos, logros);
+      guardarProgreso(s.alias, s.prog);
+      m.aviso(`+${puntos + c.bonus} PUNTOS`, r.huecos > 0 ? `${r.huecos} hueco(s) · #${r.posicion}` : `Sin huecos · #${r.posicion}`, PAL.ambar);
       anunciarCosecha(m, c);
     },
   });

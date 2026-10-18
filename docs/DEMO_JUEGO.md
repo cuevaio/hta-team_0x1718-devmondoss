@@ -538,3 +538,60 @@ Piden confirmación:
 - *Cómo se juega* junta las líneas para que entren 3.
 
 Prueba automática (`navegacion.mjs`, fuera del repo): 10 recorridos de volver, pausa y confirmaciones, sin errores en ambos tamaños.
+
+## 17. EN VIVO · LA BANDA (el modo de la jam)
+
+El modo multijugador en el que **la sala entera ataca la capa a la vez**. Es lo
+que se demuestra con el QR en un evento: cada intento es un caso real del
+pipeline, con su decisión y su gasto de IA, y el monitor lo proyecta mientras
+pasa.
+
+**El recorrido del evento**
+
+1. El operador abre la consola (`/monitor?token=…`) y la proyecta.
+2. Alguien crea la sala desde `/play` → EN VIVO → CREAR SALA → **LA BANDA**.
+3. El monitor muestra el **QR de la sala** mientras está en espera; la gente lo
+   escanea y entra directo (`/play?sala=XXXX`), pone su apodo y su país.
+4. El anfitrión toca ¡EMPEZAR! y arranca una fase de **2:30**.
+5. Al final: podio, cuántos huecos encontró la sala y con qué tácticas.
+
+**Cómo se juega**
+
+Cinco perillas (a quién, cómo, qué cuenta, cuánto, cuándo) y el botón ¡LANZAR!
+El golpe va al servidor, que lo evalúa con los agentes de verdad y devuelve:
+
+- las señales que vieron las **reglas** (sin IA);
+- si **frenó** o **pasó**, y la regla que lo decidió, en lenguaje humano;
+- cuánta **IA** costó (lo más contundente es el `0 llamadas` de la Memoria);
+- los puntos.
+
+| Resultado | Puntos |
+|---|---|
+| Frenado | 100 |
+| Hueco | 1000 |
+| Primer hueco de la sala con esa táctica | +500 |
+
+Diez golpes por persona, 2 s entre golpe y golpe, y **el mismo golpe no se
+repite**: para volver a intentar hay que cambiar algo. Así nadie sube en el
+ranking moliendo un hueco ya conocido, y el límite protege al pipeline cuando
+los agentes corren con el modelo local.
+
+**Por qué funciona como demo**
+
+- Lo que la sala descubre es verdad: si alguien pasa con «falso familiar, monto
+  chico», ese hueco existe de verdad y queda a la vista de todos.
+- El operador puede **confirmar la mula** desde el monitor en pleno juego:
+  desde ese momento, todos los golpes a esa cuenta caen al instante por P1, con
+  0 llamadas de IA. Es la demostración más clara de la Memoria.
+- Con `--juego`, el dinero de los golpes permitidos se mueve de verdad en los
+  datos: la cuenta de paso acumula remitentes y los golpes siguientes a esa
+  cuenta tienen más señales. La capa aprende durante la jam.
+
+**Lo que ve el proyector** (panel «Salas en vivo» del monitor): la fase, cuánta
+gente juega, el contador `golpes · frenados · huecos`, los últimos intentos con
+alias, táctica, víctima, monto, decisión, regla e IA, y el ranking.
+
+**Medido** (laptop Windows, agentes simulados): 6 jugadores lanzando a la vez,
+24 golpes, 0 errores, respuestas de 40–55 ms. Con el modelo local el costo es
+bajo porque solo un 13% de los golpes necesita al modelo: el resto lo resuelve
+la Policy determinista.

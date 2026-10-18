@@ -1,6 +1,7 @@
 import type { Caso } from "@/lib/contracts";
 import { tokenOperador } from "@/components/demo-dashboard";
-import type { VistaSala } from "@/lib/juego/salas";
+import type { Golpe } from "@/lib/juego/golpes";
+import type { JuegoVivo, ResultadoGolpe, VistaSala } from "@/lib/juego/salas";
 import type { ContextoJugada } from "./datos";
 
 /**
@@ -107,14 +108,19 @@ export function resumenArcade() {
   return api<ResumenArcade>("/api/juego/arcade");
 }
 
-export type { VistaSala };
+export type { JuegoVivo, ResultadoGolpe, VistaSala };
 
-export function crearSala(body: { alias: string; pais: string; juego: "real_o_estafa" | "pausa_o_pasa" }) {
+export function crearSala(body: { alias: string; pais: string; juego: JuegoVivo }) {
   return post<{ codigo: string; token: string }>("/api/juego/salas", body);
 }
 
 export function accionSala(codigo: string, body: Record<string, unknown>) {
   return post<VistaSala>(`/api/juego/salas/${codigo}`, body);
+}
+
+/** LA BANDA: lanza un golpe. El servidor lo evalúa con el pipeline real. */
+export function golpearSala(codigo: string, alias: string, golpe: Golpe) {
+  return post<ResultadoGolpe>(`/api/juego/salas/${codigo}`, { accion: "golpe", alias, golpe });
 }
 
 export function verSala(codigo: string, alias?: string) {

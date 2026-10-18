@@ -612,3 +612,108 @@ La tabla de validación de DEMO_JUEGO §6, calculada a partir de las partidas:
 | `limites` | — | los 4 límites que el doc pide decir en voz alta |
 
 Siempre va el `n`. Sin partidas, los cocientes son `null`, no 0.
+
+---
+
+## 13. Salas EN VIVO (`/api/juego/salas`)
+
+Multijugador del demo. Una sala tiene un código de 4 letras, vive en la RAM del
+proceso y se limpia sola a las 2 h. Hay dos clases de sala:
+
+| `juego` | Qué pasa | Quién califica |
+|---|---|---|
+| `real_o_estafa`, `pausa_o_pasa` | 8 rondas de cartas, todos responden la misma | el servidor, por acierto y rapidez |
+| `banda` | **una sola fase de ataque**: todos atacan la capa a la vez | el **pipeline real** (cada golpe es un `Caso`) |
+
+```
+POST /api/juego/salas              { alias, pais, juego } → 201 { codigo, token }
+GET  /api/juego/salas                                     → { salas: VistaSala[] }   (monitor)
+GET  /api/juego/salas/[codigo]?alias=…                    → VistaSala
+POST /api/juego/salas/[codigo]     { accion: … }          → VistaSala | ResultadoGolpe
+```
+
+El `token` es de quien crea la sala (empezar y reiniciar). No se muestra ni se
+guarda: no es el `DEMO_TOKEN` del operador.
+
+### `accion: 'golpe'` — LA BANDA
+
+```jsonc
+{
+  "accion": "golpe",
+  "alias": "ANA",
+  "golpe": {
+    "victima": "rosa",            // rosa | jorge | lucia
+    "tactica": "falso_banco",     // falso_banco | link_falso | falso_familiar | app_falsa | duplicado_chip
+    "destino": "M-01",            // M-01 | M-02 | M-03
+    "monto": "todo",              // chico (300) | medio (1200) | todo (4800)
+    "madrugada": false
+  }
+}
+```
+
+**El cliente manda ids, no una transferencia.** El servidor arma la operación
+con el catálogo de `lib/juego/golpes.ts` (cuentas del seed, señales de cada
+táctica) y la pasa por `evaluarTransferencia`, igual que `POST /api/transfers`.
+Un golpe con una cuenta o un monto inventados es `400` y no llega al pipeline.
+
+Respuesta `200`:
+
+```jsonc
+{
+  "vista": { /* VistaSala, ya con el golpe contado */ },
+  "golpe": {
+    "caso": "CASO-0007", "alias": "ANA", "victima": "rosa", "tactica": "falso_banco",
+    "destino": "M-01", "monto": 4800, "madrugada": false,
+    "frenado": true, "accion": "ESCALAR", "regla": "P5", "llamadas_ia": 1,
+    "puntos": 100, "descubrimiento": false, "t": 1792325434869, "orden": 7
+  },
+  "caso": { /* el Caso completo: señales, agentes, decisión */ }
+}
+```
+
+| Código | Cuándo |
+|---|---|
+| `400` | el golpe no está en el catálogo |
+| `403` | el alias no se unió a la sala |
+| `404` | no existe la sala |
+| `409` | la sala no es de LA BANDA, está fuera de la fase de ataque, se acabaron los 10 golpes, o es un golpe repetido |
+| `429` | menos de 2 s desde el golpe anterior **de ese jugador** |
+| `503` | el pipeline no pudo evaluar (el golpe no se cobra: se puede reintentar) |
+
+### Puntaje de LA BANDA
+
+| Resultado | Puntos | Por qué |
+|---|---|---|
+| Frenado | 100 | probar la capa también enseña |
+| Hueco (el dinero habría salido) | 1000 | encontrar huecos **es** el objetivo |
+| Primer hueco de la sala con esa táctica | +500 | el descubrimiento vale más que repetirlo |
+
+El mismo golpe no se repite (hay que cambiar al menos una perilla), así que no
+se puede moler un hueco conocido para subir en el ranking.
+
+### `VistaSala.banda` (lo que proyecta el monitor)
+
+```jsonc
+{
+  "golpes": 24, "frenados": 22, "huecos": 2,
+  "ultimos": [ /* los 8 últimos GolpeRegistrado de la sala, el más nuevo primero */ ],
+  "por_tactica": [ { "tactica": "falso_familiar", "intentos": 5, "huecos": 2 } ]
+}
+```
+
+`mio.banda` agrega lo del jugador que consulta: `{ golpes, huecos, restantes, mios }`.
+
+El orden del feed lo da `orden` (un contador por sala), no `t`: dos golpes del
+mismo milisegundo quedarían empatados y el proyector mostraría un orden al azar.
+
+### Fases y tiempos
+
+| Fase | Dura | Nota |
+|---|---|---|
+| `espera` | hasta que el anfitrión inicia | se muestra el QR (`/play?sala=XXXX`) |
+| `cuenta` | 3 s | |
+| `ataque` | 150 s | solo en `banda` |
+| `responder` / `revelar` | 10 s / 4,5 s por ronda | solo en salas de cartas |
+| `fin` | — | podio; el anfitrión puede `reiniciar` |
+
+`reiniciar` borra golpes, puntajes y descubrimientos, y vuelve a `espera`.
