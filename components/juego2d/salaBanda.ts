@@ -6,7 +6,7 @@ import type { GolpeRegistrado } from "@/lib/juego/salas";
 import { frase } from "./jerga";
 import type { Boton, Motor } from "./motor";
 import { PAISES, type Pais, type PaisId } from "./paises";
-import { PAL, Pincel, W, envolver, facil, type Caja } from "./pincel";
+import { PAL, Pincel, W, dibujarBandera, envolver, facil, type Caja } from "./pincel";
 import { dibujarQR } from "./qr";
 
 /**
@@ -404,16 +404,7 @@ export function pantallaSalaBanda(
         const x = 8 + (i % 2) * 92;
         const y = 128 + Math.floor(i / 2) * 12;
         const band = PAISES[j.pais as PaisId]?.bandera;
-        if (band)
-          band.colores.forEach((col, k) =>
-            p.rect(
-              col,
-              x + (band.vertical ? Math.round((k * 9) / band.colores.length) : 0),
-              y + (band.vertical ? 0 : Math.round((k * 7) / band.colores.length)),
-              band.vertical ? 3 : 9,
-              band.vertical ? 7 : 3,
-            ),
-          );
+        if (band) dibujarBandera(p, band, x, y, 9, 7);
         p.texto(j.alias.toUpperCase().slice(0, 9), x + 12, y, j.alias.toLowerCase() === alias.toLowerCase() ? PAL.ambar : PAL.crema);
       });
       if (v.jugadores.length > filas * 2) p.centrado(`+${v.jugadores.length - filas * 2} más`, 128 + filas * 12, PAL.gris);

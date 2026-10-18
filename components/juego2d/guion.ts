@@ -402,7 +402,7 @@ async function menuHistorias(m: Motor, s: Sesion): Promise<RutaId | null> {
     ...HISTORIAS.map((r) => ({ texto: r.titulo, sub: r.sub, color: r.color, marca: s.resultados[r.id] })),
     { texto: "VOLVER", sub: "Menú", color: PAL.gris },
   ];
-  const i = await m.menu(opciones, { estilo: "tarjetas", titulo: "Ganar: +600 pts", cancelable: true });
+  const i = await m.menu(opciones, { estilo: "tarjetas", titulo: "Ganar: +600 XP", cancelable: true });
   await m.fundirA(true);
   return i >= 0 && i < HISTORIAS.length ? HISTORIAS[i].id : null;
 }
@@ -473,7 +473,10 @@ async function preguntaBonus(m: Motor, s: Sesion, orden: PreguntaEncuesta[]): Pr
 /** Lo que devuelve cada minijuego, ya traducido para el flujo común. */
 type Partida = {
   puntaje: number;
+  /** Jugó bien de verdad (no basta con sobrevivir): define «¡CRACK!» o «casi». */
   gano: boolean;
+  /** Estrellas aseguradas por precisión (p. ej. 5/5 sin errores da al menos 1). */
+  estrellasMin?: number;
   lineas: DatosResultado["lineas"];
   logros: IdLogro[];
   consejos: string[];
@@ -523,11 +526,15 @@ const ARCADES: Record<ModoArcade, DefArcade> = {
       const logros: IdLogro[] = [];
       if (r.caidas.length === 0 && r.total >= 10) logros.push("ojo_halcon");
       if (r.mejorCombo >= 10) logros.push("imparable");
+      // Las cartas en que se acabó el tiempo cuentan como fallos.
+      const vistas = r.total + r.lentos;
+      const perfecto = vistas >= 5 && r.aciertos === vistas;
       return {
         puntaje: r.puntaje,
-        gano: r.vidas > 0,
+        gano: r.vidas > 0 && vistas >= 5 && r.aciertos >= vistas * 0.7,
+        estrellasMin: perfecto ? 1 : 0,
         lineas: [
-          { texto: `Aciertos ${r.aciertos}/${r.total}` },
+          { texto: `Aciertos ${r.aciertos}/${vistas}` },
           { texto: `Mejor racha x${r.mejorCombo}`, color: PAL.ambar },
           { texto: `Caíste en ${r.respuestas.filter((x) => x.estafa && !x.dijo_estafa).length}`, color: PAL.rojo },
         ],
@@ -556,9 +563,12 @@ const ARCADES: Record<ModoArcade, DefArcade> = {
       if (r.aciertos >= 15) logros.push("cazamulas");
       if (r.errores === 0 && r.aciertos >= 5) logros.push("sin_inocentes");
       if (r.mejorCombo >= 10) logros.push("imparable");
+      // Atrapar 1 y dejar escapar 55 no es ganar, aunque queden vidas.
+      const bien = r.aciertos >= 5 && r.aciertos >= r.escapados;
       return {
         puntaje: r.puntaje,
-        gano: r.vidas > 0,
+        gano: r.vidas > 0 && bien,
+        estrellasMin: bien && r.errores === 0 ? 1 : 0,
         lineas: [
           { texto: `Mulas atrapadas ${r.aciertos}`, color: PAL.celeste },
           { texto: `Se escaparon ${r.escapados}`, color: r.escapados ? PAL.rojo : PAL.verde },
@@ -594,7 +604,8 @@ const ARCADES: Record<ModoArcade, DefArcade> = {
       if (r.mejorCombo >= 10) logros.push("imparable");
       return {
         puntaje: r.puntaje,
-        gano: r.vidas > 0,
+        gano: r.vidas > 0 && r.total >= 5 && r.aciertos >= r.total * 0.7,
+        estrellasMin: r.total >= 5 && r.aciertos === r.total ? 1 : 0,
         lineas: [
           { texto: `Aciertos ${r.aciertos}/${r.total}` },
           { texto: `Robos que pasaron ${r.robos}`, color: r.robos ? PAL.rojo : PAL.verde },
@@ -703,7 +714,7 @@ async function modoArcade(m: Motor, s: Sesion, def: DefArcade): Promise<void> {
     } catch {
       // sin conexión: el juego sigue
     }
-    const c = sumarPartida(s.prog, def.modo, puntaje, r.logros);
+    const c = sumarPartida(s.prog, def.modo, puntaje, r.logros, r.estrellasMin);
     guardarProgreso(s.claveProg, s.prog);
     const rg = rango(s.prog.total);
 
@@ -937,7 +948,7 @@ async function aprende(m: Motor, s: Sesion) {
 type VistaRanking = ModoArcade | "general";
 const VISTAS: VistaRanking[] = ["general", ...MODOS_ARCADE];
 const TITULO_VISTA: Record<VistaRanking, string> = {
-  general: "GENERAL (todo suma)",
+  general: "SUMA DE TUS MEJORES",
   real_o_estafa: "¿REAL O ESTAFA?",
   atrapa_la_mula: "ATRAPA LA MULA",
   pausa_o_pasa: "¿PAUSA O PASA?",
@@ -1174,7 +1185,16 @@ type ResultadoLlamada =
   | { tipo: "cayo"; rec: Recuento; b: EstadoBatalla }
   | { tipo: "motor"; caso: Caso; rec: Recuento; b: EstadoBatalla };
 
-function movimientosLlamada(pais: Pais): Array<[string, string]> {
+/** Ronda 1 y ronda 2: el mismo tipo de estafa (falso banco), pero con otro truco. */
+function movimientosLlamada(pais: Pais, ronda: "a" | "b"): Array<[string, string]> {
+  if (ronda === "b")
+    return [
+      ["NÚMERO OFICIAL", `Le habla ${pais.banco}, área de fraudes. Fíjese: le llamo del número que está detrás de su tarjeta.`],
+      ["SUPERVISOR", "Le paso con mi supervisor... Ya bloqueamos a los delincuentes, pero falta un paso."],
+      ["NO COMPARTA", "Le llegará un código. NO lo comparta con nadie: solo transfiera a la cuenta de resguardo."],
+      ["URGENCIA", "Ya intentan sacar su dinero. Tiene minutos para ponerlo a salvo."],
+      ["CULPA", "Si cuelga ahora, el banco no se hace responsable de lo que pierda."],
+    ];
   return [
     ["SALUDO OFICIAL", `Buenas tardes, ${pais.rosa.toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}. ${pais.llamadaGancho}`],
     ["DATOS FILTRADOS", "Ya validamos sus datos: su documento termina en 47."],
@@ -1193,9 +1213,15 @@ async function llamada(m: Motor, pais: Pais, ronda: "a" | "b", alias: string): P
   const entra = m.animar(40, (k) => {
     estado.cliente = k;
   });
-  await m.decir("Son las seis. La tienda está llena y tu proveedor espera su pago.");
-  await entra;
-  await m.decir(`Se registró un consumo de ${dinero(pais, 1299)} en tu tarjeta. Si no lo reconoces, te llamaremos.`, "SMS");
+  if (ronda === "a") {
+    await m.decir("Son las seis. La tienda está llena y tu proveedor espera su pago.");
+    await entra;
+    await m.decir(`Se registró un consumo de ${dinero(pais, 1299)} en tu tarjeta. Si no lo reconoces, te llamaremos.`, "SMS");
+  } else {
+    await m.decir("Otro día de mucho movimiento. Ya cerraste la caja de la mañana.");
+    await entra;
+    await m.decir("Tu clave dinámica fue solicitada desde otro equipo. Si no fuiste tú, espera nuestra llamada.", "SMS");
+  }
   estado.cliente = 0;
   estado.telefono = "llamada";
   m.musica(null);
@@ -1203,7 +1229,7 @@ async function llamada(m: Motor, pais: Pais, ronda: "a" | "b", alias: string): P
   m.vibrar([200, 100, 200, 100, 200]);
   m.sacudir(30);
   await m.decir("¡RIIING! ¡RIIING!");
-  await m.decir(`En la pantalla: «Seguridad ${pais.banco}».`);
+  await m.decir(ronda === "a" ? `En la pantalla: «Seguridad ${pais.banco}».` : "En la pantalla aparece el número oficial de tu banco. Ese número se puede falsificar.");
 
   await m.barras(true);
   const total = SEGUNDOS_LLAMADA * 60;
@@ -1212,9 +1238,10 @@ async function llamada(m: Motor, pais: Pais, ronda: "a" | "b", alias: string): P
   m.musica("llamada");
   await entradaCombate(m, b);
   await m.decir("¡El ESTAFADOR te está llamando!");
+  if (ronda === "a") await m.decir("Tu reloj solo corre mientras eliges qué hacer. Pero atender clientes o esperar al banco te quita segundos.");
 
   const rec: Recuento = { colgo: 0, esperoBanco: 0, bloqueo: false };
-  const movimientos = movimientosLlamada(pais);
+  const movimientos = movimientosLlamada(pais, ronda);
   for (let turno = 0; ; turno++) {
     const [nombre, frase] = movimientos[Math.min(turno, movimientos.length - 1)];
     await m.decir(`¡ESTAFADOR usó ${nombre}!`);
@@ -1329,7 +1356,7 @@ async function rutaLlamada(m: Motor, pais: Pais, alias: string): Promise<Marca> 
   const fr = await frustracion(m);
   await m.fundirA(true);
 
-  await tarjeta(m, "LA LLAMADA · RONDA 2/2", "LA CAPA", "Mismo día, misma\nllamada... ahora con\nnuestros agentes.", PAL.verde);
+  await tarjeta(m, "LA LLAMADA · RONDA 2/2", "LA CAPA", "Otro día, otro truco\ndel falso banco...\ncon nuestros agentes.", PAL.verde);
   await caminar(m, mundo(pais, false, "bodega", { x: 2, y: 5, dir: "arriba" }), "tu tienda", "Vuelve a tu TIENDA. Juega como quieras.");
   m.barraSuperior = { texto: "RONDA 2/2", color: PAL.verdeOscuro };
 
@@ -1536,13 +1563,24 @@ async function chatFamiliar(m: Motor, pais: Pais, ronda: "a" | "b", alias: strin
   m.audio.ring();
   await entradaCombate(m, b);
   await m.decir("Te llega un mensaje de un número desconocido...");
-  const mensajes: Array<[string, string]> = [
-    ["NÚMERO NUEVO", `Hola, soy ${hijo}. Se me malogró el cel, guarda este número.`],
-    ["URGENCIA", `Tengo que pagar algo HOY o me meto en un problema. ¿Me prestas ${monto}?`],
-    ["SECRETO", "No le digas a mamá, porfa. Te devuelvo mañana."],
-    ["CULPA", "¿No me vas a ayudar? Pensé que podía contar contigo..."],
-    ["INSISTENCIA", "Rápido, porfa. Contesta."],
-  ];
+  if (ronda === "a") await m.decir("Tu reloj solo corre mientras eliges qué hacer. Ignorarlo te quita segundos.");
+  // Ronda 2: el mismo «falso familiar», con otra historia.
+  const mensajes: Array<[string, string]> =
+    ronda === "a"
+      ? [
+          ["NÚMERO NUEVO", `Hola, soy ${hijo}. Se me malogró el cel, guarda este número.`],
+          ["URGENCIA", `Tengo que pagar algo HOY o me meto en un problema. ¿Me prestas ${monto}?`],
+          ["SECRETO", "No le digas a mamá, porfa. Te devuelvo mañana."],
+          ["CULPA", "¿No me vas a ayudar? Pensé que podía contar contigo..."],
+          ["INSISTENCIA", "Rápido, porfa. Contesta."],
+        ]
+      : [
+          ["CEL ROBADO", `Soy ${hijo}. Me robaron el cel, te escribo desde el de un amigo.`],
+          ["URGENCIA", `Necesito ${monto} para volver y pagar el chip nuevo. Hoy mismo.`],
+          ["SECRETO", "No le cuentes a nadie, que me van a reñir."],
+          ["CULPA", "¿Me vas a dejar acá sin cómo volver?"],
+          ["INSISTENCIA", "Rápido, que mi amigo necesita su cel."],
+        ];
   for (let turno = 0; ; turno++) {
     const [nombre, frase] = mensajes[Math.min(turno, mensajes.length - 1)];
     await m.decir(`¡¿${hijo.toUpperCase()}? usó ${nombre}!`);
@@ -1616,7 +1654,7 @@ async function rutaFamiliar(m: Motor, pais: Pais, alias: string): Promise<Marca>
   const fr = await frustracion(m);
   await m.fundirA(true);
 
-  await tarjeta(m, "EL FAMILIAR · RONDA 2/2", "LA CAPA", "Mismo mensaje. Esta\nvez transfiere y\nmira qué pasa.", PAL.verde);
+  await tarjeta(m, "EL FAMILIAR · RONDA 2/2", "LA CAPA", "Otra historia, mismo\ntruco. Esta vez\ntransfiere y mira.", PAL.verde);
   m.barraSuperior = { texto: "RONDA 2/2", color: PAL.verdeOscuro };
   await vega(m, "Esta vez, prueba a TRANSFERIR. Queremos que veas qué hace el sistema.");
   await m.fundirA(true);

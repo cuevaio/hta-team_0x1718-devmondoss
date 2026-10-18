@@ -39,6 +39,8 @@ const MAPA = [
 ];
 
 export const ALTO_MAPA = MAPA.length * TILE;
+/** Franja de cielo arriba del mapa: la barra de objetivo no tapa el letrero de la tienda. */
+const CIELO = 20;
 
 const PUERTAS: Record<string, string> = { b: "bodega", k: "banco", h: "hotel", P: "cabina" };
 const SOLIDOS = new Set(["B", "K", "H", "M", "T", "w", "P", "b", "k", "h"]);
@@ -135,12 +137,28 @@ export class Explorador {
 
   /** Toque en la casilla (tx, ty): caminar hasta ahí, o hasta al lado si es una puerta o un vecino. */
   irA(tx: number, ty: number) {
+    // La cabeza de un vecino se dibuja en la casilla de arriba (a veces sobre
+    // un toldo sólido): tocarla cuenta como tocarlo a él.
+    const hayNpc = (x: number, y: number) => this.cfg.npcs.some((n) => n.x === x && n.y === y);
+    if (!hayNpc(tx, ty) && hayNpc(tx, ty + 1)) ty++;
     this.marca = { x: tx, y: ty, vida: 24 };
-    const destinoInteractivo = !this.libre(tx, ty) && (PUERTAS[tileEn(tx, ty)] || this.cfg.npcs.some((n) => n.x === tx && n.y === ty));
+    const destinoInteractivo = !this.libre(tx, ty) && (PUERTAS[tileEn(tx, ty)] || hayNpc(tx, ty));
     if (!destinoInteractivo) {
       const r = this.ruta(tx, ty);
       if (r) {
         this.camino = r;
+        this.alLlegar = null;
+        return;
+      }
+      if (this.libre(tx, ty)) return;
+      // Tocó algo sólido (un puesto, un árbol): ir a la casilla libre más cercana.
+      let cerca: Direccion[] | null = null;
+      for (const [dx, dy] of Object.values(DELTA)) {
+        const c = this.ruta(tx + dx, ty + dy);
+        if (c && (!cerca || c.length < cerca.length)) cerca = c;
+      }
+      if (cerca) {
+        this.camino = cerca;
         this.alLlegar = null;
       }
       return;
@@ -233,7 +251,7 @@ export class Explorador {
   private seguir(h: number) {
     const [, dy] = DELTA[this.dir];
     const py = this.y * TILE + 8 - dy * this.resto;
-    const meta = Math.max(0, Math.min(ALTO_MAPA - h, py - h * 0.45));
+    const meta = Math.max(-CIELO, Math.min(ALTO_MAPA - h, py - h * 0.45));
     if (!this.camIniciada) {
       this.camY = meta;
       this.camIniciada = true;
@@ -244,6 +262,7 @@ export class Explorador {
     this.seguir(p.h);
     const cam = Math.round(this.camY);
     p.rect("#2f7a3a", 0, 0, W, p.h);
+    if (cam < 0) p.rect(this.cfg.noche ? PAL.navy : "#9fd3ef", 0, 0, W, -cam);
     p.ctx.save();
     p.ctx.translate(0, -cam);
     dibujarMapa(p, t, this.cfg.noche, this.cfg.letrero ?? "BODEGA");
@@ -283,9 +302,12 @@ export class Explorador {
     const obj = posicionObjetivo(this.cfg.objetivo, this.cfg.npcs);
     if (obj) {
       const rebote = Math.round(Math.abs(Math.sin(t / 10)) * -4);
+      // Sobre una puerta, la flecha va pegada a ella para no tapar el letrero de arriba.
+      const esNpc = this.cfg.npcs.some((n) => n.id === this.cfg.objetivo);
+      const fy = obj.y * TILE + (esNpc ? -11 : -1) + rebote;
       p.alfa(0.35, () => p.circulo(obj.x * TILE + 8, obj.y * TILE + 8, 9 + (Math.floor(t / 8) % 3), PAL.ambar));
-      p.flechaAbajo(obj.x * TILE + 5, obj.y * TILE - 11 + rebote, PAL.tinta);
-      p.flechaAbajo(obj.x * TILE + 5, obj.y * TILE - 12 + rebote, PAL.ambar);
+      p.flechaAbajo(obj.x * TILE + 5, fy, PAL.tinta);
+      p.flechaAbajo(obj.x * TILE + 5, fy - 1, PAL.ambar);
     }
     p.ctx.restore();
 

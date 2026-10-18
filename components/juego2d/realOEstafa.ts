@@ -57,7 +57,7 @@ export function mazo(pais: Pais): Carta[] {
   const e = (id: string, categoria: string, canal: Canal, de: string, texto: string, pista: string): Carta => ({ id, categoria, estafa: true, canal, de, texto, pista });
   const r = (id: string, canal: Canal, de: string, texto: string, pista: string): Carta => ({ id, categoria: "real", estafa: false, canal, de, texto, pista });
   return [
-    e("sms_bloqueo", "link_falso", "SMS", "Número desconocido", `${banco}: tu cuenta será BLOQUEADA hoy. Valida tus datos aquí: bit.ly/val1da`, "Tu banco no te manda links para validar datos. Entra solo desde tu app."),
+    e("sms_bloqueo", "link_falso", "SMS", "Número desconocido", `${banco}: tu cuenta será BLOQUEADA hoy. Valida tus datos aquí: bit.ly/val1da`, "Tu banco no te manda links para validar datos. Entra desde tu app."),
     e("llamada_codigo", "falso_banco", "LLAMADA", `Seguridad ${banco}`, "Detectamos un consumo raro. Para anularlo, dígame el código que le acaba de llegar.", "Nadie del banco te pide códigos ni claves. Cuelga y llama tú."),
     e("familiar_nuevo", "falso_familiar", "WHATSAPP", "Número nuevo", `Hola, soy ${hijo}. Cambié de número. ¿Me pasas ${$(800)} urgente? Mañana te devuelvo.`, "Llama al número DE SIEMPRE antes de mandar dinero."),
     e("captura_pago", "comprobante_falso", "CAPTURA", "Cliente apurado", `¡Ya te pagué ${$(250)} por ${billetera}! Mira la captura y dame rápido.`, "Revisa el pago en TU app. Una captura se edita en segundos."),
@@ -73,6 +73,10 @@ export function mazo(pais: Pais): Carta[] {
     e("correo_clave", "link_falso", "CORREO", "seguridad-banco.net", "Actualiza tu clave en 24 horas o perderás tu cuenta: [ACTUALIZAR AQUÍ]", "Mira el remitente y la amenaza: es phishing."),
     e("multa", "link_falso", "SMS", "Tránsito", "Tienes una multa. Págala HOY con 50% de descuento: bit.ly/mult4", "Las multas se consultan en la web oficial, no en un link."),
     e("accidente", "falso_familiar", "LLAMADA", "Número desconocido", `Su hijo tuvo un accidente. Deposite ${$(1500)} para la clínica, ¡ahora!`, "Cuelga y llama a tu familiar. El susto es su herramienta."),
+    // Más sutiles: sin links raros ni amenazas obvias (salen al final del mazo).
+    e("pago_error", "comprobante_falso", "WHATSAPP", "Número desconocido", `Disculpa, te envié ${$(150)} por error. ¿Me los devuelves a este otro número?`, "Mira en TU app si de verdad llegó algo. Casi nunca llegó nada."),
+    e("clave_por_sms", "falso_banco", "SMS", banco, "Tu clave vence hoy. Responde este SMS con tu clave actual para renovarla.", "Aunque diga el nombre de tu banco: nadie te pide la clave por mensaje."),
+    e("paquete", "link_falso", "SMS", "Courier", `Tu paquete está retenido. Paga ${$(4)} de aduana: entregas-ya.co/pago`, "Un cobro chiquito por un paquete que no esperabas es phishing."),
     r("app_recibiste", "APP", billetera, `Recibiste ${$(25)} de Ana M. por «almuerzo».`, "Un aviso de tu app que no te pide nada: era real."),
     r("sms_compra", "SMS", banco, `Compra por ${$(38)} en Supermercado. Si no la reconoces, llama al número detrás de tu tarjeta.`, "Te manda al número oficial, no a un link: era real."),
     r("mama_pan", "WHATSAPP", "Mamá", "Hijito, ¿compras pan al venir? Gracias.", "Tu contacto de siempre, sin dinero ni prisa: era real."),
@@ -81,8 +85,40 @@ export function mazo(pais: Pais): Carta[] {
     r("hijo_llego", "WHATSAPP", hijo, "Ya llegué a casa. Buenas noches.", "Su número de siempre y nada de dinero: era real."),
     r("app_sesion", "APP", banco, "Iniciaste sesión en un equipo nuevo. Si no fuiste tú, revísalo aquí en la app.", "Un aviso dentro de tu app oficial: era real."),
     r("recibo_luz", "CORREO", "Empresa de luz", "Tu recibo del mes ya está disponible. Págalo en tu app o banco de siempre.", "Te informa y te manda a tus canales de siempre: era real."),
+    r("aviso_banco", "SMS", banco, "Recuerda: nunca te pediremos claves ni códigos por llamada, SMS o WhatsApp.", "Un aviso que no te pide nada: era real."),
+    r("sueldo", "APP", banco, `Abonamos tu sueldo: ${$(1850)}. Ya está disponible en tu cuenta.`, "Un abono en tu app que no te pide nada: era real."),
   ];
 }
+
+/**
+ * Dificultad de cada carta: el mazo va de lo obvio (links raros, premios) a
+ * lo sutil (el nombre del banco, un código que sí pediste). Sin nivel = 2.
+ */
+const NIVEL: Record<string, 1 | 3> = {
+  premio: 1,
+  inversion: 1,
+  prestamo: 1,
+  empleo_likes: 1,
+  extorsion: 1,
+  multa: 1,
+  mama_pan: 1,
+  hijo_llego: 1,
+  app_recibiste: 1,
+  marketplace: 3,
+  whatsapp_codigo: 3,
+  soporte_remoto: 3,
+  codigo_propio: 3,
+  app_sesion: 3,
+  pago_error: 3,
+  clave_por_sms: 3,
+  paquete: 3,
+  aviso_banco: 3,
+  sueldo: 3,
+};
+const nivel = (c: Carta) => NIVEL[c.id] ?? 2;
+
+/** Cuadros para decidir la carta `n`: de 8 s a 4 s. Si no decides, pierdes. */
+export const cuadrosCarta = (n: number) => Math.round(Math.max(4, 8 - n * 0.3) * 60);
 
 export type Respuesta = { carta: string; categoria: string; estafa: boolean; dijo_estafa: boolean; ms: number };
 
@@ -93,6 +129,8 @@ export type ResultadoROE = {
   mejorCombo: number;
   vidas: number;
   respuestas: Respuesta[];
+  /** Cartas en que se le acabó el tiempo (no son respuestas: no entran a los datos). */
+  lentos: number;
   /** Categorías de estafa en las que cayó (sin repetir). */
   caidas: string[];
   realesRechazados: number;
@@ -114,10 +152,11 @@ function barajar<T>(xs: T[]): T[] {
 type Fase = "cuenta" | "juego" | "bien" | "mal" | "fin";
 
 export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
-  // Primero una estafa fácil; después, al azar.
+  // Primero una estafa fácil; después, de lo obvio a lo sutil (al azar dentro de cada nivel).
   const todas = mazo(pais);
   const primera = todas.find((c) => c.id === "sms_bloqueo")!;
-  const cartas = [primera, ...barajar(todas.filter((c) => c !== primera))];
+  const resto = todas.filter((c) => c !== primera);
+  const cartas = [primera, ...([1, 2, 3] as const).flatMap((n) => barajar(resto.filter((c) => nivel(c) === n)))];
 
   let fase: Fase = "cuenta";
   let inicioFase = m.t;
@@ -133,6 +172,8 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
   let ultimoPuntos = "";
   let ultimaCarta: Carta | null = null;
   let presionado: "estafa" | "real" | null = null;
+  let lentos = 0;
+  let fueLento = false;
   const respuestas: Respuesta[] = [];
 
   const botones = (h: number): { estafa: Caja; real: Caja } => ({
@@ -172,6 +213,7 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
         mejorCombo,
         vidas,
         respuestas,
+        lentos,
         caidas,
         realesRechazados: respuestas.filter((r) => !r.estafa && r.dijo_estafa).length,
       });
@@ -191,8 +233,25 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
     cambiar("juego");
   };
 
+  /** Se acabó el tiempo de la carta: cuenta como error, pero no como respuesta. */
+  const tarde = () => {
+    const carta = cartas[idx];
+    lentos++;
+    fueLento = true;
+    ultimaCarta = carta;
+    combo = 0;
+    m.audio.error();
+    m.vibrar([60, 40, 90]);
+    m.sacudir(14);
+    m.comentar(frase(pais.id, "tiempo"), { y: 38, color: "#f4c7c3" });
+    if (carta.estafa) vidas--;
+    else restante = Math.max(0, restante - 5 * 60);
+    cambiar("mal");
+  };
+
   const responder = (dijoEstafa: boolean) => {
     if (fase !== "juego") return;
+    fueLento = false;
     const carta = cartas[idx];
     const ms = Math.round(((m.t - aparecio) * 1000) / 60);
     respuestas.push({ carta: carta.id, categoria: carta.categoria, estafa: carta.estafa, dijo_estafa: dijoEstafa, ms });
@@ -213,8 +272,10 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
       m.vibrar(10);
       m.particulas_(W / 2, caja.y + caja.h / 2, 18, { colores: [PAL.verde, PAL.blanco, PAL.ambar], vel: 2, g: 0.05, vida: 30 });
       if (combo > 0 && combo % 3 === 0) m.flotante(`COMBO x${mult}!`, 54, caja.y + 20, PAL.ambar);
-      if ([3, 5, 8, 12].includes(combo)) m.comentar(frase(pais.id, "racha"), { y: m.h - 86 });
-      else if (Math.random() < 0.3) m.comentar(frase(pais.id, "acierto"), { y: m.h - 86 });
+      // Encima de los botones, corto y breve: no tapa ESTAFA/REAL ni la carta que sigue.
+      const globo = { hastaY: m.h - 66, lineas: 2, cuadros: 60 };
+      if ([3, 5, 8, 12].includes(combo)) m.comentar(frase(pais.id, "racha"), globo);
+      else if (Math.random() < 0.3) m.comentar(frase(pais.id, "acierto"), globo);
       cambiar("bien");
     } else {
       combo = 0;
@@ -261,6 +322,7 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
       }
     } else if (fase === "juego") {
       restante--;
+      if (t - aparecio >= cuadrosCarta(idx)) tarde();
       if (restante === 600) m.audio.ritmo = 1.2;
       if (restante <= 600 && restante % 45 === 0) m.audio.latido();
       if (restante <= 0) {
@@ -323,6 +385,10 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
       if (fase === "juego") {
         const kk = Math.min(1, (t - aparecio) / 10);
         dibujarCarta(p, { ...caja, y: caja.y - Math.round((1 - facil.salida(kk)) * 30) }, cartas[idx], 0, kk);
+        // Reloj de la carta: se acorta a medida que avanzas.
+        const q = Math.max(0, 1 - (t - aparecio) / cuadrosCarta(idx));
+        p.rect(PAL.tinta, caja.x, caja.y + caja.h + 2, caja.w, 4);
+        p.rect(q > 0.35 ? PAL.celeste : PAL.rojo, caja.x + 1, caja.y + caja.h + 3, Math.round((caja.w - 2) * q), 2);
       }
       if (fase === "mal" && ultimaCarta) {
         dibujarCarta(p, caja, ultimaCarta, 0);
@@ -331,7 +397,7 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
         const alto = 30 + lineas.length * 11;
         const y = Math.min(caja.y + caja.h + 4, h - 70 - alto - 12);
         p.caja(8, y, W - 16, alto, PAL.crema, PAL.tinta, c.estafa ? PAL.rojo : PAL.verde);
-        p.texto(c.estafa ? "¡ERA ESTAFA!" : "¡ERA REAL!", 16, y + 7, c.estafa ? PAL.rojoOscuro : PAL.verdeOscuro);
+        p.texto(fueLento ? "¡MUY LENTO!" : c.estafa ? "¡ERA ESTAFA!" : "¡ERA REAL!", 16, y + 7, fueLento ? PAL.rojoOscuro : c.estafa ? PAL.rojoOscuro : PAL.verdeOscuro);
         if (c.estafa) p.texto("-1", W - 34, y + 7, PAL.rojo);
         else p.texto("-5s", W - 42, y + 7, PAL.rojo);
         lineas.forEach((l, i) => p.texto(l, 16, y + 20 + i * 11, PAL.tinta));

@@ -611,3 +611,23 @@ Prueba e2e (`identidad.mjs`, fuera del repo):
 4. Borrar cookies recupera el mismo id y el récord.
 
 Además se probó contra el Supabase real con reinicio del servidor.
+
+## 18. Arreglos del playtest
+
+Un jugador probó HISTORIAS, ¿REAL O ESTAFA? y ATRAPA LA MULA en escritorio. Esto es lo que cambió:
+
+| Problema | Arreglo |
+|---|---|
+| Al pasar el diálogo con Espacio, ese mismo toque elegía TRANSFERIR, que venía marcado | Los combates y los menús cuya primera opción es la riesgosa (rosada) abren **sin opción marcada**: la primera flecha marca, y A no elige durante los primeros 40 cuadros de cualquier menú. Al abrir un menú se vacía la cola de teclas |
+| Textos cortados | La pista de la primera carta tenía 5 líneas y la caja muestra 4: se acortó y un test exige ≤ 4 en todas. El título «EL FAMILIAR · RONDA 1/2» pone la ronda a la derecha. Los diálogos reparten las líneas en páginas parejas (6 líneas = 3 + 3), así ninguna palabra queda sola en una página |
+| Elementos encimados | Si el diálogo tiene nombre (BANCO, ANALISTA VEGA, GUARDIÁN), las opciones suben y se compactan para no taparlo. El comentarista de ¿REAL O ESTAFA? sale encima de los botones, en 2 líneas y por 1 s. «ES NORMAL» y «CONGELADA» entran en botones iguales. El barrio tiene una franja de cielo arriba y la flecha de la puerta va pegada a ella: ni la barra de objetivo ni la flecha tapan el letrero |
+| Recompensas que no cuadraban | «¡CRACK!» exige jugar bien, no solo sobrevivir: en los arcades, ≥ 70% de aciertos con al menos 5 cartas; en ATRAPA LA MULA, ≥ 5 mulas y no menos que las que escaparon. 5/5 sin errores asegura 1 estrella. El rango del perfil se muestra en **XP** (todo lo jugado suma) y el ranking general se titula «SUMA DE TUS MEJORES», para no confundirlo con el puntaje de cada juego |
+| El reloj de la historia parecía correr mientras se leía | No corría, pero no se notaba. El cuadro dice **EN PAUSA** mientras lees y **¡DECIDE!** mientras eliges, y la ronda 1 lo explica |
+| La ronda 2 repetía el guion | Mismo tipo de estafa, otro truco: en LA LLAMADA, el número oficial falsificado y el «supervisor»; en EL FAMILIAR, «me robaron el cel» |
+| Banderas iguales | `dibujarBandera` (pincel) agrega el detalle: estrella de Chile, escudo de Ecuador, estrellas de Venezuela, sol de Argentina. Un solo dibujo para el menú, la grilla de países, el ranking y las salas |
+| Faltaban tildes (QUIÉN, PERÚ, PAÍS…) | La fuente pinta mal las mayúsculas con tilde: `Pincel.texto` escribe la letra sin tilde y le dibuja la tilde encima |
+| Rosa se quedaba quieta al tocar a Don Pepe | Su cabeza cae sobre el toldo, que es sólido. Tocar la cabeza de un vecino cuenta como tocarlo a él, y tocar algo sólido lleva a la casilla libre más cercana |
+| Diálogo lento | 2 letras por cuadro en vez de 1 |
+| ¿REAL O ESTAFA? muy fácil | El mazo va de lo obvio a lo sutil (3 niveles, al azar dentro de cada uno), con 5 cartas nuevas sutiles (`pago_error`, `clave_por_sms`, `paquete`, `aviso_banco`, `sueldo`). Cada carta tiene su reloj, que baja de 8 s a 4 s; si se acaba, «¡MUY LENTO!» cuenta como fallo, pero no entra a los datos de en qué estafa cae la gente |
+
+Pruebas: `tests/juego/pulido.test.ts` y bots de navegador (fuera del repo) que pasan LA LLAMADA a Espacio sin elegir nada, llegan a Don Pepe tocándole la cabeza y juegan ¿REAL O ESTAFA? con 5 aciertos y con 28 de 29.

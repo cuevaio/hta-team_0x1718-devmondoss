@@ -111,8 +111,9 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
   const botones = (h: number) => {
     const p = panel(h);
     return {
-      congelar: { x: p.x + 8, y: p.y + p.h - (chico(h) ? 31 : 36), w: 96, h: chico(h) ? 25 : 28 },
-      cerrar: { x: p.x + 110, y: p.y + p.h - (chico(h) ? 31 : 36), w: p.w - 118, h: chico(h) ? 25 : 28 },
+      // Dos botones iguales: entran «CONGELADA» y «ES NORMAL» (9 letras).
+      congelar: { x: p.x + 8, y: p.y + p.h - (chico(h) ? 31 : 36), w: 82, h: chico(h) ? 25 : 28 },
+      cerrar: { x: p.x + 94, y: p.y + p.h - (chico(h) ? 31 : 36), w: p.w - 102, h: chico(h) ? 25 : 28 },
     };
   };
 

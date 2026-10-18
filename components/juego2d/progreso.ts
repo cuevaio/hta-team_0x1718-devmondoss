@@ -128,7 +128,7 @@ export type Cosecha = {
  * `logrosPosibles` son los que el minijuego cree ganados; aquí se filtran los
  * que ya se tenían.
  */
-export function sumarPartida(p: Progreso, modo: ModoArcade | null, puntaje: number, logrosPosibles: IdLogro[]): Cosecha {
+export function sumarPartida(p: Progreso, modo: ModoArcade | null, puntaje: number, logrosPosibles: IdLogro[], estrellasMin = 0): Cosecha {
   const antes = rango(p.total).nombre;
   const nuevos: IdLogro[] = [];
   const ganar = (id: IdLogro) => {
@@ -140,7 +140,7 @@ export function sumarPartida(p: Progreso, modo: ModoArcade | null, puntaje: numb
   let estNuevas = 0;
   let record = false;
   if (modo) {
-    est = estrellas(modo, puntaje);
+    est = Math.max(estrellas(modo, puntaje), estrellasMin);
     estNuevas = Math.max(0, est - (p.estrellas[modo] ?? 0));
     p.estrellas[modo] = Math.max(p.estrellas[modo] ?? 0, est);
     record = puntaje > (p.mejor[modo] ?? 0);

@@ -88,7 +88,7 @@ export function titulo(inicio: number, records: TablaRecords[] = []): Escena {
     // Logo con rebote
     const k = Math.min(1, f / 45);
     const ly = 26 + Math.round((1 - facil.rebote(k)) * -120);
-    p.centrado("TE ESTAN", ly, PAL.ambar, 16, PAL.rojoOscuro);
+    p.centrado("TE ESTÁN", ly, PAL.ambar, 16, PAL.rojoOscuro);
     p.centrado("ROBANDO", ly + 22, PAL.ambar, 16, PAL.rojoOscuro);
     if (k >= 1 && f % 90 < 20) {
       const brillo = Math.round(((f % 90) / 20) * 140) + 26;
@@ -168,7 +168,10 @@ export function capitulo(inicio: number, etiqueta: string, titulo1: string, sub:
     p.rect(PAL.tinta, cx, cy, W, 88);
     p.rect(color, cx, cy + 2, W, 84);
     p.rect("rgba(255,255,255,0.25)", cx, cy + 4, W, 2);
-    p.texto(etiqueta, cx + 12, cy + 12, PAL.tinta);
+    // «LA LLAMADA · RONDA 1/2»: el nombre a la izquierda y la ronda a la derecha, para que no se salga.
+    const [nombre, ronda] = etiqueta.split(" · ");
+    p.texto(nombre, cx + 12, cy + 12, PAL.tinta);
+    if (ronda) p.texto(ronda, cx + W - 10 - p.ancho(ronda), cy + 12, PAL.tinta);
     p.textoSombra(titulo1, cx + 12, cy + 30, PAL.blanco, PAL.tinta, 16);
     sub.split("\n").forEach((l, i) => p.texto(l, cx + 12, cy + 56 + i * 12, PAL.tinta));
     if (f > 40 && Math.floor(f / 25) % 2 === 0) p.centrado("toca para seguir", cy + 110, PAL.celeste);
@@ -528,12 +531,16 @@ export function batalla(b: EstadoBatalla, m: Motor): Escena {
     const uy = Math.max(baseRival + 14, baseAliado - 112);
     p.caja(86 + ux, uy, 102, 48);
     p.texto(b.aliadoNombre.slice(0, 11), 93 + ux, uy + 7, PAL.tinta);
-    const restante = m.cuadrosRestantesMenu ?? b.tiempoRestante;
+    const enMenu = m.cuadrosRestantesMenu;
+    const restante = enMenu ?? b.tiempoRestante;
     if (b.tiempoTotal > 0) {
       const actual = b.congelado ? b.tiempoRestante : restante;
       const valor = actual / b.tiempoTotal;
       const seg = Math.ceil(actual / 60);
-      p.texto(b.congelado ? "CONGELADO" : b.aliadoEtiqueta, 93 + ux, uy + 18, b.congelado ? PAL.azul : PAL.ambar);
+      // El reloj solo corre mientras eliges: mientras lees, se ve en pausa.
+      const corre = enMenu !== null;
+      const etiqueta = b.congelado ? "CONGELADO" : corre ? "¡DECIDE!" : "EN PAUSA";
+      p.texto(etiqueta, 93 + ux, uy + 18, b.congelado ? PAL.azul : corre ? (t % 30 < 20 ? PAL.rojo : PAL.ambar) : PAL.gris);
       if (!b.congelado) p.texto(`${seg}s`, 160 + ux, uy + 18, seg <= 10 && t % 20 < 10 ? PAL.rojo : PAL.tinta);
       p.barra(93 + ux, uy + 28, 88, valor, b.congelado ? PAL.celeste : valor < 0.25 ? PAL.rojo : b.aliadoColor);
     } else {

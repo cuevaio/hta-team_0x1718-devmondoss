@@ -31,6 +31,9 @@ export const CARTAS_ROE: VerdadCarta[] = [
   { id: 'correo_clave', categoria: 'link_falso', estafa: true },
   { id: 'multa', categoria: 'link_falso', estafa: true },
   { id: 'accidente', categoria: 'falso_familiar', estafa: true },
+  { id: 'pago_error', categoria: 'comprobante_falso', estafa: true },
+  { id: 'clave_por_sms', categoria: 'falso_banco', estafa: true },
+  { id: 'paquete', categoria: 'link_falso', estafa: true },
   { id: 'app_recibiste', categoria: 'real', estafa: false },
   { id: 'sms_compra', categoria: 'real', estafa: false },
   { id: 'mama_pan', categoria: 'real', estafa: false },
@@ -39,6 +42,8 @@ export const CARTAS_ROE: VerdadCarta[] = [
   { id: 'hijo_llego', categoria: 'real', estafa: false },
   { id: 'app_sesion', categoria: 'real', estafa: false },
   { id: 'recibo_luz', categoria: 'real', estafa: false },
+  { id: 'aviso_banco', categoria: 'real', estafa: false },
+  { id: 'sueldo', categoria: 'real', estafa: false },
 ];
 
 /** ¿PAUSA O PASA?: `estafa` = la transferencia es riesgosa (hay que pausarla). */
