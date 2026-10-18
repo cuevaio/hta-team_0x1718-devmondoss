@@ -472,3 +472,33 @@ El monitor muestra el panel **«Tracción y encuesta»** con todo esto en vivo.
 - Abajo, 2×2 accesos chicos.
 
 Los demás menús de tarjetas llevan ahora un tablero sólido detrás. Los avisos de logros bajan solo hasta la franja de cabecera y el resultado espera a que terminen.
+
+## 15. Jerga por país, más países y QR para entrar
+
+**Voz por país** (`jerga.ts`). Un comentarista con jerga local habla en los momentos del juego: aciertos, rachas, caídas, desconfiados, mulas, inocentes, lobby, revelación de la sala, podio y el título del resultado. El sarcasmo apunta al estafador («ya está celebrando con una chela a tu nombre») y al jugador solo se le bromea con cariño. Un test exige:
+- frases para cada país y cada momento;
+- títulos de máximo 12 caracteres;
+- **cero groserías**, con una lista negra.
+
+**9 contextos:** Perú, Colombia, México, Argentina, **Chile, Ecuador, Bolivia, Venezuela** y **Otro país** (español neutro, sin dato local). Cada uno tiene banco y billetera ficticios, moneda, nombres, lugares, modalidades y un dato local **con fuente**. Si no hay fuente confiable, no se inventa: `datoLocal: null`. El país se elige en una grilla con banderas.
+
+**QR:**
+- `/play?sala=ABCD` entra directo a la sala: apodo, país y adentro, sin video ni arcade obligatorio.
+- El lobby muestra el QR y el código.
+- El monitor muestra un QR para `/play` y uno grande por cada sala en espera.
+
+**Capacidad** (`scripts/carga-salas.ts`; los jugadores son virtuales y responden durante toda la ventana de cada ronda):
+
+| Servidor | Jugadores | Pedidos/s | Latencia p50 / p95 | Errores |
+|---|---|---|---|---|
+| Mac en red local | 120 (tope de 80 por sala, ya subido a 150) | 214 | 4 / 12 ms | solo los rechazados por el tope |
+| Railway (región California) | 60 | 69 | 227 / 739 ms | **0** (480/480 respuestas) |
+
+El reloj y la calificación son del servidor, así que la latencia no rompe la sincronía. Una sala acepta hasta 150 jugadores.
+
+**¿Railway o la Mac?** Railway es el principal: URL pública con HTTPS, el QR funciona con datos móviles y los datos del evento persisten en un volumen. La Mac queda de respaldo:
+
+```bash
+npm run servidor -- --red --juego --persistir   # celulares en la misma Wi-Fi; guarda memoria, partidas y arcade en .datos/
+cloudflared tunnel --url http://localhost:3000  # URL pública si la Wi-Fi del evento aísla a los clientes
+```

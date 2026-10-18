@@ -21,7 +21,9 @@ import { Alias } from './alias';
  * Dueño: Tony_dev (demo jugable).
  */
 
-export const PAISES_JUEGO = ['pe', 'co', 'mx', 'ar'] as const;
+/** Países del juego (`otro` = español neutro, para quien no es de la lista). */
+export const PAISES_JUEGO = ['pe', 'co', 'mx', 'ar', 'cl', 'ec', 'bo', 've', 'otro'] as const;
+export type PaisJuego = (typeof PAISES_JUEGO)[number];
 export const MODOS = ['real_o_estafa', 'sigue_el_dinero', 'atrapa_la_mula', 'pausa_o_pasa'] as const;
 export type Modo = (typeof MODOS)[number];
 

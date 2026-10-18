@@ -9,7 +9,8 @@
  * como la app que falla (docs/DEMO_JUEGO.md §8).
  */
 
-export type PaisId = "pe" | "co" | "mx" | "ar";
+export type { PaisJuego as PaisId } from "@/lib/juego/arcade";
+import type { PaisJuego as PaisId } from "@/lib/juego/arcade";
 
 export type Dato = { cifra: string; texto: string; fuente: string };
 
@@ -43,8 +44,8 @@ export type Pais = {
   /** Comprobante falso (ruta «el comprobante»). */
   comprobante: string;
   defensaComprobante: string;
-  /** Dato local para el epílogo. */
-  datoLocal: Dato;
+  /** Dato local para el epílogo (con fuente). Sin dato confiable, no se inventa. */
+  datoLocal: Dato | null;
   /** Fuente de la modalidad local (para el epílogo). */
   modalidad: string;
 };
@@ -150,6 +151,131 @@ export const PAISES: Record<PaisId, Pais> = {
     datoLocal: { cifra: "34,468", texto: "denuncias por delitos informáticos en Argentina en 2024; 63% eran fraudes en línea.", fuente: "UFECI, según prensa" },
     modalidad: "Falsos operadores de billeteras que vacían cuentas con transferencias encadenadas (2026).",
   },
+  cl: {
+    id: "cl",
+    nombre: "CHILE",
+    bandera: { colores: ["#ffffff", "#d52b1e"], vertical: false },
+    factor: 250,
+    simbolo: "$",
+    miles: ".",
+    banco: "Banco Austral",
+    billetera: "Monedero Sur",
+    billeterasReales: "transferencias, MACH o Tenpo",
+    billeterasCortas: "MACH · Tenpo",
+    tienda: "ALMACÉN",
+    rosa: "DOÑA ROSA",
+    jorge: "PATRICIO",
+    lucia: "JAVIERA",
+    pepe: "DON LUCHO",
+    hijo: "Benja",
+    sierra: "Torres del Paine",
+    smsFalso: "Su clave dinámica vence hoy. Actualícela aquí: bit.ly/...",
+    llamadaGancho: "Le llamo de Banco Austral: necesitamos validar su clave dinámica.",
+    comprobante: "¡Ya le transferí, vecina! Mire el comprobante.",
+    defensaComprobante: "Revise el abono en SU app, no en la foto del comprobante.",
+    datoLocal: { cifra: "20,880", texto: "reclamos por fraudes con bancos y retail financiero ante el Sernac en 2025.", fuente: "Sernac, según prensa" },
+    modalidad: "El «cuento del tío» digital: una llamada que pide validar la clave dinámica (fallos de 2026).",
+  },
+  ec: {
+    id: "ec",
+    nombre: "ECUADOR",
+    bandera: { colores: ["#ffdd00", "#ffdd00", "#034ea2", "#ed1c24"], vertical: false },
+    factor: 0.27,
+    simbolo: "$",
+    miles: ",",
+    banco: "Banco del Volcán",
+    billetera: "PagaYa",
+    billeterasReales: "transferencias o DeUna",
+    billeterasCortas: "DeUna · transfer.",
+    tienda: "TIENDA",
+    rosa: "DOÑA CARMITA",
+    jorge: "XAVIER",
+    lucia: "DOMÉNICA",
+    pepe: "DON GALO",
+    hijo: "Mateo",
+    sierra: "la laguna del Quilotoa",
+    smsFalso: "Su cuenta fue bloqueada por seguridad. Reactívela aquí: bit.ly/...",
+    llamadaGancho: "Le hablamos del área de seguridad de Banco del Volcán.",
+    comprobante: "¡Ya le pasé, veci! Vea la captura.",
+    defensaComprobante: "Revise el pago en SU app, no en la captura.",
+    datoLocal: { cifra: "4,733", texto: "denuncias por apropiación fraudulenta por medios electrónicos en Ecuador, de enero a noviembre de 2025 (3,701 en 2024).", fuente: "Fiscalía, según prensa" },
+    modalidad: "Retiros de cuentas «mientras la gente duerme», denunciados en 2026.",
+  },
+  bo: {
+    id: "bo",
+    nombre: "BOLIVIA",
+    bandera: { colores: ["#d52b1e", "#f9e300", "#007934"], vertical: false },
+    factor: 1.85,
+    simbolo: "Bs",
+    miles: ".",
+    banco: "Banco Illimani",
+    billetera: "QR Rápido",
+    billeterasReales: "QR o transferencias",
+    billeterasCortas: "QR · transfer.",
+    tienda: "TIENDA",
+    rosa: "DOÑA BETY",
+    jorge: "MARCELO",
+    lucia: "VALERIA",
+    pepe: "DON RENÉ",
+    hijo: "Joaquín",
+    sierra: "el Salar de Uyuni",
+    smsFalso: "Le habla su operador: confirme el código que le llegó para no perder su línea.",
+    llamadaGancho: "Le hablamos de Banco Illimani: hay un movimiento sospechoso.",
+    comprobante: "¡Ya le pagué por QR, caserita! Mire.",
+    defensaComprobante: "Revise el abono en SU app, no en la foto del QR pagado.",
+    datoLocal: { cifra: "16,821", texto: "denuncias de posibles estafas digitales en Bolivia, del 1 de enero al 17 de julio de 2026.", fuente: "ATT «Bloquea la Estafa», según prensa" },
+    modalidad: "Falsa asistencia del operador para robar códigos, y ventas falsas de dólares pagadas por QR (2026).",
+  },
+  ve: {
+    id: "ve",
+    nombre: "VENEZUELA",
+    bandera: { colores: ["#ffcc00", "#00247d", "#cf142b"], vertical: false },
+    factor: 0.27,
+    simbolo: "$",
+    miles: ",",
+    banco: "Banco Caribe Sur",
+    billetera: "PagoYa",
+    billeterasReales: "Pago Móvil o transferencias",
+    billeterasCortas: "Pago Móvil",
+    tienda: "BODEGA",
+    rosa: "DOÑA CARMEN",
+    jorge: "LUIS",
+    lucia: "ANDREÍNA",
+    pepe: "EL SEÑOR JOSÉ",
+    hijo: "Samuel",
+    sierra: "la Gran Sabana",
+    smsFalso: "Tu Pago Móvil fue suspendido. Reactívalo aquí: bit.ly/...",
+    llamadaGancho: "Le hablamos de Banco Caribe Sur: su cuenta tiene una operación rara.",
+    comprobante: "¡Ya te hice el pago móvil, pana! Mira la captura.",
+    defensaComprobante: "Revisa el pago en TU app, no en la captura: se edita en segundos.",
+    datoLocal: { cifra: "+228%", texto: "subieron los fraudes digitales en Venezuela en 2025: el mayor aumento de la región.", fuente: "AppGate, según prensa" },
+    modalidad: "Venta falsa de dólares «a buena tasa» por pago móvil que nunca se entregan.",
+  },
+  otro: {
+    id: "otro",
+    nombre: "OTRO PAÍS",
+    bandera: { colores: ["#285ea8", "#65be83", "#f1b35b"], vertical: false },
+    factor: 0.27,
+    simbolo: "$",
+    miles: ",",
+    banco: "Banco Central del Sur",
+    billetera: "MiBilletera",
+    billeterasReales: "transferencias y billeteras digitales",
+    billeterasCortas: "Billeteras",
+    tienda: "TIENDA",
+    rosa: "DOÑA ROSA",
+    jorge: "JORGE",
+    lucia: "LUCÍA",
+    pepe: "DON PEPE",
+    hijo: "Kevin",
+    sierra: "la montaña",
+    smsFalso: "Tu cuenta será bloqueada. Valida tus datos aquí: bit.ly/...",
+    llamadaGancho: "Le hablamos del área de seguridad de su banco.",
+    comprobante: "¡Ya te pagué! Mira la captura.",
+    defensaComprobante: "Revisa el pago en TU app, no en la captura.",
+    datoLocal: null,
+    modalidad: "Las mismas estafas se repiten en toda la región: falso banco, falso familiar y comprobante falso.",
+  },
 };
 
 /** Monto del juego (PEN) en la moneda del país, redondeado a algo creíble. */
@@ -169,7 +295,7 @@ export function datosEpilogo(pais: Pais): Dato[] {
     { cifra: "+155%", texto: "intentos de estafa por ingeniería social en bancos de Latinoamérica.", fuente: "BioCatch, 36 instituciones, 2025" },
     { cifra: "+42%", texto: "cuentas mula reportadas: cada robo necesita una cuenta que lo reciba.", fuente: "BioCatch, 2025" },
   ];
-  datos.push(pais.datoLocal);
+  if (pais.datoLocal) datos.push(pais.datoLocal);
   datos.push(
     { cifra: "S/ 10,000", texto: "Un cliente en Puno perdió una transferencia inusual. El banco dijo: «se autenticó bien». Indecopi le dio la razón al cliente: autenticar no exime de monitorear.", fuente: "Indecopi, julio 2026" },
     { cifra: "S/ 1,550", texto: "En Tarapoto, otra transferencia no reconocida: el banco es quien tiene que probar que fuiste tú.", fuente: "Indecopi, 2026" },

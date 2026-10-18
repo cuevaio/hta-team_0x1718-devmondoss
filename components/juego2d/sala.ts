@@ -1,9 +1,11 @@
 import { accionSala, verSala, type VistaSala } from "@/components/juego/api";
 import { CARTAS } from "@/lib/juego/cartas";
+import { frase } from "./jerga";
 import type { Boton, Motor } from "./motor";
 import { PAISES, type Pais, type PaisId } from "./paises";
 import { TICKETS, dibujarTicket } from "./pausaOPasa";
-import { PAL, Pincel, W, facil, type Caja } from "./pincel";
+import { PAL, Pincel, W, envolver, facil, type Caja } from "./pincel";
+import { dibujarQR } from "./qr";
 import { dibujarCarta, mazo } from "./realOEstafa";
 
 /**
@@ -41,6 +43,8 @@ export function pantallaSala(
   let ultimoTic = -1;
   let resolver: () => void = () => {};
   const listo = new Promise<void>((r) => (resolver = r));
+  const lemaLobby = frase(pais.id, "lobby");
+  const urlSala = `${window.location.origin}/play?sala=${codigo}`;
 
   const restante = () => (vista?.restante_ms == null ? 0 : Math.max(0, vista.restante_ms - (performance.now() - recibida)));
 
@@ -54,6 +58,13 @@ export function pantallaSala(
     }
     if (v.fase === "revelar") {
       const ultima = v.mio?.ultima;
+      const rep = v.reparto;
+      const respondieron = rep ? rep.estafa + rep.real : 0;
+      const fallaron = rep && v.verdad !== null ? (v.verdad ? rep.real : rep.estafa) : 0;
+      const y = m.h - 50;
+      if (respondieron >= 2 && fallaron / respondieron >= 0.5) m.comentar(frase(pais.id, "muchosCayeron"), { y, color: "#f4c7c3" });
+      else if (respondieron >= 2 && fallaron === 0) m.comentar(frase(pais.id, "nadieCayo"), { y, color: "#bfe8c9" });
+      else if (ultima) m.comentar(frase(pais.id, ultima.correcto ? "acierto" : v.verdad ? "cayo" : "desconfiado"), { y });
       if (ultima?.correcto) {
         m.audio.acierto(3);
         m.audio.monedas();
@@ -70,6 +81,7 @@ export function pantallaSala(
     }
     if (v.fase === "fin") {
       m.musica("guardian");
+      if (v.jugadores[0]) m.comentar(frase(pais.id, "podio", v.jugadores[0].alias.toUpperCase()), { y: m.h - 96 });
       const pos = v.mio?.posicion ?? 0;
       if (pos > 0 && pos <= 3) {
         m.audio.exito();
@@ -205,22 +217,29 @@ export function pantallaSala(
     const juego = NOMBRE_JUEGO[v.juego];
 
     if (v.fase === "espera") {
-      p.centrado(juego, 30, PAL.ambar, 8, PAL.tinta);
-      p.centrado("CÓDIGO DE LA SALA", 46, PAL.grisClaro);
-      const pulso = 1 + (Math.floor(t / 30) % 2) * 0.04;
-      p.escalado(W / 2, 72, pulso * 2, () => p.centrado(codigo.split("").join(" "), 68, PAL.blanco, 8, PAL.rojoOscuro));
-      p.centrado("Entren a /play", 96, PAL.crema);
-      p.centrado("EN VIVO > UNIRME", 108, PAL.celeste);
-      p.rect(PAL.tinta, 6, 122, W - 12, 1);
-      const filas = Math.max(1, Math.floor((h - 190) / 12));
+      p.centrado(juego, 26, PAL.ambar, 8, PAL.tinta);
+      // QR que entra directo a esta sala, y el código para dictarlo.
+      dibujarQR(p, urlSala, 8, 38, 78);
+      p.centrado("CÓDIGO", 42, PAL.grisClaro, 8, undefined, 92, 96);
+      const pulso = 1 + (Math.floor(t / 30) % 2) * 0.05;
+      p.escalado(140, 62, pulso * 2, () => p.centrado(codigo, 58, PAL.blanco, 8, PAL.rojoOscuro, 92, 96));
+      p.centrado("¡ESCANEA!", 82, PAL.ambar, 8, undefined, 92, 96);
+      p.centrado("o en /play", 94, PAL.crema, 8, undefined, 92, 96);
+      p.centrado("> EN VIVO", 106, PAL.celeste, 8, undefined, 92, 96);
+      p.rect(PAL.tinta, 6, 120, W - 12, 1);
+      if (Math.floor(t / 240) % 2 === 1) {
+        p.alfa(0.92, () => p.rect(PAL.ambar, 6, h - 92, W - 12, 26));
+        envolver(lemaLobby, 21).slice(0, 2).forEach((l, i) => p.centrado(l, h - 88 + i * 11, PAL.tinta));
+      }
+      const filas = Math.max(1, Math.floor((h - 226) / 12));
       v.jugadores.slice(0, filas * 2).forEach((j, i) => {
         const x = 8 + (i % 2) * 92;
-        const y = 130 + Math.floor(i / 2) * 12;
+        const y = 128 + Math.floor(i / 2) * 12;
         const band = PAISES[j.pais as PaisId]?.bandera;
         if (band) band.colores.forEach((col, k) => p.rect(col, x + (band.vertical ? Math.round((k * 9) / band.colores.length) : 0), y + (band.vertical ? 0 : Math.round((k * 7) / band.colores.length)), band.vertical ? 3 : 9, band.vertical ? 7 : 3));
         p.texto(j.alias.toUpperCase().slice(0, 9), x + 12, y, j.alias.toLowerCase() === alias.toLowerCase() ? PAL.ambar : PAL.crema);
       });
-      if (v.jugadores.length > filas * 2) p.centrado(`+${v.jugadores.length - filas * 2} más`, 130 + filas * 12, PAL.gris);
+      if (v.jugadores.length > filas * 2) p.centrado(`+${v.jugadores.length - filas * 2} más`, 128 + filas * 12, PAL.gris);
       if (!token) {
         const puntos = ".".repeat(1 + (Math.floor(t / 20) % 3));
         p.centrado(`Esperando a ${v.host.toUpperCase().slice(0, 10)}${puntos}`, h - 64, PAL.grisClaro);

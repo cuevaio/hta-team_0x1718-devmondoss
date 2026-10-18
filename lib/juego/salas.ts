@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { Alias } from './alias';
+import { PAISES_JUEGO } from './arcade';
 import { CARTAS, type JuegoSala, type VerdadCarta } from './cartas';
 
 /**
@@ -23,12 +24,12 @@ export const REVELAR_MS = 4_500;
 const VIDA_MS = 2 * 60 * 60 * 1000;
 /** Una sala que nunca empezó deja de mostrarse en el monitor a los 15 min. */
 const ESPERA_VISIBLE_MS = 15 * 60 * 1000;
-const MAX_JUGADORES = 80;
+const MAX_JUGADORES = 150;
 /** Sin I ni O: se confunden con 1 y 0 al dictar el código. */
 const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 export const JuegoSalaZ = z.enum(['real_o_estafa', 'pausa_o_pasa']);
-const Pais = z.enum(['pe', 'co', 'mx', 'ar']);
+const Pais = z.enum(PAISES_JUEGO);
 const Codigo = z.string().trim().toUpperCase().regex(/^[A-Z]{4}$/);
 
 export const CrearSala = z.object({ alias: Alias, pais: Pais, juego: JuegoSalaZ });

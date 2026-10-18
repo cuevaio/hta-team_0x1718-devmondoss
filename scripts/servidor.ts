@@ -11,7 +11,7 @@
  *   --red          escucha en 0.0.0.0 (celulares en la misma red). Exige token.
  *   --tunel        imprime el comando de Cloudflare Tunnel. Exige token.
  *   --juego        MOVIMIENTOS_EN_VIVO=1 (DEMO_JUEGO §9)
- *   --persistir    guarda Memoria y partidas en .datos/ y NO reinicia al arrancar
+ *   --persistir    guarda Memoria, partidas y arcade en .datos/ y NO reinicia al arrancar
  *   --sin-build    no corre `next build` (si ya está hecho)
  *
  * Por qué un servidor continuo y no serverless: el estado vive en RAM, y en un proceso
@@ -67,6 +67,7 @@ export function entornoServidor(o: Opciones, base: NodeJS.ProcessEnv = process.e
   if (o.persistir) {
     env.MEMORIA_ARCHIVO ??= resolve('.datos/memoria.json');
     env.PARTIDAS_ARCHIVO ??= resolve('.datos/partidas.json');
+    env.ARCADE_ARCHIVO ??= resolve('.datos/arcade.json');
   }
   return { env, expuesto, tokenGenerado };
 }

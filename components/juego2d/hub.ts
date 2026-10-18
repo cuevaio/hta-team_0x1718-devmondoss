@@ -180,3 +180,88 @@ export function menuHub(m: Motor, d: DatosHub): Promise<string> {
   m.minijuego({ dibujar, tocar, tecla, info });
   return listo;
 }
+
+/** Elegir país: grilla de 2 columnas con bandera grande (caben los 9). */
+export function menuPaises(
+  m: Motor,
+  paises: Array<{ id: string; nombre: string; bandera: { colores: string[]; vertical: boolean } }>,
+): Promise<string> {
+  const inicio = m.t;
+  let sel = 0;
+  let elegido: number | null = null;
+  let resolver: (id: string) => void = () => {};
+  const listo = new Promise<string>((r) => (resolver = r));
+  const filas = Math.ceil(paises.length / 2);
+
+  const caja = (i: number): Caja => {
+    const arriba = 44;
+    const alto = Math.max(30, Math.min(52, Math.floor((m.h - arriba - 8) / filas) - 4));
+    const y0 = arriba + Math.max(0, Math.floor((m.h - arriba - 8 - filas * (alto + 4)) / 2));
+    // El último impar va centrado.
+    const solo = i === paises.length - 1 && paises.length % 2 === 1;
+    return { x: solo ? 52 : 6 + (i % 2) * 92, y: y0 + Math.floor(i / 2) * (alto + 4), w: 88, h: alto };
+  };
+
+  const elegir = (i: number) => {
+    if (elegido !== null) return;
+    elegido = i;
+    sel = i;
+    m.audio.confirmar();
+    m.vibrar(12);
+    window.setTimeout(() => {
+      m.minijuego(null);
+      resolver(paises[i].id);
+    }, 160);
+  };
+
+  const tocar = (x: number, y: number) => {
+    paises.forEach((_, i) => {
+      const c = caja(i);
+      if (x >= c.x - 2 && x < c.x + c.w + 2 && y >= c.y - 2 && y < c.y + c.h + 2) elegir(i);
+    });
+  };
+
+  const tecla = (b: Boton) => {
+    const antes = sel;
+    if (b === "der") sel = Math.min(paises.length - 1, sel + 1);
+    if (b === "izq") sel = Math.max(0, sel - 1);
+    if (b === "abajo") sel = Math.min(paises.length - 1, sel + 2);
+    if (b === "arriba") sel = Math.max(0, sel - 2);
+    if (sel !== antes) m.audio.mover();
+    if (b === "a") elegir(sel);
+  };
+
+  const dibujar = (p: Pincel, t: number) => {
+    const h = p.h;
+    p.degradado(0, h, "#141a3a", "#2a1240");
+    p.centrado("¿DE DÓNDE JUEGAS?", 16, PAL.ambar, 8, PAL.tinta);
+    p.centrado("Lo adaptamos a tu país", 28, PAL.grisClaro);
+    paises.forEach((pa, i) => {
+      const c = caja(i);
+      const f = t - inicio;
+      const k = facil.salida(Math.min(1, Math.max(0, (f - i * 3) / 12)));
+      const y = c.y + Math.round((1 - k) * 30) + (elegido === i ? 2 : 0);
+      p.alfa(k, () => {
+        p.alfa(0.4, () => p.rect(PAL.negro, c.x + 1, y + 3, c.w, c.h));
+        p.rect(sel === i ? PAL.ambar : PAL.tinta, c.x, y, c.w, c.h);
+        p.rect(PAL.crema, c.x + 1, y + 1, c.w - 2, c.h - 2);
+        // Bandera arriba y nombre abajo, centrados: entran nombres de hasta 10 letras.
+        const bw = 24;
+        const bh = 14;
+        const by = y + Math.max(3, Math.round((c.h - bh - 12) / 2));
+        const bx = c.x + Math.round((c.w - bw) / 2);
+        p.rect(PAL.tinta, bx - 1, by - 1, bw + 2, bh + 2);
+        const { colores, vertical } = pa.bandera;
+        colores.forEach((col, j) => {
+          if (vertical) p.rect(col, bx + Math.round((j * bw) / colores.length), by, Math.ceil(bw / colores.length), bh);
+          else p.rect(col, bx, by + Math.round((j * bh) / colores.length), bw, Math.ceil(bh / colores.length));
+        });
+        p.centrado(pa.nombre.slice(0, 10), by + bh + 4, PAL.tinta, 8, undefined, c.x, c.w);
+      });
+    });
+  };
+
+  const info = () => ({ paises: paises.map((pa, i) => ({ id: pa.id, nombre: pa.nombre, ...caja(i) })) });
+  m.minijuego({ dibujar, tocar, tecla, info });
+  return listo;
+}
