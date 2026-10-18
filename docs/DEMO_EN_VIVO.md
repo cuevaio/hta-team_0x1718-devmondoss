@@ -6,34 +6,46 @@
 
 **El público ataca al sistema desde su celular mientras lo proyectamos; después lo saturamos a propósito y se ve que igual frena los robos.**
 
-## La presentación: slides → demo → juego
+## La presentación: slides → backend → juego
 
 Son **tres pantallas en el proyector, en este orden**. Conviene abrirlas antes en tres pestañas.
 
 | # | Pantalla | URL | Tiempo |
 |---|---|---|---|
 | 1 | **Slides** (portada, problema, solución) | `npm run pitch` → http://localhost:4000 | ~1:30 |
-| 2 | **Demo de la solución**: el caso de Rosa de punta a punta | `https://web-production-be4c9.up.railway.app/demo?token=TOKEN` | ~2:00 |
+| 2 | **Backend en vivo**: la suite corre por el pipeline real y se ve qué hizo cada agente | `https://web-production-be4c9.up.railway.app/demo?token=TOKEN` | ~2:00 |
 | 3 | **Juego + monitor**: el público ataca | QR de la portada (`/play`) y `/monitor?token=TOKEN` | ~3:00 |
 | 4 | **Slides**: la oportunidad (última diapositiva) | pestaña 1 | ~0:30 |
 
-El token es el `DEMO_TOKEN` del servidor y se borra de la barra de direcciones al cargar. Sin token, el público puede ejecutar los actos de `/demo`; **confirmar la mula y reiniciar** son del presentador.
+El token es el `DEMO_TOKEN` del servidor y se borra de la barra de direcciones al cargar. Sin token, el panel muestra la lista pero no corre la suite.
 
-### Guion de `/demo` (2 minutos)
+### `/demo`: el backend en vivo (2 minutos)
 
-Antes de empezar: **Reiniciar demo**.
+Un solo botón: **▶ correr suite**. Son 11 pruebas (`lib/demo/suite.ts`, las mismas de `tests/scenarios`) contra el pipeline del servidor, con los agentes que tenga configurados. Cada prueba muestra:
 
-1. **Acto 1 · Rosa recibe una llamada** → *Ejecutar*. A la izquierda, el celular de Rosa: el dinero queda en **pausa preventiva** antes de que actúe la IA. A la derecha, la consola del banco: la línea de tiempo muestra Reglas → Coordinador → Detective → Guardián. En el celular de Rosa tocar **«Sí, el banco»**: el Guardián detecta que la están guiando y el caso pasa al analista con el expediente citado (E-01, E-03…).
-   > «A Rosa no la hackearon: la convencieron. Por eso frenamos el dinero primero y preguntamos después.»
-2. **Acto 2 · Revisión de M-01** → *Ejecutar* → **Confirmar mula**. Decide una persona, no la IA.
-   > «El analista confirma la mula con el expediente que armaron los agentes.»
-3. **Acto 3 · Jorge es la siguiente víctima** → *Ejecutar*. Resultado: **P1 · 0 llamadas de IA**, «Cuenta reconocida». El embudo muestra las llamadas evitadas por la memoria.
-   > «Lo aprendimos con Rosa: Jorge está protegido al instante y sin gastar IA.»
-4. (Si hay tiempo) **Control · Bodega Don Pepe**: un pago legítimo pasa. El sistema no bloquea todo.
+- las **etapas** que actuaron: Reglas → Memoria → Red → Coordinador → Detective → Guardián → Policy → Auditor. Las que no hicieron falta quedan apagadas;
+- el **log** del caso, con el tiempo de cada paso;
+- la **evidencia** que calcularon las tools y el **expediente** del Auditor, con cada afirmación citando su evidencia (se despliegan);
+- los **chequeos** que verifica, en verde o rojo.
+
+| # | Prueba | Qué decir |
+|---|---|---|
+| 1 | Falso asesor del banco | «El dinero se retiene antes de la IA. La IA investiga después y el Auditor cita cada hecho» |
+| 2 | Inyección de instrucciones | «El estafador intenta engañar al modelo. No importa: quien decide sobre el dinero es una Policy determinista» |
+| 3 | El cliente no contesta | «El silencio no es aprobación» |
+| 4–6 | Bodega, suplantación, hotel | «No bloqueamos todo: el pago legítimo pasa sin molestar al cliente» |
+| 7–8 | Alerta AML → la siguiente víctima | «Un analista confirma la mula y Jorge queda protegido al instante, con 0 llamadas de IA» |
+| 9 | Mula confirmada en otro país | «La red regional avisa antes de cualquier agente» |
+| 10 | Se cae el modelo | «Falla segura: sin IA, el dinero no sale» |
+| 11 | Matriz del atacante | «750 ataques combinados y 0 violaciones de los 5 invariantes» |
+
+Tiempos medidos el 18/10/2026: con agentes simulados, ~16 s (el panel deja ver cada traza). Con Ollama qwen3.5:9b en la Mac, ~40 s, 11/11.
+
+La suite **no le deja rastro al juego**: guarda la Memoria antes de empezar y la repone al terminar, así que M-01 no queda confirmada. Los 750 casos de la matriz no quedan en el monitor y no mueven dinero. Los casos de las otras 10 pruebas sí aparecen en el monitor, con alias «SUITE». Se corre una vez a la vez.
 
 Después: «Ahora ustedes son la banda» → pestaña 3 y el guion de abajo desde el minuto 0:00.
 
-> El juego del público está en Vercel (`te-estan-robando.vercel.app/play`, el QR de los slides) y `/demo` en Railway. Usan el mismo Supabase, así que el ranking y la encuesta son los mismos. Los casos de `/demo` viven en Railway.
+> El juego del público está en Vercel (`te-estan-robando.vercel.app/play`, el QR de los slides) y `/demo` en Railway. Usan el mismo Supabase, así que el ranking y la encuesta son los mismos.
 
 ## Las 3 pantallas
 

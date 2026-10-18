@@ -92,6 +92,12 @@ export class StoreCasos {
     vivo.caso.ia.costo_estimado = estimarCosto(vivo.caso.ia.tokens);
   }
 
+  /** Retira un caso (la matriz de la suite en vivo, lib/demo/suite.ts, no deja 750 casos en el monitor). */
+  quitar(id: string): void {
+    this.casos.delete(id);
+    this.alias.delete(id);
+  }
+
   /** Para `/api/demo/reset`. */
   limpiar(): void {
     this.casos.clear();
