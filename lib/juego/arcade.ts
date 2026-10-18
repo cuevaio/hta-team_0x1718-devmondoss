@@ -113,9 +113,14 @@ export const EntradaArcade = z.discriminatedUnion('modo', [
   EntradaPausaOPasa,
 ]);
 export type EntradaArcade = z.infer<typeof EntradaArcade>;
-export type JugadaArcade = EntradaArcade & { id: string; t: string };
+/** `jugador`: id del celular (cookie, lib/juego/jugador.ts). Las jugadas viejas no lo tienen. */
+export type JugadaArcade = EntradaArcade & { id: string; t: string; jugador?: string };
 
-export type FilaRanking = { alias: string; pais: string; puntaje: number };
+/** Quién es quién en el ranking: el id del jugador; las jugadas viejas, por apodo. */
+const quien = (j: { jugador?: string; alias: string }) => j.jugador ?? `alias:${j.alias.toLowerCase()}`;
+
+/** `tuyo`: la fila es del jugador que consulta (para resaltarla). */
+export type FilaRanking = { alias: string; pais: string; puntaje: number; tuyo?: boolean };
 
 export type ResumenArcade = {
   jugadas: number;
@@ -180,9 +185,10 @@ export class RegistroArcade {
     }
   }
 
-  registrar(entrada: EntradaArcade): JugadaArcade {
+  registrar(entrada: EntradaArcade, jugador?: string): JugadaArcade {
     const jugada: JugadaArcade = {
       ...entrada,
+      ...(jugador ? { jugador } : {}),
       id: idUnico('ARCADE'),
       t: new Date().toISOString(),
     };
@@ -215,24 +221,24 @@ export class RegistroArcade {
 
   /** Posición (1 = primero) que tendría un puntaje en el ranking de su modo. */
   posicion(modo: Modo, puntaje: number): number {
-    const mejores = this.mejoresPorAlias(modo);
+    const mejores = this.filas(modo);
     return mejores.filter((f) => f.puntaje > puntaje).length + 1;
   }
 
   /** Ranking general: suma del mejor puntaje de cada alias en cada modo. */
-  general(): FilaRanking[] {
+  general(yo?: string): FilaRanking[] {
     const total = new Map<string, FilaRanking>();
     for (const modo of MODOS) {
-      for (const f of this.mejoresPorAlias(modo)) {
-        const clave = f.alias.toLowerCase();
-        const previa = total.get(clave);
-        total.set(clave, { alias: previa?.alias ?? f.alias, pais: previa?.pais ?? f.pais, puntaje: (previa?.puntaje ?? 0) + f.puntaje });
+      for (const [k, f] of this.mejoresPorJugador(modo)) {
+        const previa = total.get(k);
+        total.set(k, { alias: previa?.alias ?? f.alias, pais: previa?.pais ?? f.pais, puntaje: (previa?.puntaje ?? 0) + f.puntaje, ...(yo && k === yo ? { tuyo: true } : {}) });
       }
     }
     return [...total.values()].sort((a, b) => b.puntaje - a.puntaje);
   }
 
-  resumen(top = 10): ResumenArcade {
+  /** `yo`: id del jugador que consulta, para marcar sus filas. */
+  resumen(top = 10, yo?: string): ResumenArcade {
     const j = this.jugadas;
     const contar = (claves: string[]) =>
       claves.reduce<Record<string, number>>((acc, k) => ({ ...acc, [k]: (acc[k] ?? 0) + 1 }), {});
@@ -281,12 +287,12 @@ export class RegistroArcade {
 
     return {
       jugadas: j.length,
-      jugadores: new Set(j.map((x) => x.alias.toLowerCase())).size,
+      jugadores: new Set(j.map(quien)).size,
       por_pais: contar(j.map((x) => x.pais)),
       por_modo: contar(j.map((x) => x.modo)),
       en_sala: j.filter((x) => x.origen === 'sala').length,
-      ranking: Object.fromEntries(MODOS.map((m) => [m, this.mejoresPorAlias(m).slice(0, top)])) as Record<Modo, FilaRanking[]>,
-      general: this.general().slice(0, top),
+      ranking: Object.fromEntries(MODOS.map((m) => [m, this.filas(m, yo).slice(0, top)])) as Record<Modo, FilaRanking[]>,
+      general: this.general(yo).slice(0, top),
       caidas: [...categorias.entries()]
         .map(([categoria, c]) => ({ categoria, ...c, pct: pct(c.cayeron, c.vistas) }))
         .sort((a, b) => b.pct - a.pct || b.vistas - a.vistas),
@@ -300,15 +306,23 @@ export class RegistroArcade {
   }
 
   /** Mejor puntaje de cada alias en un modo, de mayor a menor. */
-  private mejoresPorAlias(modo: Modo): FilaRanking[] {
+  /** Ranking de un modo: el mejor puntaje de cada jugador, de mayor a menor. */
+  private filas(modo: Modo, yo?: string): FilaRanking[] {
+    return [...this.mejoresPorJugador(modo)]
+      .map(([k, f]) => (yo && k === yo ? { ...f, tuyo: true } : f))
+      .sort((a, b) => b.puntaje - a.puntaje);
+  }
+
+  /** Mejor jugada de cada jugador (por id; las viejas sin id, por apodo). */
+  private mejoresPorJugador(modo: Modo): Map<string, FilaRanking> {
     const mejor = new Map<string, FilaRanking>();
     for (const x of this.jugadas) {
       if (x.modo !== modo || x.origen === 'sala') continue;
-      const clave = x.alias.toLowerCase();
-      const previa = mejor.get(clave);
-      if (!previa || x.puntaje > previa.puntaje) mejor.set(clave, { alias: x.alias, pais: x.pais, puntaje: x.puntaje });
+      const k = quien(x);
+      const previa = mejor.get(k);
+      if (!previa || x.puntaje > previa.puntaje) mejor.set(k, { alias: x.alias, pais: x.pais, puntaje: x.puntaje });
     }
-    return [...mejor.values()].sort((a, b) => b.puntaje - a.puntaje);
+    return mejor;
   }
 
   private cargar(archivo: string): void {

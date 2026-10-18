@@ -72,6 +72,7 @@ import { escenaMemoria, sigueElDinero } from "./sigueElDinero";
 import { comoSeJuega, icono, teLlevas, type Paso } from "./tutorial";
 import { frase } from "./jerga";
 import { menuHub, menuPaises } from "./hub";
+import { apodoRecordado, identificar, paisRecordado, recordar } from "./identidad";
 import { pantallaSala, type ResultadoSala } from "./sala";
 import { pantallaSalaBanda, type ResultadoBanda } from "./salaBanda";
 import type { Direccion } from "./sprites";
@@ -100,6 +101,8 @@ const ROBADO: Marca = { texto: "ROBADO", color: PAL.rojoOscuro };
 
 type Sesion = {
   alias: string;
+  /** Id del jugador (cookie) o, sin conexión, su apodo: llave de su progreso. */
+  claveProg: string;
   pais: Pais;
   prog: Progreso;
   resultados: Partial<Record<RutaId, Marca>>;
@@ -132,6 +135,8 @@ function cargarRecords(destino: TablaRecords[]) {
 
 export async function jugar(m: Motor) {
   let sesion: Sesion | null = null;
+  // El id de este celular (cookie) se pide en paralelo con la intro.
+  const identificacion = identificar();
   const records: TablaRecords[] = [];
   let salaDirecta = salaDelEnlace();
   // Quien llega por el QR de una sala va al grano: sin video.
@@ -149,9 +154,22 @@ export async function jugar(m: Motor) {
     m.descubrirYa();
     m.fundido = 1;
     if (!sesion) {
-      const alias = await intro(m);
-      const pais = await elegirPais(m);
-      sesion = { alias, pais, prog: cargarProgreso(alias), resultados: {}, respondidas: new Set(), vistos: new Set(), vioDatos: false };
+      const jugadorId = await identificacion;
+      // Como en un arcade: si este celular ya jugó, se le reconoce.
+      const recordado = apodoRecordado();
+      const paisGuardado = paisRecordado();
+      let alias: string;
+      let pais: Pais;
+      if (recordado && !validarAlias(recordado) && (await bienvenida(m, recordado))) {
+        alias = recordado;
+        pais = paisGuardado && paisGuardado in PAISES ? PAISES[paisGuardado as PaisId] : await elegirPais(m);
+      } else {
+        alias = await intro(m);
+        pais = await elegirPais(m);
+      }
+      recordar(alias, pais.id);
+      const claveProg = jugadorId ?? alias;
+      sesion = { alias, claveProg, pais, prog: cargarProgreso(claveProg, alias), resultados: {}, respondidas: new Set(), vistos: new Set(), vioDatos: false };
       if (salaDirecta) {
         const codigo = salaDirecta;
         salaDirecta = null;
@@ -181,7 +199,10 @@ export async function jugar(m: Motor) {
         } else if (extra === "pais") {
           await protegido(m, async () => {
             const nuevo = await elegirPais(m, true);
-            if (nuevo) s.pais = nuevo;
+            if (nuevo) {
+              s.pais = nuevo;
+              recordar(s.alias, nuevo.id);
+            }
           });
         } else if (extra === "intro") await protegido(m, () => videoIntro(m));
         else if (extra === "titulo") {
@@ -219,7 +240,7 @@ async function jugarRuta(m: Motor, s: Sesion, id: RutaId) {
   if (marca === SALVO) logros.push("salvaste");
   if (huecos > 0) logros.push("hacker_etico");
   const c = sumarPartida(s.prog, null, puntos, logros);
-  guardarProgreso(s.alias, s.prog);
+  guardarProgreso(s.claveProg, s.prog);
   m.aviso(`+${puntos + c.bonus} PUNTOS`, id === "banda" ? `${huecos} huecos encontrados` : marca === SALVO ? "¡Saliste a salvo!" : "Por jugar la historia", PAL.ambar);
   anunciarCosecha(m, c);
   await m.esperar(Math.min(3000, (m.avisosPendientes * 1000) / 60));
@@ -268,6 +289,20 @@ function validarAlias(alias: string): string | null {
   const motivo = motivoAliasInvalido(alias);
   if (!motivo) return null;
   return motivo.replace(/^el alias/, "El apodo").replace("no puede contener un número de teléfono", "no puede ser un teléfono");
+}
+
+/** Jugador que vuelve: ¿sigue con su apodo (y su récord) o cambia? */
+async function bienvenida(m: Motor, alias: string): Promise<boolean> {
+  m.escena = laboratorio;
+  m.musica("barrio");
+  await m.fundirA(false);
+  const i = await m.pregunta(
+    `¡Volviste, ${alias}! Tu récord sigue aquí, como en las máquinas de antes.`,
+    [{ texto: `SEGUIR COMO ${alias.toUpperCase()}`.slice(0, 22), color: "#bfe8c9" }, { texto: "CAMBIAR APODO" }],
+    VEGA,
+  );
+  await m.fundirA(true);
+  return i !== 1;
 }
 
 async function intro(m: Motor): Promise<string> {
@@ -669,7 +704,7 @@ async function modoArcade(m: Motor, s: Sesion, def: DefArcade): Promise<void> {
       // sin conexión: el juego sigue
     }
     const c = sumarPartida(s.prog, def.modo, puntaje, r.logros);
-    guardarProgreso(s.alias, s.prog);
+    guardarProgreso(s.claveProg, s.prog);
     const rg = rango(s.prog.total);
 
     m.barraSuperior = null;
@@ -817,7 +852,7 @@ async function jugarSala(m: Motor, s: Sesion, codigo: string, token: string | nu
       const logros: IdLogro[] = ["en_vivo"];
       if (r.posicion === 1 && r.jugadores > 1) logros.push("campeon");
       const c = sumarPartida(s.prog, null, puntos, logros);
-      guardarProgreso(s.alias, s.prog);
+      guardarProgreso(s.claveProg, s.prog);
       m.aviso(`+${puntos + c.bonus} PUNTOS`, `Puesto #${r.posicion} de ${r.jugadores}`, PAL.ambar);
       anunciarCosecha(m, c);
     },
@@ -864,7 +899,7 @@ async function salaDeLaBanda(m: Motor, s: Sesion, codigo: string, token: string 
       if (r.huecos > 0) logros.push("hacker_etico");
       if (r.posicion === 1 && r.jugadores > 1) logros.push("campeon");
       const c = sumarPartida(s.prog, null, puntos, logros);
-      guardarProgreso(s.alias, s.prog);
+      guardarProgreso(s.claveProg, s.prog);
       m.aviso(`+${puntos + c.bonus} PUNTOS`, r.huecos > 0 ? `${r.huecos} hueco(s) · #${r.posicion}` : `Sin huecos · #${r.posicion}`, PAL.ambar);
       anunciarCosecha(m, c);
     },

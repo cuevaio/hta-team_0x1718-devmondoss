@@ -80,10 +80,18 @@ export type Progreso = {
 
 const clave = (alias: string) => `ter-progreso:${alias.toLowerCase()}`;
 
-export function cargarProgreso(alias: string): Progreso {
+/**
+ * `quien`: id del jugador (o el apodo si no hay id). `aliasViejo`: si este
+ * jugador tenía progreso guardado por apodo (antes de los ids), se migra.
+ */
+export function cargarProgreso(quien: string, aliasViejo?: string): Progreso {
   const vacio: Progreso = { total: 0, mejor: {}, estrellas: {}, logros: [] };
   try {
-    const crudo = window.localStorage.getItem(clave(alias));
+    let crudo = window.localStorage.getItem(clave(quien));
+    if (!crudo && aliasViejo && aliasViejo !== quien) {
+      crudo = window.localStorage.getItem(clave(aliasViejo));
+      if (crudo) window.localStorage.setItem(clave(quien), crudo);
+    }
     if (!crudo) return vacio;
     const p = JSON.parse(crudo) as Partial<Progreso>;
     return {
