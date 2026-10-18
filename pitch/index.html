@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mule Zero</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Geist:wght@400..800&family=Geist+Mono:wght@400..600&display=swap">
+<link rel="stylesheet" href="estilos.css">
+<script src="presentacion.js" defer></script>
+</head>
+<body>
+<div class="deck" id="deck">
+<main class="stage" id="stage" aria-roledescription="presentación">
+  <header class="hud">
+    <div class="brand"><i></i>MULE ZERO</div>
+    <div class="count" id="count">01 / 04</div>
+  </header>
+
+  <!-- 1 · Portada -->
+  <section class="slide cover is-active" aria-label="Portada">
+    <div class="netbg" aria-hidden="true"><svg id="net" data-smil viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice"></svg></div>
+    <div class="cover-text">
+      <p class="kicker rise" style="--d:.1s">HACK THE ANDES · TRACK 04</p>
+      <h1 class="logo rise" style="--d:.25s">MULE ZERO<span class="cursor" aria-hidden="true"></span></h1>
+      <p class="tagline rise" style="--d:.5s">Le quitamos al estafador la cuenta que necesita.</p>
+      <div class="team rise" style="--d:.8s">
+        <p class="member" style="--c:var(--cyan)"><b>TONY</b><span>Agentes de IA</span></p>
+        <p class="member" style="--c:var(--green)"><b>ALE</b><span>Plataforma</span></p>
+        <p class="member" style="--c:var(--amber)"><b>JHOSTYN</b><span>QA</span></p>
+      </div>
+    </div>
+    <div class="play pop" style="--d:1s">
+      <p class="kicker">JUEGA AHORA</p>
+      <div class="qr" role="img" aria-label="Código QR hacia te-estan-robando.vercel.app/play"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><path stroke="#f6ebd7" d="M0 0.5h7m4 0h2m2 0h1m2 0h2m2 0h7M0 1.5h1m5 0h1m2 0h1m2 0h1m2 0h1m1 0h2m3 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m2 0h1m5 0h1m1 0h4m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h1m3 0h1m3 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h2m1 0h2m3 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h1m1 0h1m2 0h1m1 0h1m1 0h3m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 7.5h1m1 0h1m2 0h4M0 8.5h1m2 0h1m1 0h2m1 0h4m1 0h2m3 0h1m2 0h1m1 0h1M2 9.5h1m1 0h1m5 0h2m1 0h1m2 0h1m3 0h1m1 0h1m2 0h1m2 0h1M6 10.5h4m1 0h4m2 0h1m1 0h2m2 0h5M4 11.5h2m2 0h2m2 0h2m1 0h1m4 0h1m1 0h2m2 0h2M1 12.5h2m1 0h1m1 0h3m1 0h2m1 0h1m3 0h1m2 0h3m2 0h1m1 0h2M0 13.5h1m6 0h1m2 0h5m2 0h4M2 14.5h1m1 0h1m1 0h1m1 0h3m1 0h1m7 0h3m1 0h5M0 15.5h2m1 0h2m6 0h5m1 0h1m2 0h2m2 0h2m1 0h1M5 16.5h5m1 0h1m1 0h2m2 0h1m2 0h2m5 0h1M4 17.5h2m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m4 0h2m2 0h1m2 0h1M0 18.5h1m2 0h1m1 0h2m2 0h2m2 0h1m2 0h1m3 0h1m1 0h3m2 0h2M2 19.5h1m2 0h1m1 0h3m1 0h1m1 0h1m3 0h3m2 0h1m4 0h2M0 20.5h1m1 0h1m3 0h1m1 0h2m2 0h1m1 0h3m3 0h5m1 0h1M8 21.5h1m1 0h1m1 0h2m3 0h2m1 0h1m3 0h1m1 0h3M0 22.5h7m3 0h2m1 0h2m2 0h2m1 0h1m1 0h1m1 0h1m2 0h1M0 23.5h1m5 0h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h1m3 0h4M0 24.5h1m1 0h3m1 0h1m2 0h3m2 0h4m2 0h5M0 25.5h1m1 0h3m1 0h1m1 0h1m2 0h4m2 0h1m1 0h1m2 0h6M0 26.5h1m1 0h3m1 0h1m2 0h2m1 0h3m3 0h3m3 0h3m1 0h1M0 27.5h1m5 0h1m3 0h2m1 0h8m1 0h2m3 0h1M0 28.5h7m1 0h1m1 0h1m6 0h1m1 0h2m1 0h3m2 0h1"/></svg>
+</div>
+      <p class="url">te-estan-robando.vercel.app/play</p>
+    </div>
+  </section>
+
+  <!-- 2 · El problema -->
+  <section class="slide with-note" id="s-problema" aria-label="El problema">
+    <div class="head">
+      <p class="kicker rise" style="--d:.05s">EL PROBLEMA</p>
+      <h2 class="rise" style="--d:.15s">Muchas víctimas. <span class="red">Una sola cuenta.</span></h2>
+    </div>
+    <div class="viz">
+      <svg id="viz-problema" data-smil viewBox="0 0 900 600" role="img" aria-label="Catorce víctimas envían dinero a una sola cuenta mula, que lo reenvía en menos de dos horas a otra cuenta del país y a cuentas de Bolivia y Colombia.">
+        <text class="px" x="80" y="36" text-anchor="middle" font-size="12" fill="#79c7e8">VÍCTIMAS</text>
+        <g id="victimas"></g>
+        <line x1="725" y1="40" x2="725" y2="540" stroke="#93a8c0" stroke-width="2" stroke-dasharray="6 8" opacity="0.5"/>
+        <text class="px" x="733" y="560" font-size="10" fill="#93a8c0">FRONTERA</text>
+        <g opacity="0">
+          <animate attributeName="opacity" from="0" to="1" begin="4.6s" dur="0.5s" fill="freeze"/>
+          <path id="o1" d="M512 285 Q 590 160 628 150" fill="none" stroke="#f1b35b" stroke-width="3" stroke-dasharray="10 10">
+            <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="0.6s" repeatCount="indefinite"/>
+          </path>
+          <path id="o2" d="M516 300 Q 680 260 802 255" fill="none" stroke="#f1b35b" stroke-width="3" stroke-dasharray="10 10">
+            <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="0.6s" repeatCount="indefinite"/>
+          </path>
+          <path id="o3" d="M512 315 Q 680 450 802 455" fill="none" stroke="#f1b35b" stroke-width="3" stroke-dasharray="10 10">
+            <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="0.6s" repeatCount="indefinite"/>
+          </path>
+          <circle r="6" fill="#f6ebd7"><animateMotion dur="1.1s" begin="4.8s" repeatCount="indefinite"><mpath href="#o1"/></animateMotion></circle>
+          <circle r="6" fill="#f6ebd7"><animateMotion dur="1.1s" begin="5.1s" repeatCount="indefinite"><mpath href="#o2"/></animateMotion></circle>
+          <circle r="6" fill="#f6ebd7"><animateMotion dur="1.1s" begin="5.4s" repeatCount="indefinite"><mpath href="#o3"/></animateMotion></circle>
+          <circle cx="640" cy="148" r="16" fill="#0f1d33" stroke="#f1b35b" stroke-width="2"/>
+          <text class="sx" x="640" y="190" text-anchor="middle" font-size="17" fill="#93a8c0">Perú</text>
+          <circle cx="820" cy="255" r="16" fill="#0f1d33" stroke="#f1b35b" stroke-width="2"/>
+          <text class="sx" x="820" y="297" text-anchor="middle" font-size="17" fill="#93a8c0">Bolivia</text>
+          <circle cx="820" cy="455" r="16" fill="#0f1d33" stroke="#f1b35b" stroke-width="2"/>
+          <text class="sx" x="820" y="497" text-anchor="middle" font-size="17" fill="#93a8c0">Colombia</text>
+          <text class="sx" x="470" y="470" text-anchor="middle" font-size="22" font-weight="800" fill="#f1b35b">91% sale en &lt; 2 h</text>
+        </g>
+        <circle cx="470" cy="300" r="46" fill="none" stroke="#e66565" stroke-width="2" opacity="0">
+          <animate attributeName="r" values="46;96" dur="1.6s" begin="1.3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.7;0" dur="1.6s" begin="1.3s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="470" cy="300" r="46" fill="#2a0f14" stroke="#e66565" stroke-width="3"/>
+        <text id="s2-count" class="px" x="470" y="314" text-anchor="middle" font-size="34" fill="#f6ebd7">0</text>
+        <text class="px" x="470" y="378" text-anchor="middle" font-size="12" fill="#e66565">1 CUENTA MULA</text>
+              </svg>
+    </div>
+    <div class="facts rise" style="--d:.5s">
+      <p class="fact" style="--c:var(--red)"><b>42,000+</b><span>denuncias por delitos informáticos en Perú, 2024</span></p>
+      <p class="fact" style="--c:var(--cyan)"><b>+42%</b><span>cuentas mula reportadas en LATAM, 2025</span></p>
+      <p class="note">Fuentes: Ministerio Público vía SBS (El Comercio, 2025) · BioCatch (2025) · Escena: simulación con datos sintéticos</p>
+    </div>
+  </section>
+
+  <!-- 5 · La solución -->
+  <section class="slide with-note" aria-label="La solución: cómo funciona la red de agentes">
+    <div class="head">
+      <p class="kicker rise" style="--d:.05s">LA SOLUCIÓN · CÓMO FUNCIONA</p>
+      <h2 class="rise" style="--d:.15s">Cuatro agentes de IA investigan. <span class="green">Una regla fija decide.</span></h2>
+    </div>
+    <div class="flow">
+      <div class="phase" style="--c:var(--amber)">
+        <p class="phase-name rise" style="--d:.25s">1 · FRENAR</p>
+        <div class="card rise" style="--d:.35s;--l:.5s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,2 16,2 22,8 22,16 16,22 8,22 2,16 2,8" fill="currentColor"/></svg><b>REGLAS</b><i class="no">SIN IA</i></div>
+          <p>Ve señales raras y retiene el dinero</p>
+          <span class="out">retenido antes de la IA</span>
+        </div>
+      </div>
+
+      <div class="phase wide" style="--c:var(--cyan)">
+        <p class="phase-name rise" style="--d:.25s">2 · INVESTIGAR</p>
+        <div class="card rise" style="--d:.45s;--l:1.2s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l4 10-4 10-4-10z" fill="currentColor"/></svg><b>COORDINADOR</b><i class="ia">IA</i></div>
+          <p>Decide a quién llamar</p>
+          <span class="out">→ Guardián y Detective</span>
+        </div>
+        <div class="pair">
+          <div class="card rise" style="--d:.55s;--l:2s">
+            <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v7c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5z" fill="currentColor"/></svg><b>GUARDIÁN</b><i class="ia">IA</i></div>
+            <p>Habla con Rosa por un canal seguro</p>
+            <span class="out">la guían por teléfono</span>
+          </div>
+          <div class="card rise" style="--d:.65s;--l:2s">
+            <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="3"/><path d="M15 15l6 6" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg><b>DETECTIVE</b><i class="ia">IA</i></div>
+            <p>Revisa la cuenta que recibe</p>
+            <span class="out">14 le envían · reenvía en 2 h</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="phase" style="--c:var(--red)">
+        <p class="phase-name rise" style="--d:.25s">3 · DECIDIR</p>
+        <div class="card rise" style="--d:.75s;--l:3.1s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 7h14M5 7l-3 7h6zM19 7l-3 7h6z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg><b>POLÍTICA</b><i class="no">SIN IA</i></div>
+          <p>Una regla fija decide qué pasa con el dinero</p>
+          <span class="out">ESCALAR</span>
+        </div>
+        <div class="card rise" style="--d:.85s;--l:3.8s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l4 4v16H6z" fill="currentColor"/><path d="M9 11h7M9 15h7" stroke="#0a0f1a" stroke-width="2"/></svg><b>AUDITOR</b><i class="ia">IA</i></div>
+          <p>Arma el expediente: cada dato con su prueba</p>
+          <span class="out">expediente listo</span>
+        </div>
+      </div>
+
+      <div class="phase" style="--c:var(--green)">
+        <p class="phase-name rise" style="--d:.25s">4 · RECORDAR</p>
+        <div class="card rise" style="--d:.95s;--l:4.5s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4.5" fill="currentColor"/><path d="M3 22a9 9 0 0 1 18 0z" fill="currentColor"/></svg><b>ANALISTA</b><i class="hu">HUMANO</i></div>
+          <p>Revisa el expediente y confirma</p>
+          <span class="out">✓ es una mula</span>
+        </div>
+        <div class="card rise" style="--d:1.05s;--l:5.2s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="12" rx="2" fill="currentColor"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><b>MEMORIA</b><i class="no">SIN IA</i></div>
+          <p>Marca la cuenta, también en la red regional</p>
+          <span class="out">cuenta marcada</span>
+        </div>
+      </div>
+    </div>
+    <p class="jorge rise" style="--d:6.1s"><b>Después:</b> Jorge paga a la misma cuenta y la Memoria lo frena en el paso 1. <span>Sin investigar otra vez · 0 llamadas de IA.</span></p>
+  </section>
+
+  <!-- 6 · La red regional -->
+  <section class="slide with-note" aria-label="La red regional">
+    <div class="head">
+      <p class="kicker rise" style="--d:.05s">LA OPORTUNIDAD</p>
+      <h2 class="rise" style="--d:.15s">Una mula confirmada en un país. <span class="green">Frenada en todos.</span></h2>
+    </div>
+    <div class="viz">
+      <svg id="viz-red" data-smil viewBox="0 0 900 600" role="img" aria-label="Un banco de Colombia confirma una mula y la red avisa a Perú, Bolivia y Brasil. Cuando Ana, en Lima, intenta pagar a esa cuenta, el pago se retiene antes de que corra la IA.">
+        <g stroke="#22416a" stroke-width="2" stroke-dasharray="6 8">
+          <line x1="450" y1="144" x2="450" y2="252"/>
+          <line x1="386" y1="315" x2="246" y2="315"/>
+          <line x1="514" y1="315" x2="684" y2="315"/>
+          <line x1="450" y1="378" x2="450" y2="472"/>
+        </g>
+        <path id="ana" d="M236 290 L420 128" fill="none" stroke="#f1b35b" stroke-width="2" stroke-dasharray="4 8" opacity="0">
+          <set attributeName="opacity" to="0.7" begin="3.6s"/>
+        </path>
+        <circle cx="450" cy="315" r="62" fill="none" stroke="#65be83" stroke-width="2" opacity="0">
+          <animate attributeName="r" values="62;120" dur="1s" begin="2.1s" fill="freeze"/>
+          <animate attributeName="opacity" values="0.9;0" dur="1s" begin="2.1s" fill="freeze"/>
+        </circle>
+        <circle cx="450" cy="315" r="62" fill="#0f2a1c" stroke="#65be83" stroke-width="3"/>
+        <text class="px" x="450" y="321" text-anchor="middle" font-size="13" fill="#65be83">RED</text>
+
+        <circle cx="450" cy="110" r="34" fill="#10213a" stroke="#79c7e8" stroke-width="2"><set attributeName="stroke" to="#e66565" begin="0.6s"/></circle>
+        <circle cx="450" cy="110" r="34" fill="none" stroke="#e66565" stroke-width="3" opacity="0">
+          <animate attributeName="r" values="34;76" dur="1s" begin="0.6s" repeatCount="2" fill="freeze"/>
+          <animate attributeName="opacity" values="1;0" dur="1s" begin="0.6s" repeatCount="2" fill="freeze"/>
+        </circle>
+        <text class="px" x="450" y="116" text-anchor="middle" font-size="15" fill="#eef3f8">CO</text>
+        <text class="sx" x="450" y="56" text-anchor="middle" font-size="17" fill="#93a8c0">Bre-B</text>
+        <text class="sx" x="500" y="122" font-size="17" font-weight="700" fill="#e66565" opacity="0"><set attributeName="opacity" to="1" begin="0.7s"/>mula confirmada</text>
+
+        <circle cx="212" cy="315" r="34" fill="#10213a" stroke="#79c7e8" stroke-width="2"><set attributeName="stroke" to="#65be83" begin="3s"/></circle>
+        <text class="px" x="212" y="321" text-anchor="middle" font-size="15" fill="#eef3f8">PE</text>
+        <text class="sx" x="212" y="378" text-anchor="middle" font-size="17" fill="#93a8c0">TAPP</text>
+        <circle cx="718" cy="315" r="34" fill="#10213a" stroke="#79c7e8" stroke-width="2"><set attributeName="stroke" to="#65be83" begin="3s"/></circle>
+        <text class="px" x="718" y="321" text-anchor="middle" font-size="15" fill="#eef3f8">BR</text>
+        <text class="sx" x="718" y="378" text-anchor="middle" font-size="17" fill="#93a8c0">PIX</text>
+        <circle cx="450" cy="506" r="34" fill="#10213a" stroke="#79c7e8" stroke-width="2"><set attributeName="stroke" to="#65be83" begin="3s"/></circle>
+        <text class="px" x="450" y="512" text-anchor="middle" font-size="15" fill="#eef3f8">BO</text>
+        <text class="sx" x="450" y="570" text-anchor="middle" font-size="17" fill="#93a8c0">QR</text>
+
+        <circle r="8" fill="#e66565" opacity="0">
+          <set attributeName="opacity" to="1" begin="1.4s"/><set attributeName="opacity" to="0" begin="2.1s"/>
+          <animateMotion path="M450 144 L450 253" dur="0.7s" begin="1.4s" fill="freeze"/>
+        </circle>
+        <circle r="8" fill="#65be83" opacity="0">
+          <set attributeName="opacity" to="1" begin="2.3s"/><set attributeName="opacity" to="0" begin="3s"/>
+          <animateMotion path="M388 315 L246 315" dur="0.7s" begin="2.3s" fill="freeze"/>
+        </circle>
+        <circle r="8" fill="#65be83" opacity="0">
+          <set attributeName="opacity" to="1" begin="2.3s"/><set attributeName="opacity" to="0" begin="3s"/>
+          <animateMotion path="M512 315 L684 315" dur="0.7s" begin="2.3s" fill="freeze"/>
+        </circle>
+        <circle r="8" fill="#65be83" opacity="0">
+          <set attributeName="opacity" to="1" begin="2.3s"/><set attributeName="opacity" to="0" begin="3s"/>
+          <animateMotion path="M450 377 L450 472" dur="0.7s" begin="2.3s" fill="freeze"/>
+        </circle>
+
+        <circle r="10" fill="#f1b35b" opacity="0">
+          <set attributeName="opacity" to="1" begin="3.6s"/>
+          <animateMotion dur="0.9s" begin="3.6s" fill="freeze" keyPoints="0;0.45" keyTimes="0;1" calcMode="linear"><mpath href="#ana"/></animateMotion>
+        </circle>
+        <circle cx="319" cy="217" r="10" fill="none" stroke="#f1b35b" stroke-width="3" opacity="0">
+          <animate attributeName="r" values="10;48" dur="0.7s" begin="4.5s" fill="freeze"/>
+          <animate attributeName="opacity" values="1;0" dur="0.7s" begin="4.5s" fill="freeze"/>
+        </circle>
+        <g opacity="0"><set attributeName="opacity" to="1" begin="4.6s"/>
+          <rect x="40" y="420" width="300" height="70" rx="10" fill="#2a1f0e" stroke="#f1b35b" stroke-width="2"/>
+          <text class="sx" x="60" y="450" font-size="18" font-weight="700" fill="#eef3f8">Ana · Lima</text>
+          <text class="px" x="60" y="476" font-size="11" fill="#f1b35b">PAGO RETENIDO</text>
+        </g>
+      </svg>
+    </div>
+    <p class="note rise" style="--d:.6s">Diseñado para pagos interoperables: TAPP · Bre-B · QR · PIX</p>
+  </section>
+
+  <div class="wipe" id="wipe" aria-hidden="true"></div>
+
+  <footer class="hud-bottom">
+    <nav class="progress" id="progress" aria-label="Diapositivas"></nav>
+    <button type="button" class="full" id="full" aria-label="Pantalla completa">⛶</button>
+  </footer>
+</main>
+</div>
+</body>
+</html>
