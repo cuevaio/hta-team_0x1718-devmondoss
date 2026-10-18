@@ -32,6 +32,8 @@ Todo resultado se presenta como **simulación con participantes del evento**, nu
 
 **Restricción oficial del evento** ([guía Hack The Andes](https://hacktheandes.com/guide)): el jurado abre los enlaces **desde el equipo de la organización**, en ventana privada; no se conecta la laptop del equipo. La app debe estar **desplegada en una URL pública**, en un **solo proceso** (el estado vive en RAM; nada de serverless).
 
+**Desplegar en Vercel:** sí, pero solo como frontal. Vercel es serverless y el estado vive en la RAM de un solo proceso, así que con `API_REMOTA=<URL del backend en Railway>` Vercel sirve las páginas y reenvía todo `/api/*` a Railway (`next.config.ts`). Sin esa variable, la API correría en Vercel y el demo fallaría al azar.
+
 **Mula precargada para el pitch:** en el modo demo la cuenta M-01 puede confirmarse en vivo con el botón del analista, o llegar ya confirmada como **«validada por analista de simulación»**. Siempre se etiqueta así; nunca se presenta como una revisión humana real.
 
 > Paquete de especificación ampliado (34 docs, 10 escenarios): [Te_Estan_Robando/INDICE.md](Te_Estan_Robando/INDICE.md). Es de referencia: asume Postgres, salas y realtime que **no** entran en el MVP del hackathon.
