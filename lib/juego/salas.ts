@@ -21,6 +21,8 @@ export const CUENTA_MS = 3_000;
 export const RESPONDER_MS = 10_000;
 export const REVELAR_MS = 4_500;
 const VIDA_MS = 2 * 60 * 60 * 1000;
+/** Una sala que nunca empezó deja de mostrarse en el monitor a los 15 min. */
+const ESPERA_VISIBLE_MS = 15 * 60 * 1000;
 const MAX_JUGADORES = 80;
 /** Sin I ni O: se confunden con 1 y 0 al dictar el código. */
 const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -207,10 +209,13 @@ export class Salas {
     };
   }
 
-  /** Salas con actividad en las últimas 2 h, para el monitor. */
+  /** Salas para el monitor: las de las últimas 2 h, salvo lobbies abandonados. */
   activas(): VistaSala[] {
     this.limpiarViejas();
-    return [...this.salas.keys()].map((c) => this.vista(c)!).filter((v) => v.jugadores.length > 0);
+    const ahora = this.reloj();
+    return [...this.salas.values()]
+      .filter((s) => s.inicio !== null || ahora - s.creada < ESPERA_VISIBLE_MS)
+      .map((s) => this.vista(s.codigo)!);
   }
 
   private fase(sala: Sala, ahora: number): { fase: Fase; ronda: number; restante: number | null } {

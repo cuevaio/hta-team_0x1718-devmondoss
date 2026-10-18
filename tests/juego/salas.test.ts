@@ -80,6 +80,16 @@ describe('Salas', () => {
     expect(v.mio!.puntaje).toBe(0);
   });
 
+  it('un lobby que nunca empezó deja de listarse en el monitor a los 15 min', () => {
+    const r = reloj();
+    const s = new Salas(r.ahora);
+    const { codigo } = s.crear('Ana', 'pe', 'real_o_estafa');
+    expect(s.activas().map((x) => x.codigo)).toContain(codigo);
+    r.avanzar(16 * 60 * 1000);
+    expect(s.activas().map((x) => x.codigo)).not.toContain(codigo);
+    expect(s.vista(codigo)).not.toBeNull(); // pero todavía se puede entrar con el código
+  });
+
   it('las salas viejas se limpian solas', () => {
     const r = reloj();
     const s = new Salas(r.ahora);
