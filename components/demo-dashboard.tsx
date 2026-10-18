@@ -975,13 +975,17 @@ export default function DemoDashboard() {
   return (
     <main className="app-shell">
       <header className="site-header">
-        <a className="brand" href="#main-demo" aria-label="Te están robando, inicio">
+        <a className="brand" href="#main-demo" aria-label="Mule Zero, inicio">
+          {/* El mismo símbolo que el pitch (pitch/index.html). */}
           <span className="brand-mark" aria-hidden="true">
-            AF
+            <svg viewBox="0 0 24 24" width="22" height="22">
+              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.4" />
+              <path d="M6 18L18 6" stroke="currentColor" strokeWidth="2.4" />
+            </svg>
           </span>
           <span>
-            <strong>Te están robando</strong>
-            <small>Adaptive Financial Security · seguridad que aprende</small>
+            <strong>Mule Zero</strong>
+            <small>Reto «Te están robando» · seguridad que aprende</small>
           </span>
         </a>
         <nav className="site-nav" aria-label="Pantallas del demo">
