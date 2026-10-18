@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { dirname } from 'node:path';
 import { z } from 'zod';
 import type { Caso, DecisionAccion, ReglaPolicy } from '@/lib/contracts';
+import { borrarFilas, cargarFilas, guardarFila, supabaseActivo } from '@/lib/persistencia/supabase';
 import { Alias, motivoAliasInvalido } from './alias';
 
 /**
@@ -17,7 +18,9 @@ import { Alias, motivoAliasInvalido } from './alias';
  *  - **Sobrevive al reset del demo**: al registrar, se copia de cada caso lo
  *    que hace falta (acción, regla, monto). Si no, el reset que se hace antes
  *    de presentar borraría los datos de las partidas del evento.
- *  - Persistencia opcional con `PARTIDAS_ARCHIVO`, igual que la Memoria.
+ *  - Persistencia opcional con `PARTIDAS_ARCHIVO`, igual que la Memoria, y/o
+ *    en Supabase (`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`): se carga al
+ *    arrancar (`listo`) y cada partida se escribe al registrarse.
  *
  * Dueño: Ale_dev.
  */
@@ -100,9 +103,26 @@ const casosDe = (e: EntradaPartida): string[] =>
 
 export class RegistroPartidas {
   private partidas: Partida[] = [];
+  /** Se resuelve cuando terminó de cargar de Supabase (si está configurado). */
+  readonly listo: Promise<void>;
 
-  constructor(private readonly archivo?: string) {
+  constructor(
+    private readonly archivo?: string,
+    nube = supabaseActivo(),
+  ) {
     if (archivo) this.cargar(archivo);
+    this.listo = nube ? this.hidratar() : Promise.resolve();
+  }
+
+  private async hidratar(): Promise<void> {
+    try {
+      const nube = await cargarFilas<Partida>('partidas');
+      const ids = new Set(nube.map((p) => p.id));
+      // Lo que solo existe en el archivo local (p. ej. de antes de conectar Supabase) se conserva.
+      this.partidas = [...nube, ...this.partidas.filter((p) => !ids.has(p.id))];
+    } catch (e) {
+      console.error(`Partidas: no se pudo cargar de Supabase; sigo con lo local. ${(e as Error).message}`);
+    }
   }
 
   /**
@@ -145,6 +165,9 @@ export class RegistroPartidas {
 
     this.partidas.push(partida);
     this.guardar();
+    void guardarFila('partidas', { id: partida.id, t: partida.t, alias: partida.alias, tipo: partida.rol, data: partida }).catch(
+      (e: Error) => console.error(`Partidas: no se guardó ${partida.id} en Supabase. ${e.message}`),
+    );
     return partida;
   }
 
@@ -155,6 +178,7 @@ export class RegistroPartidas {
   limpiar(): void {
     this.partidas = [];
     this.guardar();
+    void borrarFilas('partidas').catch((e: Error) => console.error(`Partidas: no se borró en Supabase. ${e.message}`));
   }
 
   get cantidad(): number {

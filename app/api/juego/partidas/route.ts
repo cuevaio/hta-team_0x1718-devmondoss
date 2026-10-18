@@ -14,6 +14,7 @@ import { exigirToken } from '@/lib/seguridad/token';
  * se llevaría los datos de validación del evento.
  */
 export async function POST(req: Request) {
+  await partidas.listo;
   const parsed = EntradaPartida.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'cuerpo inválido', detalle: parsed.error.issues }, { status: 400 });
@@ -26,10 +27,12 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
+  await partidas.listo;
   return NextResponse.json({ total: partidas.cantidad, partidas: partidas.todas() });
 }
 
 export async function DELETE(req: Request) {
+  await partidas.listo;
   const denegado = exigirToken(req);
   if (denegado) return denegado;
   partidas.limpiar();
