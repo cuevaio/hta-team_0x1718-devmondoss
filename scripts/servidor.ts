@@ -157,11 +157,11 @@ function abrirTunel(local: string): Promise<{ url: string | null; proceso: Child
 
 /** Si los agentes usan Ollama: ¿responde? ¿está el modelo? Lo deja cargado. */
 async function prepararOllama(): Promise<string> {
-  const { calentarOllama, configOllamaDesdeEnv } = await import('../lib/agents/llm-ollama');
+  const { calentarOllama, cabecerasOllama, configOllamaDesdeEnv } = await import('../lib/agents/llm-ollama');
   const modelos = [process.env.OLLAMA_MODELO?.trim(), process.env.OLLAMA_MODELO_CAPAZ?.trim()].filter((x): x is string => !!x);
   const cfg = configOllamaDesdeEnv();
   try {
-    const r = await fetch(`${cfg.url}/api/tags`, { signal: AbortSignal.timeout(3000) });
+    const r = await fetch(`${cfg.url}/api/tags`, { headers: cabecerasOllama(cfg), signal: AbortSignal.timeout(3000) });
     const tags = (await r.json()) as { models?: Array<{ name: string }> };
     const faltan = modelos.filter((m) => !tags.models?.some((t) => t.name === m || t.name === `${m}:latest`));
     if (faltan.length) return `⚠ Ollama no tiene ${faltan.join(', ')}: ollama pull ${faltan[0]}  (mientras, los agentes usan su fallback)`;

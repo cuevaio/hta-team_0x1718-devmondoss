@@ -15,7 +15,9 @@ import { ErrorLlm, type LlmCaller, type SolicitudLlm } from './llm';
  *     sube para que el razonamiento no corte el JSON.
  *
  * Ollama queda en localhost: NO se expone a internet (su API también permite
- * bajar y borrar modelos). Lo que se publica es la app, con el túnel.
+ * bajar y borrar modelos). Si la app corre en otro lado (Railway), llega al
+ * modelo de la Mac por `scripts/puente-ollama.ts`: un puente con clave
+ * (`OLLAMA_TOKEN`) que solo deja pasar chat, carga y lista de modelos.
  */
 
 export interface ConfigOllama {
@@ -23,6 +25,8 @@ export interface ConfigOllama {
   /** `false` o un nivel; sin definir, se deja al modelo. */
   think?: boolean | 'low' | 'medium' | 'high';
   keepAlive: string;
+  /** Clave del puente (cuando Ollama está en otra máquina). */
+  token?: string;
 }
 
 export function configOllamaDesdeEnv(env: NodeJS.ProcessEnv = process.env): ConfigOllama {
@@ -32,7 +36,13 @@ export function configOllamaDesdeEnv(env: NodeJS.ProcessEnv = process.env): Conf
     url: (env.OLLAMA_URL?.trim() || 'http://127.0.0.1:11434').replace(/\/+$/, ''),
     think,
     keepAlive: env.OLLAMA_KEEP_ALIVE?.trim() || '60m',
+    token: env.OLLAMA_TOKEN?.trim() || undefined,
   };
+}
+
+/** Cabeceras para Ollama: con clave del puente si la hay. */
+export function cabecerasOllama(cfg: ConfigOllama): Record<string, string> {
+  return { 'content-type': 'application/json', ...(cfg.token ? { 'x-puente-token': cfg.token } : {}) };
 }
 
 /** Tokens mínimos cuando el modelo razona antes de responder. */
@@ -68,7 +78,7 @@ export function crearLlmOllama(cfg: ConfigOllama = configOllamaDesdeEnv()): LlmC
     try {
       res = await fetch(`${cfg.url}/api/chat`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: cabecerasOllama(cfg),
         body: JSON.stringify(cuerpoOllama(req, cfg)),
         signal: AbortSignal.timeout(req.timeoutMs),
       });
@@ -103,7 +113,7 @@ export async function calentarOllama(modelos: string[], cfg: ConfigOllama = conf
     try {
       const r = await fetch(`${cfg.url}/api/generate`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: cabecerasOllama(cfg),
         body: JSON.stringify({ model, prompt: '', keep_alive: cfg.keepAlive }),
         signal: AbortSignal.timeout(120_000),
       });

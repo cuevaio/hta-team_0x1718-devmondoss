@@ -13,7 +13,8 @@
     "demo": "tsx scripts/demo.ts",
     "seed": "tsx scripts/seed.ts",
     "evals": "tsx scripts/evals.ts",
-    "servidor": "tsx scripts/servidor.ts"
+    "servidor": "tsx scripts/servidor.ts",
+    "puente-ollama": "tsx scripts/puente-ollama.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
