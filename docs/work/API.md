@@ -486,7 +486,7 @@ explicabilidad es un criterio de aceptación de los tres casos de uso *must*.
 ```bash
 npm run dev          # servidor en :3000
 npm run demo         # los 5 casos de uso en consola, con sus reglas
-npm test             # 410 tests
+npm test             # 426 tests
 npm run typecheck
 ```
 
@@ -583,7 +583,13 @@ Registra una partida al terminar. **`201`**. Dos formas, según `rol`:
   los casos reales. `400` si un caso no existe o aparece dos veces; `409` si
   ya está en otra partida. No se pueden inventar ni contar dos veces.
 - Al registrar se **copian los hechos** de cada caso (acción, regla, monto,
-  destino): la partida sobrevive al reset del demo.
+  destino, hora de creación): la partida sobrevive al reset del demo. Un caso
+  se identifica por **id + hora de creación**, no solo por el id: `CASO-0001`
+  se recicla con cada reset y reinicio, y antes eso hacía que toda partida
+  posterior fuera rechazada con `409`.
+- **`ronda_b.casos` es solo para los intentos de estafa**, nunca para pagos
+  legítimos: el resumen cuenta cualquier `PERMITIR` ahí como dinero perdido
+  (E3). Si se mandara el pago a Don Pepe, saldría 100% de pérdida falsa.
 - Anónimo: `alias` e `idea` rechazan correos, teléfonos y enlaces.
 
 `GET /api/juego/partidas` las lista. `DELETE /api/juego/partidas` las borra

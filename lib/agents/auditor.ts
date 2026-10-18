@@ -11,6 +11,9 @@ export async function auditor(
 ): Promise<AgentResult<SalidaAuditor>> {
   const candidatas = afirmacionesCandidatas(caso.evidencia);
   const riesgoDetective = caso.salidas.detective?.riesgo_destino;
+  // El Guardián preguntó y el cliente no ha respondido: sin salida del Guardián
+  // pero con un `turno_pendiente` en el timeline.
+  const guardianPendiente = !caso.salidas.guardian && caso.timeline.some((e) => e.evento === 'turno_pendiente');
 
   // Sin afirmaciones verificables no hay nada que redactar
   if (candidatas.length === 0) {
@@ -24,7 +27,7 @@ export async function auditor(
         puerta: caso.puerta,
         afirmaciones: candidatas.map((c, i) => ({ i, texto: c.texto })),
         riesgo_detective: riesgoDetective ?? null,
-        estado_guardian: caso.salidas.guardian?.estado_usuario ?? null,
+        estado_guardian: caso.salidas.guardian?.estado_usuario ?? (guardianPendiente ? 'pendiente_de_respuesta' : null),
         decision: caso.decision ? { accion: caso.decision.accion, regla: caso.decision.regla } : null,
       },
       AuditorLLM,
@@ -35,6 +38,7 @@ export async function auditor(
         evidencia: caso.evidencia,
         riesgoDetective,
         estadoGuardian: caso.salidas.guardian?.estado_usuario,
+        guardianPendiente,
       }),
       uso: r.uso,
     };

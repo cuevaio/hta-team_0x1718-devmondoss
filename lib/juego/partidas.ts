@@ -73,6 +73,12 @@ export type EntradaPartida = z.infer<typeof EntradaPartida>;
 
 export interface HechoCaso {
   caso: string;
+  /**
+   * Hora de creación del caso. El id (`CASO-0001`) se recicla con el reset del
+   * demo y con cada reinicio del proceso, pero las partidas sobreviven a ambos:
+   * el id solo no identifica un caso, id + hora sí.
+   */
+  creado?: string;
   accion: DecisionAccion;
   regla: ReglaPolicy;
   monto: number;
@@ -112,8 +118,10 @@ export class RegistroPartidas {
     if (faltan.length > 0) {
       return { error: 'casos inexistentes o sin decisión', casos: faltan, status: 400 };
     }
-    const usados = new Set(this.partidas.flatMap((p) => p.hechos.map((h) => h.caso)));
-    const repetidos = ids.filter((id) => usados.has(id));
+    const clave = (id: string, creado?: string) => `${id}@${creado ?? ''}`;
+    const usados = new Set(this.partidas.flatMap((p) => p.hechos.map((h) => clave(h.caso, h.creado))));
+    const creadoDe = (id: string) => buscarCaso(id)!.timeline[0]?.t;
+    const repetidos = ids.filter((id) => usados.has(clave(id, creadoDe(id))));
     if (repetidos.length > 0) {
       return { error: 'casos ya registrados en otra partida', casos: repetidos, status: 409 };
     }
@@ -122,6 +130,7 @@ export class RegistroPartidas {
       const c = buscarCaso(id)!;
       return {
         caso: id,
+        creado: c.timeline[0]?.t,
         accion: c.decision!.accion,
         regla: c.decision!.regla,
         monto: c.transaccion.monto,

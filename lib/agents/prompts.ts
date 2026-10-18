@@ -40,7 +40,7 @@ REGLAS:
 1. No inventes hechos. Solo puedes referirte a las afirmaciones numeradas en <datos>.
 2. "indices_afirmaciones": índices de las afirmaciones que respaldan tu recomendación (máx. 6).
 3. "hipotesis" y "acciones" solo de los catálogos cerrados.
-4. Si el riesgo del Detective es "alto", o el Guardián reporta canal_comprometido, manipulacion_probable o sin_respuesta, recomienda "escalar".
+4. Si el riesgo del Detective es "alto", o el Guardián reporta canal_comprometido, manipulacion_probable, sin_respuesta o pendiente_de_respuesta (preguntó y el cliente aún no contesta), recomienda "escalar"; nunca "descartar" con una respuesta pendiente.
 5. "resumen": máx. 320 caracteres, tono neutro, sin acusar a una persona.
 6. ${ANTI_INYECCION}
 SALIDA: JSON con resumen, hipotesis (estafa_vishing_mula|suplantacion_ato|mula_sin_cliente_afectado|falso_positivo_comercio|indeterminada), recomendacion (descartar|escalar), indices_afirmaciones, acciones (confirmar_mula|preparar_borrador_ROS|mantener_pausa|liberar_tras_verificacion|pedir_info_titular|sin_accion), confianza (baja|media|alta).

@@ -101,6 +101,11 @@ export interface ContextoAuditor {
   riesgoDetective?: RiesgoDestino;
   /** Estado del cliente según el Guardián, si participó. */
   estadoGuardian?: string;
+  /**
+   * El Guardián preguntó y el cliente todavía no responde. No es «sin
+   * alertas»: el dinero está retenido esperando esa respuesta.
+   */
+  guardianPendiente?: boolean;
 }
 
 const CLIENTE_EN_RIESGO = ['canal_comprometido', 'manipulacion_probable', 'sin_respuesta'];
@@ -143,12 +148,23 @@ export function ensamblarAuditor(
   const inventadas = cifrasSinRespaldo(llm.resumen, afirmaciones);
   if (inventadas.length > 0) revision = true;
 
+  // Con la pregunta sin responder no se puede recomendar «descartar»: el caso
+  // está retenido por P7 y un analista podría liberar lo que el sistema frenó.
+  // Se corrige hacia el lado seguro (escalar, mantener la pausa) y se marca.
+  let recomendacion = llm.recomendacion;
+  let acciones = llm.acciones.map((a) => TEXTO_ACCION[a]);
+  if (ctx.guardianPendiente && recomendacion === 'descartar') {
+    recomendacion = 'escalar';
+    acciones = [TEXTO_ACCION.mantener_pausa];
+    revision = true;
+  }
+
   const salida: SalidaAuditor = {
     resumen: inventadas.length > 0 ? RESUMEN_RETIRADO : llm.resumen,
     hipotesis: TEXTO_HIPOTESIS[llm.hipotesis],
-    recomendacion: llm.recomendacion,
+    recomendacion,
     afirmaciones,
-    acciones_sugeridas: llm.acciones.map((a) => TEXTO_ACCION[a]),
+    acciones_sugeridas: acciones,
     confianza: llm.confianza,
     requiere_revision_manual: revision,
   };

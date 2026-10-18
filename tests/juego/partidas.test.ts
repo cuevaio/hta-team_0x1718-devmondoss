@@ -76,8 +76,8 @@ describe('POST /api/juego/partidas', () => {
     expect(r.status).toBe(201);
     const p = await r.json();
     expect(p.hechos).toEqual([
-      { caso: frenado, accion: 'ESCALAR', regla: 'P4', monto: 4800, destino: 'M-01', tactica: 'falso_banco' },
-      { caso: logrado, accion: 'PERMITIR', regla: 'P3', monto: 300, destino: 'M-02', tactica: 'falso_familiar' },
+      { caso: frenado, creado: expect.any(String), accion: 'ESCALAR', regla: 'P4', monto: 4800, destino: 'M-01', tactica: 'falso_banco' },
+      { caso: logrado, creado: expect.any(String), accion: 'PERMITIR', regla: 'P3', monto: 300, destino: 'M-02', tactica: 'falso_familiar' },
     ]);
   });
 
@@ -232,5 +232,32 @@ describe('GET /api/juego/resumen — la tabla de §6', () => {
     const { total, partidas: lista } = await (await listar()).json();
     expect(total).toBe(1);
     expect(lista[0].alias).toBe('Ana');
+  });
+});
+
+describe('ids de caso que se reciclan (reset del demo y reinicio del proceso)', () => {
+  /**
+   * Encontrado jugando el videojuego en Chrome: el reset reinicia los ids
+   * (`CASO-0001`), pero las partidas sobreviven a propósito. Todo caso nuevo
+   * chocaba con el id de una partida vieja → 409 en una partida legítima, y el
+   * juego igual decía «tu partida ya aparece en el monitor».
+   */
+  it('después de un reset, el nuevo CASO-0001 NO se confunde con el viejo', async () => {
+    const viejo = await intentoFrenado();
+    expect((await registrar(json('/api/juego/partidas', 'POST', victima([viejo])))).status).toBe(201);
+
+    await reset(json('/api/demo/reset', 'POST')); // los ids vuelven a CASO-0001
+    const nuevo = await intentoFrenado();
+    expect(nuevo).toBe(viejo); // mismo id, otro caso
+
+    const r = await registrar(json('/api/juego/partidas', 'POST', victima([nuevo], { alias: 'Otra' })));
+    expect(r.status).toBe(201);
+    expect(partidas.cantidad).toBe(2);
+  });
+
+  it('pero el MISMO caso sigue sin poder contarse dos veces', async () => {
+    const id = await intentoFrenado();
+    expect((await registrar(json('/api/juego/partidas', 'POST', victima([id])))).status).toBe(201);
+    expect((await registrar(json('/api/juego/partidas', 'POST', victima([id], { alias: 'Otra' })))).status).toBe(409);
   });
 });

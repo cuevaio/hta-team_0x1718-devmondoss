@@ -126,3 +126,48 @@ describe('Auditor — el resumen no puede inventar cifras', () => {
     expect(s.resumen).not.toMatch(/20|50/);
   });
 });
+
+describe('Auditor — no recomienda descartar mientras el cliente no ha respondido', () => {
+  /**
+   * Encontrado jugando el videojuego: un caso PAUSADO por P7 («esperando la
+   * respuesta del cliente») mostraba en el monitor «Recomendación: descartar».
+   * El Auditor solo veía `estado_guardian: null` y lo leía como «sin alertas»,
+   * cuando en realidad el Guardián preguntó y el cliente aún no contesta.
+   */
+  const evidencia: Evidencia[] = [{ id: 'E-01', fuente: 'fan_in', dato: {} }];
+  const candidatas: Afirmacion[] = [{ texto: 'La cuenta M-03 recibió de 2 remitentes nuevos en 48 h', evidencia: ['E-01'] }];
+  const llmDescartar = (): AuditorLLM => ({
+    resumen: 'La cuenta destino no muestra patrones de riesgo.',
+    hipotesis: 'falso_positivo_comercio',
+    recomendacion: 'descartar',
+    indices_afirmaciones: [0],
+    acciones: ['sin_accion'],
+    confianza: 'baja',
+  });
+
+  it('con la pregunta pendiente, «descartar» se corrige a «escalar» y va a revisión', () => {
+    const s = ensamblarAuditor(llmDescartar(), candidatas, { evidencia, riesgoDetective: 'bajo', guardianPendiente: true });
+    expect(s.recomendacion).toBe('escalar');
+    expect(s.requiere_revision_manual).toBe(true);
+    expect(s.acciones_sugeridas.join(' ')).toMatch(/mantener la pausa/i);
+  });
+
+  it('sin pregunta pendiente (la Bodega), «descartar» se respeta', () => {
+    const s = ensamblarAuditor(llmDescartar(), candidatas, { evidencia, riesgoDetective: 'bajo', guardianPendiente: false });
+    expect(s.recomendacion).toBe('descartar');
+    expect(s.requiere_revision_manual).toBe(false);
+  });
+
+  it('el Auditor completo, sobre un caso real pausado por P7, no recomienda descartar', async () => {
+    const { evaluarTransferencia } = await import('@/lib/pipeline');
+    const { storeCasos } = await import('@/lib/cases/store');
+    storeCasos.limpiar();
+    const { caso } = await evaluarTransferencia(
+      { origen: 'C-JORGE', destino: 'M-03', monto: 4800, moneda: 'PEN' },
+      { contexto: { llamada_activa_o_acceso_remoto: true } }, // «app falsa» / «falso banco» sin respuesta
+    );
+    expect(caso.timeline.map((e) => e.evento)).toContain('turno_pendiente');
+    expect(caso.decision).toMatchObject({ accion: 'PAUSAR', regla: 'P7' });
+    expect(caso.salidas.auditor?.recomendacion).toBe('escalar');
+  });
+});
