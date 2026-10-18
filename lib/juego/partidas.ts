@@ -90,10 +90,11 @@ export interface HechoCaso {
 }
 
 export type Partida =
-  | (z.infer<typeof EntradaPartidaVictima> & { id: string; t: string; hechos: HechoCaso[] })
+  | (z.infer<typeof EntradaPartidaVictima> & { id: string; t: string; jugador?: string; hechos: HechoCaso[] })
   | (z.infer<typeof EntradaPartidaAtacante> & {
       id: string;
       t: string;
+      jugador?: string;
       hechos: (HechoCaso & { tactica: z.infer<typeof Tactica> })[];
     });
 
@@ -130,7 +131,8 @@ export class RegistroPartidas {
    * Registra una partida. `buscarCaso` da acceso a los casos vivos del
    * pipeline; se inyecta para poder testear sin estado global.
    */
-  registrar(entrada: EntradaPartida, buscarCaso: (id: string) => Caso | null): Partida | ErrorPartida {
+  /** `jugador`: id del celular (cookie, lib/juego/jugador.ts), para no confundir dos apodos iguales. */
+  registrar(entrada: EntradaPartida, buscarCaso: (id: string) => Caso | null, jugador?: string): Partida | ErrorPartida {
     const ids = casosDe(entrada);
     if (new Set(ids).size !== ids.length) {
       return { error: 'un caso aparece dos veces en la partida', status: 400 };
@@ -160,7 +162,7 @@ export class RegistroPartidas {
     };
     // Id único entre servidores (ver lib/persistencia/id.ts): con un contador, dos servidores
     // sobre el mismo Supabase se pisaban las partidas.
-    const base = { id: idUnico('PARTIDA'), t: new Date().toISOString() };
+    const base = { id: idUnico('PARTIDA'), t: new Date().toISOString(), ...(jugador ? { jugador } : {}) };
     const partida: Partida =
       entrada.rol === 'victima'
         ? { ...entrada, ...base, hechos: entrada.ronda_b.casos.map(hecho) }

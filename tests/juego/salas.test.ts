@@ -100,6 +100,41 @@ describe('Salas', () => {
   });
 });
 
+describe('salas: cada jugador es su celular', () => {
+  it('dos ANA en celulares distintos son dos jugadores; la segunda se ve como ANA2', () => {
+    const r = reloj();
+    const s = new Salas(r.ahora);
+    const { codigo } = s.crear('ANA', 'pe', 'real_o_estafa', 'J-0000000AA-AAAAAAAAAAAA');
+    const otra = s.accion(codigo, { accion: 'unirse', alias: 'ana', pais: 'mx' }, 'J-0000000AB-BBBBBBBBBBBB');
+    expect(esVista(otra) && otra.mio?.alias).toBe('ana2');
+    const v = s.vista(codigo, 'J-0000000AA-AAAAAAAAAAAA')!;
+    expect(v.jugadores.map((j) => j.alias).sort()).toEqual(['ANA', 'ana2']);
+    expect(v.mio!.alias).toBe('ANA');
+  });
+
+  it('el mismo celular que vuelve a unirse sigue siendo el mismo jugador', () => {
+    const r = reloj();
+    const s = new Salas(r.ahora);
+    const { codigo } = s.crear('ANA', 'pe', 'real_o_estafa', 'J-0000000AA-AAAAAAAAAAAA');
+    s.accion(codigo, { accion: 'unirse', alias: 'BETO', pais: 'co' }, 'J-0000000BE-CCCCCCCCCCCC');
+    s.accion(codigo, { accion: 'unirse', alias: 'BETO', pais: 'co' }, 'J-0000000BE-CCCCCCCCCCCC');
+    expect(s.vista(codigo)!.jugadores).toHaveLength(2);
+  });
+
+  it('responder cuenta para el celular que responde, aunque haya otro con el mismo apodo', () => {
+    const r = reloj();
+    const s = new Salas(r.ahora);
+    const { codigo, token } = s.crear('ANA', 'pe', 'real_o_estafa', 'J-0000000AA-AAAAAAAAAAAA');
+    s.accion(codigo, { accion: 'unirse', alias: 'ANA', pais: 'pe' }, 'J-0000000AB-BBBBBBBBBBBB');
+    s.accion(codigo, { accion: 'iniciar', token });
+    r.avanzar(CUENTA_MS + 500);
+    const carta = CARTAS_ROE.find((c) => c.id === s.vista(codigo)!.carta)!;
+    s.accion(codigo, { accion: 'responder', alias: 'ANA', ronda: 0, dijo_estafa: carta.estafa }, 'J-0000000AB-BBBBBBBBBBBB');
+    expect(s.vista(codigo, 'J-0000000AB-BBBBBBBBBBBB')!.mio!.puntaje).toBeGreaterThan(0);
+    expect(s.vista(codigo, 'J-0000000AA-AAAAAAAAAAAA')!.mio!.puntaje).toBe(0);
+  });
+});
+
 describe('API de salas', () => {
   const post = (url: string, cuerpo: unknown) =>
     new Request(`http://test${url}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) });
@@ -112,7 +147,9 @@ describe('API de salas', () => {
     expect(typeof token).toBe('string');
     const u = await accionar(post(`/api/juego/salas/${codigo}`, { accion: 'unirse', alias: 'Beto', pais: 'co' }), ctx(codigo.toLowerCase()));
     expect(u.status).toBe(200);
-    const v = await (await ver(new Request(`http://test/api/juego/salas/${codigo}?alias=Beto`), ctx(codigo))).json();
+    // El celular de Beto recibe su cookie de jugador y con ella se identifica después.
+    const cookie = /ter_jugador=[^;]+/.exec(u.headers.get('set-cookie') ?? '')![0];
+    const v = await (await ver(new Request(`http://test/api/juego/salas/${codigo}`, { headers: { cookie } }), ctx(codigo))).json();
     expect(v.jugadores).toHaveLength(2);
     expect(v.mio.posicion).toBeGreaterThan(0);
     expect(JSON.stringify(v)).not.toContain(token);

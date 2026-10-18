@@ -90,7 +90,7 @@ export type JugadaArcade =
       encuesta?: Record<string, string>;
     };
 
-export type FilaRanking = { alias: string; pais: string; puntaje: number };
+export type FilaRanking = { alias: string; pais: string; puntaje: number; tuyo?: boolean };
 
 export type ResumenArcade = {
   jugadas: number;
@@ -129,4 +129,9 @@ export function verSala(codigo: string, alias?: string) {
 
 export function salasActivas() {
   return api<{ salas: VistaSala[] }>("/api/juego/salas");
+}
+
+/** Id de jugador de este celular (cookie): el servidor lo asigna la primera vez. */
+export function yo() {
+  return api<{ jugador: string; nuevo: boolean }>("/api/juego/yo");
 }

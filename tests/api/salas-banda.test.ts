@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { POST as crearSala } from '@/app/api/juego/salas/route';
 import { POST as accionar } from '@/app/api/juego/salas/[codigo]/route';
@@ -18,15 +19,26 @@ import type { ResumenCaso } from '@/lib/cases/resumen';
  * tocar los `setTimeout` del pipeline.
  */
 
-const post = (codigo: string, cuerpo: unknown) =>
-  accionar(
+/**
+ * Cada jugador es su celular: el navegador manda la cookie `ter_jugador` en
+ * cada pedido (lib/juego/jugador.ts). Aquí, una cookie fija por apodo.
+ */
+const celular = (alias: string) => {
+  const h = createHash('sha256').update(alias.toLowerCase()).digest('hex').toUpperCase();
+  return `ter_jugador=J-${h.slice(0, 9)}-${h.slice(9, 21)}`;
+};
+
+const post = (codigo: string, cuerpo: unknown) => {
+  const alias = (cuerpo as { alias?: string }).alias;
+  return accionar(
     new Request(`http://test/api/juego/salas/${codigo}`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...(alias ? { cookie: celular(alias) } : {}) },
       body: JSON.stringify(cuerpo),
     }),
     { params: Promise.resolve({ codigo }) },
   );
+};
 
 const GOLPE: Golpe = { victima: 'rosa', tactica: 'falso_banco', destino: 'M-01', monto: 'todo', madrugada: false };
 
@@ -37,7 +49,7 @@ async function salaEnAtaque(alias = 'Ana') {
   const c = await crearSala(
     new Request('http://test/api/juego/salas', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', cookie: celular(alias) },
       body: JSON.stringify({ alias, pais: 'pe', juego: 'banda' }),
     }),
   );

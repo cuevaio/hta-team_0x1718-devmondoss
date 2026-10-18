@@ -271,7 +271,8 @@ export function pantallaSala(
         const y = 128 + Math.floor(i / 2) * 12;
         const band = PAISES[j.pais as PaisId]?.bandera;
         if (band) band.colores.forEach((col, k) => p.rect(col, x + (band.vertical ? Math.round((k * 9) / band.colores.length) : 0), y + (band.vertical ? 0 : Math.round((k * 7) / band.colores.length)), band.vertical ? 3 : 9, band.vertical ? 7 : 3));
-        p.texto(j.alias.toUpperCase().slice(0, 9), x + 12, y, j.alias.toLowerCase() === alias.toLowerCase() ? PAL.ambar : PAL.crema);
+        const mio = (v.mio?.alias ?? alias).toLowerCase();
+        p.texto(j.alias.toUpperCase().slice(0, 9), x + 12, y, j.alias.toLowerCase() === mio ? PAL.ambar : PAL.crema);
       });
       if (v.jugadores.length > filas * 2) p.centrado(`+${v.jugadores.length - filas * 2} más`, 128 + filas * 12, PAL.gris);
       if (!token) {

@@ -130,6 +130,8 @@ type Sala = {
   codigo: string;
   juego: JuegoVivo;
   host: string;
+  /** Llave del anfitrión en `jugadores`. */
+  hostId: string;
   token: string;
   creada: number;
   inicio: number | null;
@@ -173,6 +175,8 @@ export type VistaSala = {
   banda: VistaBanda | null;
   /** Lo del jugador que consulta (si mandó `alias`). */
   mio: {
+    /** Su apodo en la sala (puede ser ANA2 si ya había otra ANA). */
+    alias: string;
     puntaje: number;
     posicion: number;
     respondio: boolean;
@@ -191,6 +195,26 @@ export type ResultadoGolpe = { vista: VistaSala; golpe: GolpeRegistrado; caso: C
 export type Evaluador = (entrada: ReturnType<typeof transferenciaDeGolpe>) => Promise<Caso>;
 
 const clave = (alias: string) => alias.trim().toLowerCase();
+
+/**
+ * Llave de un jugador en la sala: su id de celular (cookie, lib/juego/jugador.ts).
+ * Sin id (clientes viejos, tests), su apodo. Así dos «ANA» son dos jugadores.
+ */
+const llave = (jugador: string | undefined, alias: string) => jugador ?? `alias:${clave(alias)}`;
+
+/** `vista()` acepta un id, una llave ya armada o un apodo suelto. */
+const normalizar = (quien: string) => (/^J-/.test(quien) || quien.startsWith('alias:') ? quien : `alias:${clave(quien)}`);
+
+/** Apodo que no se repita dentro de la sala: la segunda ANA es ANA2. */
+function apodoLibre(sala: { jugadores: Map<string, { alias: string }> }, alias: string, id: string): string {
+  const ocupado = (a: string) => [...sala.jugadores.entries()].some(([k, j]) => k !== id && clave(j.alias) === clave(a));
+  if (!ocupado(alias)) return alias;
+  for (let n = 2; n < 100; n++) {
+    const otro = `${alias.slice(0, 22)}${n}`;
+    if (!ocupado(otro)) return otro;
+  }
+  return `${alias.slice(0, 20)}${Math.floor(Math.random() * 9000) + 1000}`;
+}
 
 function nuevoJugador(alias: string, pais: string): Jugador {
   return {
@@ -254,7 +278,7 @@ export class Salas {
    */
   constructor(private readonly reloj: () => number = () => Date.now()) {}
 
-  crear(alias: string, pais: string, juego: JuegoVivo): { codigo: string; token: string } {
+  crear(alias: string, pais: string, juego: JuegoVivo, jugador?: string): { codigo: string; token: string } {
     this.limpiarViejas();
     let codigo = '';
     do {
@@ -265,6 +289,7 @@ export class Salas {
       codigo,
       juego,
       host: alias,
+      hostId: llave(jugador, alias),
       token,
       creada: this.reloj(),
       inicio: null,
@@ -273,22 +298,23 @@ export class Salas {
       tacticasConHueco: new Set(),
       secuencia: 0,
     };
-    sala.jugadores.set(clave(alias), nuevoJugador(alias, pais));
+    sala.jugadores.set(sala.hostId, nuevoJugador(alias, pais));
     this.salas.set(codigo, sala);
     return { codigo, token };
   }
 
-  accion(codigo: string, a: AccionSala): VistaSala | ErrorSala {
+  accion(codigo: string, a: AccionSala, jugador?: string): VistaSala | ErrorSala {
     const sala = this.salas.get(codigo);
     if (!sala) return { error: 'sala no encontrada', status: 404 };
     const ahora = this.reloj();
     const f = this.fase(sala, ahora);
     if (a.accion === 'unirse') {
-      if (!sala.jugadores.has(clave(a.alias))) {
+      const id = llave(jugador, a.alias);
+      if (!sala.jugadores.has(id)) {
         if (sala.jugadores.size >= MAX_JUGADORES) return { error: 'la sala está llena', status: 409 };
-        sala.jugadores.set(clave(a.alias), nuevoJugador(a.alias, a.pais));
+        sala.jugadores.set(id, nuevoJugador(apodoLibre(sala, a.alias, id), a.pais));
       }
-      return this.vista(codigo, a.alias)!;
+      return this.vista(codigo, id)!;
     }
     if (a.accion === 'iniciar' || a.accion === 'reiniciar') {
       if (a.token !== sala.token) return { error: 'solo quien creó la sala puede hacer eso', status: 403 };
@@ -306,16 +332,17 @@ export class Salas {
           j.ultimoGolpe = 0;
         }
         sala.inicio = null;
-        return this.vista(codigo, sala.host)!;
+        return this.vista(codigo, sala.hostId)!;
       }
       sala.inicio = ahora;
-      return this.vista(codigo, sala.host)!;
+      return this.vista(codigo, sala.hostId)!;
     }
     // Un golpe necesita el pipeline: lo atiende `golpe()`, que es asíncrono.
     if (a.accion === 'golpe') return { error: 'un golpe se manda al evaluador de la sala', status: 400 };
     if (!esCartas(sala.juego)) return { error: 'en esta sala no se responden cartas: se lanzan golpes', status: 409 };
     // responder
-    const j = sala.jugadores.get(clave(a.alias));
+    const id = llave(jugador, a.alias);
+    const j = sala.jugadores.get(id);
     if (!j) return { error: 'primero únete a la sala', status: 403 };
     if (f.fase !== 'responder' || f.ronda !== a.ronda) return { error: 'esa ronda ya cerró', status: 409 };
     if (j.respuestas.has(a.ronda)) return { error: 'ya respondiste esta ronda', status: 409 };
@@ -326,7 +353,7 @@ export class Salas {
     const puntos = correcto ? 500 + Math.round(500 * (1 - ms / RESPONDER_MS)) + Math.min(3, j.racha - 1) * 100 : 0;
     j.puntaje += puntos;
     j.respuestas.set(a.ronda, { dijo_estafa: a.dijo_estafa, ms, correcto, puntos });
-    return this.vista(codigo, a.alias)!;
+    return this.vista(codigo, id)!;
   }
 
   /**
@@ -342,11 +369,13 @@ export class Salas {
     codigo: string,
     datos: { alias: string; golpe: Golpe },
     evaluar: Evaluador,
+    jugador?: string,
   ): Promise<ResultadoGolpe | ErrorSala> {
     const sala = this.salas.get(codigo);
     if (!sala) return { error: 'sala no encontrada', status: 404 };
     if (sala.juego !== 'banda') return { error: 'esta sala no es de LA BANDA', status: 409 };
-    const j = sala.jugadores.get(clave(datos.alias));
+    const id = llave(jugador, datos.alias);
+    const j = sala.jugadores.get(id);
     if (!j) return { error: 'primero únete a la sala', status: 403 };
     const ahora = this.reloj();
     const f = this.fase(sala, ahora);
@@ -401,21 +430,22 @@ export class Salas {
     };
     j.golpes.push(registrado);
     j.puntaje += puntos;
-    return { vista: this.vista(codigo, j.alias)!, golpe: registrado, caso };
+    return { vista: this.vista(codigo, id)!, golpe: registrado, caso };
   }
 
-  vista(codigo: string, alias?: string): VistaSala | null {
+  /** `quien`: id de jugador (cookie), llave, o el apodo (clientes viejos). */
+  vista(codigo: string, quien?: string): VistaSala | null {
     const sala = this.salas.get(codigo);
     if (!sala) return null;
     const ahora = this.reloj();
     const f = this.fase(sala, ahora);
     const carta = f.fase === 'responder' || f.fase === 'revelar' ? sala.cartas[f.ronda] : null;
-    const jugadores = [...sala.jugadores.values()]
-      .map((j) => ({ alias: j.alias, pais: j.pais, puntaje: j.puntaje }))
-      .sort((x, y) => y.puntaje - x.puntaje);
+    const orden = [...sala.jugadores.entries()].sort(([, x], [, y]) => y.puntaje - x.puntaje);
+    const jugadores = orden.map(([, j]) => ({ alias: j.alias, pais: j.pais, puntaje: j.puntaje }));
     const enRonda = [...sala.jugadores.values()].map((j) => j.respuestas.get(f.ronda));
     const respondieron = carta ? enRonda.filter(Boolean).length : 0;
-    const yo = alias ? sala.jugadores.get(clave(alias)) : undefined;
+    const miId = quien ? normalizar(quien) : undefined;
+    const yo = miId ? sala.jugadores.get(miId) : undefined;
     return {
       codigo: sala.codigo,
       juego: sala.juego,
@@ -440,8 +470,9 @@ export class Salas {
       banda: sala.juego === 'banda' ? vistaBanda(sala) : null,
       mio: yo
         ? {
+            alias: yo.alias,
             puntaje: yo.puntaje,
-            posicion: jugadores.findIndex((x) => clave(x.alias) === clave(yo.alias)) + 1,
+            posicion: orden.findIndex(([k]) => k === miId) + 1,
             respondio: yo.respuestas.has(f.ronda),
             ultima: yo.respuestas.get(f.ronda) ?? null,
             banda:

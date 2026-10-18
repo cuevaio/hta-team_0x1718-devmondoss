@@ -113,7 +113,8 @@ export function escenaRanking(inicio: number, titulo: string, filas: FilaRanking
       const kk = facil.salida(Math.min(1, Math.max(0, (f - i * 4) / 14)));
       const y = 64 + i * 19;
       const x = 8 + Math.round((1 - kk) * W);
-      const mio = propio !== null && fila.alias.toLowerCase() === propio.toLowerCase();
+      // El servidor marca la fila de este celular (`tuyo`); sin eso, por apodo.
+      const mio = fila.tuyo ?? (propio !== null && fila.alias.toLowerCase() === propio.toLowerCase());
       p.rect(PAL.tinta, x, y, W - 16, 17);
       p.rect(mio ? "#4a3a12" : "#1f2650", x + 1, y + 1, W - 18, 15);
       p.texto(String(i + 1).padStart(2, " "), x + 4, y + 5, i < 3 ? MEDALLAS[i] : PAL.grisClaro);

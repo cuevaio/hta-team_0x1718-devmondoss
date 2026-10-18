@@ -7,10 +7,15 @@ import { RegistroArcade, arcade } from '@/lib/juego/arcade';
 
 /** Modos arcade del juego: ranking, en qué estafas cae la gente y encuesta. */
 
-const json = (method: string, cuerpo?: unknown) =>
+/** Cada celular trae su cookie de jugador (lib/juego/jugador.ts). */
+const CEL_ANA = 'ter_jugador=J-0000000AA-AAAAAAAAAAAA';
+const CEL_OTRA_ANA = 'ter_jugador=J-0000000AB-BBBBBBBBBBBB';
+const CEL_BETO = 'ter_jugador=J-0000000BE-CCCCCCCCCCCC';
+
+const json = (method: string, cuerpo?: unknown, cookie?: string) =>
   new Request('http://test/api/juego/arcade', {
     method,
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
     ...(cuerpo === undefined ? {} : { body: JSON.stringify(cuerpo) }),
   });
 
@@ -39,14 +44,35 @@ describe('/api/juego/arcade', () => {
     expect((await r2.json()).posicion).toBe(2);
   });
 
-  it('el ranking guarda el mejor puntaje de cada alias', async () => {
-    await registrar(json('POST', realOEstafa('Ana', 300)));
-    await registrar(json('POST', realOEstafa('ana', 1200)));
-    await registrar(json('POST', realOEstafa('Beto', 800)));
+  it('el ranking guarda el mejor puntaje de cada jugador (su celular)', async () => {
+    await registrar(json('POST', realOEstafa('Ana', 300), CEL_ANA));
+    await registrar(json('POST', realOEstafa('ana', 1200), CEL_ANA));
+    await registrar(json('POST', realOEstafa('Beto', 800), CEL_BETO));
     const r = await (await resumen(json('GET'))).json();
     expect(r.jugadas).toBe(3);
     expect(r.jugadores).toBe(2);
     expect(r.ranking.real_o_estafa.map((f: { puntaje: number }) => f.puntaje)).toEqual([1200, 800]);
+  });
+
+  it('dos ANA en celulares distintos son dos jugadores con su propio récord', async () => {
+    await registrar(json('POST', realOEstafa('ANA', 900), CEL_ANA));
+    await registrar(json('POST', realOEstafa('ANA', 400), CEL_OTRA_ANA));
+    const r = await (await resumen(json('GET', undefined, CEL_OTRA_ANA))).json();
+    expect(r.jugadores).toBe(2);
+    expect(r.ranking.real_o_estafa.map((f: { alias: string; puntaje: number }) => [f.alias, f.puntaje])).toEqual([
+      ['ANA', 900],
+      ['ANA', 400],
+    ]);
+    // Solo la fila propia viene marcada, y los ids de jugador no salen de la API.
+    expect(r.ranking.real_o_estafa.map((f: { tuyo?: boolean }) => !!f.tuyo)).toEqual([false, true]);
+    expect(JSON.stringify(r)).not.toContain('J-0000000');
+  });
+
+  it('el primer POST sin cookie le asigna un id al celular', async () => {
+    const res = await registrar(json('POST', realOEstafa('Nuevo', 10)));
+    expect(res.headers.get('set-cookie')).toMatch(/ter_jugador=J-[0-9A-Z]{9}-[0-9A-F]{12}/);
+    const conCookie = await registrar(json('POST', realOEstafa('Nuevo', 20), CEL_ANA));
+    expect(conCookie.headers.get('set-cookie')).toContain('J-0000000AA-AAAAAAAAAAAA');
   });
 
   it('calcula en qué estafas cae la gente y cuántos mensajes reales rechaza', async () => {
@@ -77,8 +103,8 @@ describe('/api/juego/arcade', () => {
   });
 
   it('registra ATRAPA LA MULA y ¿PAUSA O PASA?, y arma el ranking general', async () => {
-    await registrar(json('POST', realOEstafa('Ana', 1000)));
-    await registrar(json('POST', { modo: 'atrapa_la_mula', alias: 'Ana', pais: 'pe', puntaje: 2000, aciertos: 18, errores: 1, escapados: 3 }));
+    await registrar(json('POST', realOEstafa('Ana', 1000), CEL_ANA));
+    await registrar(json('POST', { modo: 'atrapa_la_mula', alias: 'Ana', pais: 'pe', puntaje: 2000, aciertos: 18, errores: 1, escapados: 3 }, CEL_ANA));
     await registrar(
       json('POST', {
         modo: 'pausa_o_pasa',

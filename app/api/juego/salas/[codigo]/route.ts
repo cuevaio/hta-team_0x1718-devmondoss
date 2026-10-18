@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { opcionDiferir } from '@/lib/diferir';
 import { AccionSala, CodigoSala, salas, type Evaluador } from '@/lib/juego/salas';
+import { asegurarJugador, conCookie, jugadorDe } from '@/lib/juego/jugador';
 import { evaluarTransferencia } from '@/lib/pipeline';
 
 /**
@@ -33,7 +34,8 @@ export async function GET(req: Request, ctx: Ctx) {
   const codigo = await codigoDe(ctx);
   if (!codigo) return NextResponse.json({ error: 'código inválido' }, { status: 400 });
   const alias = new URL(req.url).searchParams.get('alias') ?? undefined;
-  const vista = salas.vista(codigo, alias);
+  // Se identifica por la cookie del celular; el apodo queda para clientes viejos.
+  const vista = salas.vista(codigo, jugadorDe(req) ?? alias);
   if (!vista) return NextResponse.json({ error: 'sala no encontrada' }, { status: 404 });
   return NextResponse.json(vista);
 }
@@ -45,13 +47,14 @@ export async function POST(req: Request, ctx: Ctx) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'cuerpo inválido', detalle: parsed.error.issues }, { status: 400 });
   }
+  const { id: jugador } = asegurarJugador(req);
   if (parsed.data.accion === 'golpe') {
     const { alias, golpe } = parsed.data;
-    const g = await salas.golpe(codigo, { alias, golpe }, evaluador);
+    const g = await salas.golpe(codigo, { alias, golpe }, evaluador, jugador);
     if ('error' in g) return NextResponse.json({ error: g.error }, { status: g.status });
-    return NextResponse.json(g);
+    return conCookie(NextResponse.json(g), req, jugador);
   }
-  const r = salas.accion(codigo, parsed.data);
+  const r = salas.accion(codigo, parsed.data, jugador);
   if ('error' in r) return NextResponse.json({ error: r.error }, { status: r.status });
-  return NextResponse.json(r);
+  return conCookie(NextResponse.json(r), req, jugador);
 }

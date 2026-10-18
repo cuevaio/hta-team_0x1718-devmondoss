@@ -595,3 +595,19 @@ alias, táctica, víctima, monto, decisión, regla e IA, y el ranking.
 24 golpes, 0 errores, respuestas de 40–55 ms. Con el modelo local el costo es
 bajo porque solo un 13% de los golpes necesita al modelo: el resto lo resuelve
 la Policy determinista.
+
+## 17. Cada jugador es su celular (récords para siempre)
+
+- **Id único por celular:** el servidor asigna `J-<hora>-<azar>` en la cookie `ter_jugador`, que dura 400 días, lo máximo que guardan los navegadores (`lib/juego/jugador.ts`, `GET /api/juego/yo`). El juego también lo guarda en localStorage: si alguien borra las cookies, se le devuelve el mismo id y no pierde su récord.
+- **Ranking por jugador, no por apodo:** dos «ANA» en celulares distintos son dos filas con su propio récord, y el mismo celular con otro apodo sigue siendo el mismo jugador. Cada jugada y partida guarda su `jugador` en Supabase. La API nunca devuelve los ids: solo marca con `tuyo` la fila de quien consulta.
+- **Salas:** cada jugador entra con su id. Si ya hay otra ANA, la nueva se ve como **ANA2**, y las respuestas y los golpes cuentan para el celular que los manda.
+- **Volver:** el juego recuerda apodo y país. Al abrirlo de nuevo dice «¡Volviste, ANA! Tu récord sigue aquí» y ofrece SEGUIR o CAMBIAR APODO. El progreso local (estrellas, rango, logros) se guarda por id.
+- **Para siempre:** los récords viven en Supabase. El borrado del operador no los toca (§ récords) y el título los muestra en modo atracción (HI-SCORE).
+
+Prueba e2e (`identidad.mjs`, fuera del repo):
+1. ANA juega, recarga y es reconocida con el mismo id.
+2. Otra ANA en otro celular aparece como una segunda fila en el ranking.
+3. En una sala aparecen «ANA» y «ANA2».
+4. Borrar cookies recupera el mismo id y el récord.
+
+Además se probó contra el Supabase real con reinicio del servidor.

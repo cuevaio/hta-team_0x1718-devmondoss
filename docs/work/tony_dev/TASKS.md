@@ -121,3 +121,10 @@
   - Reintentos al escribir en Supabase (1 s, 4 s y 15 s).
   - El arcade se resincroniza con Supabase cada 20 s, para que dos servidores encendidos no muestren rankings distintos.
   - ⚠️ Para Ale: toqué `lib/juego/partidas.ts` (id) y `tests/juego/partidas.test.ts`, que era el test intermitente: se esperan 5 ms entre el caso viejo y el nuevo. Las partidas todavía no se resincronizan entre servidores en caliente; conviene un solo servidor por evento.
+- [x] **Identidad por celular** (DEMO_JUEGO §17): cookie `ter_jugador` y ranking, salas y partidas por id de jugador.
+  - ⚠️ Para Ale, toqué:
+    - `lib/juego/salas.ts`: llave por jugador, apodo único en la sala (ANA2), `mio.alias` y `hostId`.
+    - `app/api/juego/salas/**` y `app/api/juego/partidas/route.ts`: cookie.
+    - `lib/juego/partidas.ts`: campo `jugador`.
+    - `tests/api/salas-banda.test.ts`: cada jugador manda su cookie, como un celular.
+  - Sin cookie todo sigue funcionando por apodo (clientes viejos y tests).

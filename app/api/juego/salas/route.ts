@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { CrearSala, salas } from '@/lib/juego/salas';
+import { asegurarJugador, conCookie } from '@/lib/juego/jugador';
 
 /**
  * Salas EN VIVO del juego (multijugador).
@@ -14,7 +15,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'cuerpo inválido', detalle: parsed.error.issues }, { status: 400 });
   }
   const { alias, pais, juego } = parsed.data;
-  return NextResponse.json(salas.crear(alias, pais, juego), { status: 201 });
+  const { id: jugador } = asegurarJugador(req);
+  return conCookie(NextResponse.json(salas.crear(alias, pais, juego, jugador), { status: 201 }), req, jugador);
 }
 
 export async function GET() {
