@@ -14,7 +14,38 @@
 | **Monitor** `/monitor?token=…` | Proyector | Todos; lo maneja el presentador |
 | **Terminal** `npm run servidor` | La Mac, enchufada | Solo el técnico |
 
-## 30 minutos antes
+## Dos piezas separadas: el juego y el modelo
+
+El juego no necesita la Mac; el modelo sí. Por eso se corren por separado:
+
+```
+Celulares y proyector ──► RAILWAY: juego, monitor, salas, datos (URL fija, siempre encendido)
+                              │  solo cuando un agente tiene que razonar
+                              ▼
+               túnel ──► puente con clave (Mac) ──► Ollama (Mac)
+```
+
+1. **El juego** se despliega en Railway desde GitHub (cada merge a `main`).
+2. **El modelo**, en la Mac:
+   ```bash
+   npm run puente-ollama
+   ```
+   El comando imprime 4 variables: `OLLAMA_URL`, `OLLAMA_TOKEN`, `OLLAMA_MODELO` y `OLLAMA_THINK`.
+3. **Conectar:** pegar esas 4 variables en el servicio del juego en Railway (*Variables*). Railway se reinicia una vez, en 1–2 min, y el monitor pasa a decir «agentes con modelo local».
+   - Si el proyecto de Railway es el de la cuenta de Tony (`te-estan-robando`), `npm run puente-ollama -- --railway` hace este paso solo y lo deshace al cerrar con Ctrl+C.
+4. **Si la Mac se apaga o el túnel se cae:** el juego sigue funcionando. El cortacircuitos pasa a reglas + memoria y las decisiones son las mismas.
+
+Ollama nunca queda abierto a internet. El puente solo deja pasar chat, carga y lista de modelos, y exige la clave.
+
+⚠ **Conectar ANTES de presentar:** cambiar variables reinicia Railway, y se pierden las salas y casos en curso.
+
+Medido el 18/10/2026 entre Railway (California) y la Mac (Lima): una respuesta libre del Guardián, razonada por el modelo de la Mac, tardó 6–10 s. Las respuestas con botones del juego no pasan por el modelo y son instantáneas.
+
+**Un solo servidor de juego para el evento.** Si hay dos proyectos de Railway corriendo el juego, elijan uno solo para el QR: las salas EN VIVO existen únicamente en el servidor donde se crearon.
+
+## Alternativa: todo en la Mac
+
+## 30 minutos antes (si todo corre en la Mac)
 
 1. Mac **enchufada** y en una red estable (Wi-Fi del evento o el hotspot de un celular).
 2. Ollama abierto, con el modelo cargado: `ollama run qwen3.5:9b "hola"`.
