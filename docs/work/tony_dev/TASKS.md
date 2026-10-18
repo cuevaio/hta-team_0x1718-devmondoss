@@ -128,3 +128,5 @@
     - `lib/juego/partidas.ts`: campo `jugador`.
     - `tests/api/salas-banda.test.ts`: cada jugador manda su cookie, como un celular.
   - Sin cookie todo sigue funcionando por apodo (clientes viejos y tests).
+- [x] **`/demo` = backend en vivo** (DEMO_EN_VIVO, «La presentación»): suite de 11 pruebas (`lib/demo/suite.ts`, `POST /api/demo/suite` en NDJSON) con traza por agente, evidencia, expediente y chequeos. Pasa 11/11 con agentes simulados y con Ollama qwen3.5:9b.
+  - ⚠️ Para Ale: agregué `StoreCasos.quitar(id)` en `lib/cases/store.ts`, para que la matriz de 750 casos no quede en el monitor. No cambia nada más del store.
