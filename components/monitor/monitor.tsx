@@ -496,6 +496,114 @@ function PanelSalas({ salas }: { salas: SalaVivo[] }) {
   );
 }
 
+type Carga = {
+  agentes: "claude" | "ollama" | "simulado";
+  modelo: {
+    concurrencia: number;
+    en_curso: number;
+    en_cola: number;
+    atendidas: number;
+    saturadas: number;
+    por_circuito: number;
+    circuito: "cerrado" | "abierto" | "probando";
+    latencia_ms: { p50: number | null; p95: number | null };
+    ultimo_minuto: { con_ia: number; degradadas: number };
+  } | null;
+  proceso: { memoria_mb: number; lag_ms: number };
+  ola: {
+    activa: boolean;
+    lanzados: number;
+    objetivo: number;
+    completados: number;
+    errores: number;
+    a_mulas: number;
+    mulas_retenidas: number;
+    legitimos: number;
+    legitimos_pasaron: number;
+    casos_con_ia: number;
+    latencia_ms: { p50: number | null; p95: number | null };
+  };
+};
+
+const CIRCUITO: Record<string, string> = { cerrado: "🟢 normal", abierto: "🔴 abierto: reglas + memoria", probando: "🟡 probando" };
+
+/** Resistencia bajo carga: la ola de ataques y cómo responde el modelo. */
+function PanelResistencia({ c, onOla }: { c: Carga | null; onOla: (n: number | null) => void }) {
+  if (!c) return null;
+  const o = c.ola;
+  const m = c.modelo;
+  const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "—");
+  const min = m?.ultimo_minuto;
+  const totalMin = min ? min.con_ia + min.degradadas : 0;
+  return (
+    <section className={s.panel}>
+      <h2>🛡️ Resistencia bajo carga</h2>
+      <div className={s.marcador}>
+        <div className={`${s.kpi} ${s.kpiAncho}`}>
+          <span>Ola de ataques {o.activa ? "· EN CURSO" : ""}</span>
+          <strong>
+            {o.completados}/{o.objetivo || o.lanzados} · errores {o.errores}
+          </strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Ataques a mulas retenidos</span>
+          <strong>{pct(o.mulas_retenidas, o.a_mulas)}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Pagos legítimos que pasaron</span>
+          <strong>{pct(o.legitimos_pasaron, o.legitimos)}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Modelo ({c.agentes})</span>
+          <strong>{m ? `${m.en_curso}/${m.concurrencia} · cola ${m.en_cola}` : "sin modelo"}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Cortacircuitos</span>
+          <strong className={s.circuito}>{m ? CIRCUITO[m.circuito] : "—"}</strong>
+        </div>
+        <div className={`${s.kpi} ${s.kpiAncho}`}>
+          <span>Último minuto: con IA vs. modo degradado (reglas + memoria)</span>
+          <strong>
+            {min ? `${min.con_ia} · ${min.degradadas}` : "—"}
+            {totalMin > 0 && (
+              <span className={s.barraCarga}>
+                <span style={{ width: `${(100 * (min?.con_ia ?? 0)) / totalMin}%` }} />
+              </span>
+            )}
+          </strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Latencia p95 por ataque</span>
+          <strong>{o.latencia_ms.p95 === null ? "—" : `${(o.latencia_ms.p95 / 1000).toFixed(1)} s`}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Servidor: retardo · memoria</span>
+          <strong>
+            {c.proceso.lag_ms} ms · {c.proceso.memoria_mb} MB
+          </strong>
+        </div>
+      </div>
+      <div className={s.acciones}>
+        <button className={s.boton} onClick={() => onOla(200)} disabled={o.activa}>
+          🔥 Ola: 200 ataques
+        </button>
+        <button className={s.boton} onClick={() => onOla(500)} disabled={o.activa}>
+          🌊 Ola grande: 500
+        </button>
+        {o.activa && (
+          <button className={s.boton} onClick={() => onOla(null)}>
+            ⏹ Parar
+          </button>
+        )}
+      </div>
+      <p className={s.nota}>
+        Si el modelo se satura, el caso se decide igual con reglas + memoria: el dinero sigue retenido. Lo que pasa es el
+        hueco conocido (montos chicos a cuentas nuevas sin señales), igual con o sin carga.
+      </p>
+    </section>
+  );
+}
+
 function PanelTraccion({ a }: { a: Arcade | null }) {
   if (!a) return null;
   const vivido = cuota(a.encuesta.vivido, (k) => k !== "no");
@@ -609,6 +717,7 @@ export default function Monitor() {
   const [health, setHealth] = useState<Health | null>(null);
   const [arcade, setArcade] = useState<Arcade | null>(null);
   const [salasVivas, setSalasVivas] = useState<SalaVivo[]>([]);
+  const [carga, setCarga] = useState<Carga | null>(null);
   const [seleccion, setSeleccion] = useState<string | null>(null);
   const [fijo, setFijo] = useState(false);
   const [detalle, setDetalle] = useState<Caso | null>(null);
@@ -632,6 +741,9 @@ export default function Monitor() {
       setResumen(r);
       setError(null);
       api<Arcade>("/api/juego/arcade").then(setArcade).catch(() => undefined);
+      api<Carga>("/api/carga")
+        .then(setCarga)
+        .catch(() => undefined);
       api<{ salas: SalaVivo[] }>("/api/juego/salas")
         .then((x) => setSalasVivas(x.salas))
         .catch(() => undefined);
@@ -687,6 +799,22 @@ export default function Monitor() {
     }
   }
 
+  // La ola se ve en el feed mientras dura; después no tapa a los jugadores reales.
+  const feed = carga?.ola.activa ? casos : casos.filter((c) => c.alias !== "OLA");
+
+  async function lanzarOla(n: number | null) {
+    try {
+      if (n === null) await post("/api/carga", { accion: "parar" });
+      else {
+        if (!window.confirm(`¿Lanzar ${n} ataques contra el sistema? Aparecen en el feed como «OLA».`)) return;
+        await post("/api/carga", { accion: "lanzar", n, por_segundo: n > 300 ? 40 : 20 });
+      }
+      await refrescar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo lanzar la ola.");
+    }
+  }
+
   async function reiniciar() {
     if (!window.confirm("¿Reiniciar el demo? Se borran los casos y la Memoria (las partidas se conservan).")) return;
     try {
@@ -725,11 +853,11 @@ export default function Monitor() {
           <h2>
             Intentos en vivo {total > casos.length ? `(últimos ${casos.length} de ${total})` : `(${total})`}
           </h2>
-          {casos.length === 0 ? (
+          {feed.length === 0 ? (
             <p className={s.vacio}>Todavía no hay intentos. Escanea y juega en /play.</p>
           ) : (
             <ul className={s.feed}>
-              {casos.map((c) => (
+              {feed.map((c) => (
                 <li key={c.id}>
                   <button
                     className={s.item}
@@ -777,6 +905,7 @@ export default function Monitor() {
 
         <div style={{ display: "grid", gap: 16 }}>
           <PanelSalas salas={salasVivas} />
+          <PanelResistencia c={carga} onOla={(n) => void lanzarOla(n)} />
           <section className={s.panel}>
             <h2>Marcador</h2>
             <div className={s.marcador}>

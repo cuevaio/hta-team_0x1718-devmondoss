@@ -20,3 +20,5 @@ Cada carpeta tiene una subcarpeta por dev: `tony_dev/` (agentes) y `ale_dev/` (i
 4. [Diseño del sistema multiagente](context/tony_dev/adaptive_financial_security_docs/19_MULTIAGENT_SYSTEM.md)
 5. [Work Blueprint](work/00_WORK_BLUEPRINT.md): quién hace qué y cuándo
 6. Tu checklist: [Tony](work/tony_dev/TASKS.md) · [Ale](work/ale_dev/TASKS.md)
+
+- **[DEMO_EN_VIVO](DEMO_EN_VIVO.md)**: guion del demo en vivo (el público ataca, lo saturamos y resiste), números medidos y qué hacer si algo falla.

@@ -5,6 +5,8 @@ import { detective } from './detective';
 import { guardianTurno } from './guardian';
 import { crearLlmAnthropic } from './llm';
 import { calentarOllama, crearLlmOllama } from './llm-ollama';
+import { configLimitadorDesdeEnv, limitar, type EstadoCarga } from './limitador';
+import type { LlmCaller } from './llm';
 import { crearRunAgent, modelosDesdeEnv } from './runtime';
 import { runAgentSimulado } from './llm-simulado';
 import type { DepsAgentes } from './util';
@@ -55,6 +57,28 @@ export function modelosOllama(env: NodeJS.ProcessEnv = process.env) {
 
 let calentado = false;
 
+// Un limitador por proceso y por modo: `obtenerAgentes()` se llama en cada
+// transferencia, pero la cola y el cortacircuitos tienen que ser compartidos.
+const g = globalThis as unknown as { __limitadoresLlm?: Map<string, ReturnType<typeof limitar>> };
+const limitadores = (g.__limitadoresLlm ??= new Map());
+
+function callerLimitado(modo: 'ollama' | 'claude', crear: () => LlmCaller, env: NodeJS.ProcessEnv) {
+  let l = limitadores.get(modo);
+  if (!l) {
+    l = limitar(crear(), configLimitadorDesdeEnv(modo, env));
+    limitadores.set(modo, l);
+  }
+  return l.caller;
+}
+
+/** Carga del modelo en este proceso (null en modo simulado: no hay modelo). */
+export function estadoCargaAgentes(env: NodeJS.ProcessEnv = process.env): (EstadoCarga & { modo: ModoAgentes }) | null {
+  const modo = modoAgentes(env);
+  if (modo === 'simulado') return null;
+  const l = limitadores.get(modo);
+  return l ? { modo, ...l.estado() } : { modo, ...limitar(async () => ({ salida: null, tokens: 0 }), configLimitadorDesdeEnv(modo, env)).estado() };
+}
+
 /**
  * Punto de entrada que usa el pipeline de Ale:
  *   - `simulado` (AGENTS_MOCK=1 o sin API key): agentes REALES + tools reales,
@@ -71,8 +95,8 @@ export function obtenerAgentes(env: NodeJS.ProcessEnv = process.env): AgentsApi 
       calentado = true;
       void calentarOllama([modelos.rapido, modelos.capaz]);
     }
-    return crearAgentes({ runAgent: crearRunAgent({ caller: crearLlmOllama(), modelos }) });
+    return crearAgentes({ runAgent: crearRunAgent({ caller: callerLimitado('ollama', () => crearLlmOllama(), env), modelos }) });
   }
-  const runAgent = crearRunAgent({ caller: crearLlmAnthropic(env.ANTHROPIC_API_KEY), modelos: modelosDesdeEnv(env) });
+  const runAgent = crearRunAgent({ caller: callerLimitado('claude', () => crearLlmAnthropic(env.ANTHROPIC_API_KEY), env), modelos: modelosDesdeEnv(env) });
   return crearAgentes({ runAgent });
 }
