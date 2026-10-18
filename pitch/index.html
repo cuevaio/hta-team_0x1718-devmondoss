@@ -47,7 +47,7 @@
       <p class="lead rise" style="--d:.3s">Ella misma autoriza la transferencia. Para el banco todo está en orden, y el dinero cae en una cuenta mula que lo saca del país en minutos.</p>
     </div>
     <div class="viz">
-      <svg id="viz-problema" data-smil viewBox="0 0 1500 300" role="img" aria-label="Una llamada falsa del banco convence a Rosa. Ella autoriza la transferencia con su clave, su celular y su token, y el banco ve todo en orden. El dinero cae en una cuenta mula que recibe de 14 víctimas y sale del país en menos de dos horas.">
+      <svg id="viz-problema" data-smil viewBox="0 0 1500 300" role="img" aria-label="Una llamada falsa del banco convence a Rosa. Ella autoriza la transferencia con su clave, un código SMS y su token, y el banco ve todo en orden. El dinero cae en una cuenta mula que recibe de 14 víctimas y sale del país en menos de dos horas.">
         <defs>
           <marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#56657a"/></marker>
         </defs>
@@ -70,9 +70,9 @@
         <circle cx="560" cy="76" r="14" fill="#7cc4e6"/>
         <path d="M534 118 a26 23 0 0 1 52 0 z" fill="#7cc4e6"/>
         <text class="sx" x="560" y="190" text-anchor="middle" font-size="22" font-weight="600" fill="#e8edf3">Rosa autoriza S/4,800</text>
-        <text class="mx" x="412" y="224" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.3s"/>✓ clave</text>
-        <text class="mx" x="560" y="224" text-anchor="middle" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.6s"/>✓ celular</text>
-        <text class="mx" x="708" y="224" text-anchor="end" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.9s"/>✓ token</text>
+        <text class="mx" x="392" y="224" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.3s"/>✓ clave</text>
+        <text class="mx" x="560" y="224" text-anchor="middle" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.6s"/>✓ código SMS</text>
+        <text class="mx" x="728" y="224" text-anchor="end" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.9s"/>✓ token</text>
         <text class="mx" x="560" y="256" text-anchor="middle" font-size="15" fill="#8a99ad" opacity="0"><set attributeName="opacity" to="1" begin="2.3s"/>para el banco: todo en orden</text>
 
         <!-- 3 · Cuenta mula -->
@@ -115,7 +115,7 @@
       <p class="lead rise" style="--d:.3s">Si un pago suma señales de riesgo, espera. Mientras tanto, un agente de IA le pregunta a la clienta y otro revisa la cuenta que recibe. Con las dos respuestas decide una regla fija: la IA nunca mueve el dinero.</p>
     </div>
     <div class="viz">
-      <svg id="viz-solucion" data-smil viewBox="0 0 1600 640" role="img" aria-label="Por qué se retiene: un puntaje fijo, sin IA. Cuenta nueva suma 2, monto 11 veces su promedio suma 2 y llamada en curso suma 3: total 7, sobre un umbral de 5, así que el pago de Rosa espera antes de usar IA. Son señales de la operación, nunca de la persona, y retener no es bloquear. Dos agentes de IA trabajan en paralelo. El Guardián le escribe por la app y pregunta si la están manipulando: responde que la guían por teléfono. El Detective revisa si la cuenta que recibe es una mula: 14 personas le envían y reenvía el 91 por ciento en 2 horas. Una regla fija combina las dos respuestas en una tabla: clienta manipulada y cuenta mula, escalar. Después, el Auditor arma el expediente con pruebas, un analista confirma y la Memoria marca la cuenta; cuando Jorge paga a la misma cuenta, se le frena al instante sin IA.">
+      <svg id="viz-solucion" data-smil viewBox="0 0 1600 640" role="img" aria-label="Por qué se retiene: un puntaje fijo, sin IA. Cuenta nueva suma 2, monto 11 veces su promedio suma 2 y dispositivo nuevo suma 2: total 6, sobre un umbral de 5, así que el pago de Rosa espera antes de usar IA. Son señales de la operación, nunca de la persona, y retener no es bloquear. Dos agentes de IA trabajan en paralelo. El Guardián le escribe por la app y pregunta si la están manipulando: responde que la guían por teléfono. El Detective revisa si la cuenta que recibe es una mula: 14 personas le envían y reenvía el 91 por ciento en 2 horas. Una regla fija combina las dos respuestas en una tabla: clienta manipulada y cuenta mula, escalar. Después, el Auditor arma el expediente con pruebas, un analista confirma y la Memoria marca la cuenta; cuando Jorge paga a la misma cuenta, se le frena al instante sin IA.">
         <defs>
           <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#56657a"/></marker>
         </defs>
@@ -126,9 +126,10 @@
         <g class="mx" font-size="17" fill="#e8edf3">
           <text x="20" y="104"><tspan fill="#e3b25a">+2</tspan>  cuenta nueva para ella</text>
           <text x="20" y="134"><tspan fill="#e3b25a">+2</tspan>  monto 11× su promedio</text>
+          <text x="20" y="164"><tspan fill="#e3b25a">+2</tspan>  dispositivo nuevo</text>
         </g>
         <line x1="20" y1="180" x2="400" y2="180" stroke="#24324a" stroke-width="1.5"/>
-        <text class="mx" x="20" y="210" font-size="17" fill="#e8edf3"><tspan fill="#e3b25a">=7</tspan>  umbral de retención: 5</text>
+        <text class="mx" x="20" y="210" font-size="17" fill="#e8edf3"><tspan fill="#e3b25a">=6</tspan>  umbral de retención: 5</text>
         <g opacity="0"><set attributeName="opacity" to="1" begin="0.5s"/>
           <rect x="20" y="230" width="380" height="46" rx="8" fill="#2a1f0e" stroke="#e3b25a" stroke-width="2">
             <animate attributeName="stroke-width" values="2;6;2" dur="0.6s" begin="0.5s" fill="freeze"/>
