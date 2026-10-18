@@ -37,18 +37,18 @@
 | 0:00 | Proyector en `/monitor`. Se pide al público que escanee el QR | «Saquen el celular: van a robar un banco» |
 | 0:30 | Unos entran a **LA BANDA** (atacar) y otros a **¿REAL O ESTAFA?** | «Elijan: ser la víctima o ser la banda» |
 | 1:30 | En el monitor se encienden los agentes con cada intento: Reglas → Pausa → Guardián / Detective → Policy → Auditor | «Miren: el dinero se pausa ANTES de la IA. La IA investiga después» |
-| 3:00 | El presentador crea una sala **EN VIVO** desde su celular y proyecta el QR de la sala. Todos juegan la misma carta | «Ahora todos contra todos: ¿real o estafa?» |
-| 5:00 | Al revelar cada carta, el monitor muestra qué porcentaje de la sala cayó | «La mitad de la sala cayó. Así de fácil es en la vida real» |
-| 6:00 | **🔥 Ola de 500 ataques** desde el panel *Resistencia* | «Ahora lo saturamos a propósito» |
+| 3:00 | El presentador crea una sala **EN VIVO · LA BANDA** y proyecta su QR. **Toda la sala ataca la capa real durante 2:30**: cada golpe es un caso de verdad que aparece en el monitor con su alias. Un hueco vale 1000 puntos y el primero de la sala con esa táctica suma +500 | «Ahora ustedes son la banda: intenten robar» |
+| 4:30 | En plena ola de golpes, el presentador **confirma la mula** en el expediente. Desde ahí, todos los golpes a esa cuenta caen por P1 con 0 IA, y se ve en el feed | «Lo aprendimos con uno: ya nadie le roba a esa cuenta» |
+| 5:30 | (Opcional) Una ronda de sala **¿REAL O ESTAFA?**: el monitor muestra qué porcentaje de la sala cayó en cada carta | «La mitad de la sala cayó. Así de fácil es en la vida real» |
+| 6:00 | **🔥 Ola de 500 ataques** desde el panel *Resistencia*, encima de lo que esté jugando la gente | «Ahora lo saturamos a propósito» |
 | 6:30 | El panel muestra la cola del modelo llena, cientos de casos en *modo degradado*, **0 errores** y los pagos legítimos pasando | «La IA se satura. El sistema no: decide igual con reglas + memoria, y el dinero sigue retenido» |
-| 8:00 | Confirmar una mula en el expediente: el siguiente intento a esa cuenta cae al instante, con 0 IA | «Lo que aprende con uno protege al siguiente» |
 | 9:00 | Panel *Tracción y encuesta*: cuántos jugaron, de qué países, cuántos dicen que les pasó de verdad | «Esto no es teoría: lo dicen ustedes» |
 
 ## Números que se pueden decir (medidos el 18/10/2026)
 
 Medido en la Mac (Apple M5, 24 GB) con qwen3.5:9b local:
 
-- **500 ataques en ~13 s + 60 jugadores en una sala al mismo tiempo: 0 errores.** La sala respondió con p95 de 12 ms y el servidor tuvo 1 ms de retraso.
+- **500 ataques en ~13 s + 60 jugadores en una sala al mismo tiempo: 0 errores.** Las salas de LA BANDA (Ale) ponen 2 s entre golpes y 10 por jugador, así que un auditorio lleno queda muy por debajo de la ola. La sala respondió con p95 de 12 ms y el servidor tuvo 1 ms de retraso.
 - El modelo atendió 7 llamadas y **321 se resolvieron en modo degradado**, sin colgar nada.
 - **El 100% de los pagos legítimos pasó** (165/165): bajo carga no se bloquea a gente honesta.
 - **La saturación no cambia las decisiones:** se retuvo el 60% de los ataques a mulas con el modelo saturado, contra 62% sin modelo.
