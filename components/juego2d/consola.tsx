@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { H, W } from "./pincel";
+import { useEffect, useRef } from "react";
+import { W } from "./pincel";
 import { Motor, type Boton } from "./motor";
 import { jugar } from "./guion";
 import s from "./consola.module.css";
 
 /**
- * La consola: la pantalla del juego y sus controles (cruceta, A, B, START).
- * Funciona con toques y con teclado (flechas, Z/Enter = A, X/Esc = B).
+ * Pantalla del juego a pantalla completa, pensada para celular en vertical.
+ * Todo se maneja tocando; en escritorio también sirve el teclado
+ * (flechas, Enter/Z = A, Esc/X = B).
  */
 
 const TECLAS: Record<string, Boton> = {
@@ -23,53 +24,35 @@ const TECLAS: Record<string, Boton> = {
   x: "b",
   X: "b",
   Escape: "b",
-  Backspace: "b",
 };
 const DIRECCIONES: Boton[] = ["arriba", "abajo", "izq", "der"];
-
-function BotonConsola({
-  motor,
-  boton,
-  className,
-  etiqueta,
-  children,
-}: {
-  motor: React.RefObject<Motor | null>;
-  boton: Boton;
-  className: string;
-  etiqueta: string;
-  children?: React.ReactNode;
-}) {
-  const soltar = () => motor.current?.sostener(boton, false);
-  return (
-    <button
-      type="button"
-      aria-label={etiqueta}
-      className={className}
-      onPointerDown={(e) => {
-        e.preventDefault();
-        motor.current?.pulsar(boton);
-        if (DIRECCIONES.includes(boton)) motor.current?.sostener(boton, true);
-      }}
-      onPointerUp={soltar}
-      onPointerLeave={soltar}
-      onPointerCancel={soltar}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      {children}
-    </button>
-  );
-}
+const ANCHO_MAX = 460;
 
 export default function Consola({ fuente }: { fuente: string }) {
   const lienzo = useRef<HTMLCanvasElement>(null);
   const motor = useRef<Motor | null>(null);
-  const [silencio, setSilencio] = useState(false);
 
   useEffect(() => {
     const canvas = lienzo.current;
     if (!canvas) return;
     let vivo = true;
+
+    const ajustar = () => {
+      const m = motor.current;
+      if (!m) return;
+      const anchoDisp = Math.min(window.innerWidth, ANCHO_MAX);
+      const altoDisp = window.innerHeight;
+      m.ajustar(anchoDisp, altoDisp, window.devicePixelRatio || 1);
+      // Mantener la proporción exacta de la resolución lógica (sin estirar).
+      let ancho = anchoDisp;
+      let alto = (anchoDisp * m.h) / W;
+      if (alto > altoDisp) {
+        alto = altoDisp;
+        ancho = (altoDisp * W) / m.h;
+      }
+      canvas.style.width = `${Math.floor(ancho)}px`;
+      canvas.style.height = `${Math.floor(alto)}px`;
+    };
 
     void (async () => {
       try {
@@ -83,16 +66,24 @@ export default function Consola({ fuente }: { fuente: string }) {
       if (new URLSearchParams(window.location.search).has("depurar")) {
         (window as unknown as { __motor: Motor }).__motor = m;
       }
+      ajustar();
       m.iniciar();
       void jugar(m);
     })();
 
     const abajo = (e: KeyboardEvent) => {
+      const m = motor.current;
+      if (!m) return;
+      if (m.pidiendoNombre && (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter")) {
+        e.preventDefault();
+        m.letra(e.key);
+        return;
+      }
       const b = TECLAS[e.key];
       if (!b) return;
       e.preventDefault();
-      if (!e.repeat) motor.current?.pulsar(b);
-      if (DIRECCIONES.includes(b)) motor.current?.sostener(b, true);
+      if (!e.repeat) m.pulsar(b);
+      if (DIRECCIONES.includes(b)) m.sostener(b, true);
     };
     const arriba = (e: KeyboardEvent) => {
       const b = TECLAS[e.key];
@@ -100,71 +91,32 @@ export default function Consola({ fuente }: { fuente: string }) {
     };
     window.addEventListener("keydown", abajo);
     window.addEventListener("keyup", arriba);
+    window.addEventListener("resize", ajustar);
     return () => {
       vivo = false;
       motor.current?.detener();
       motor.current = null;
       window.removeEventListener("keydown", abajo);
       window.removeEventListener("keyup", arriba);
+      window.removeEventListener("resize", ajustar);
     };
   }, [fuente]);
 
   return (
     <main className={s.pagina}>
-      <div className={s.consola}>
-        <div className={s.marco}>
-          <div className={s.franja}>
-            <span className={s.led} aria-hidden="true" />
-            <span>TE ESTAN ROBANDO</span>
-          </div>
-          <canvas
-            ref={lienzo}
-            className={s.pantalla}
-            aria-label="Pantalla del juego Te están robando"
-            onPointerDown={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              motor.current?.tocar(((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * H);
-            }}
-          />
-        </div>
-
-        <div className={s.controles}>
-          <div className={s.cruceta}>
-            <BotonConsola motor={motor} boton="arriba" etiqueta="Arriba" className={`${s.dir} ${s.arriba}`} />
-            <BotonConsola motor={motor} boton="izq" etiqueta="Izquierda" className={`${s.dir} ${s.izq}`} />
-            <span className={s.centro} aria-hidden="true" />
-            <BotonConsola motor={motor} boton="der" etiqueta="Derecha" className={`${s.dir} ${s.der}`} />
-            <BotonConsola motor={motor} boton="abajo" etiqueta="Abajo" className={`${s.dir} ${s.abajo}`} />
-          </div>
-
-          <div className={s.centrales}>
-            <BotonConsola motor={motor} boton="start" etiqueta="Start" className={s.start}>
-              START
-            </BotonConsola>
-            <button
-              type="button"
-              className={s.start}
-              onClick={() => {
-                const nuevo = !silencio;
-                setSilencio(nuevo);
-                if (motor.current) motor.current.sonido.silencio = nuevo;
-              }}
-            >
-              {silencio ? "SON: NO" : "SON: SI"}
-            </button>
-          </div>
-
-          <div className={s.accion}>
-            <BotonConsola motor={motor} boton="b" etiqueta="Botón B" className={`${s.redondo} ${s.b}`}>
-              B
-            </BotonConsola>
-            <BotonConsola motor={motor} boton="a" etiqueta="Botón A" className={s.redondo}>
-              A
-            </BotonConsola>
-          </div>
-        </div>
-        <p className={s.ayuda}>Teclado: flechas · Z o Enter = A · X o Esc = B</p>
-      </div>
+      <canvas
+        ref={lienzo}
+        className={s.pantalla}
+        aria-label="Juego Te están robando. Toca para avanzar y elegir."
+        onPointerDown={(e) => {
+          e.preventDefault();
+          const r = e.currentTarget.getBoundingClientRect();
+          const m = motor.current;
+          if (!m) return;
+          m.tocar(((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * m.h);
+        }}
+        onContextMenu={(e) => e.preventDefault()}
+      />
     </main>
   );
 }

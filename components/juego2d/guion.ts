@@ -22,10 +22,20 @@ import {
   soles,
   type Jugada,
 } from "@/components/juego/datos";
-import { batalla, bodega, laboratorio, nuevaBatalla, titulo, type EstadoBatalla, type EstadoBodega } from "./escenas";
+import {
+  batalla,
+  bodega,
+  capitulo,
+  laboratorio,
+  nuevaBatalla,
+  puntosBatalla,
+  titulo,
+  type EstadoBatalla,
+  type EstadoBodega,
+} from "./escenas";
 import type { Motor } from "./motor";
-import type { ConfigMundo, Npc } from "./mundo";
-import { PAL } from "./pincel";
+import { TILE, posicionObjetivo, type ConfigMundo, type Npc } from "./mundo";
+import { PAL, W, facil } from "./pincel";
 import type { Direccion } from "./sprites";
 
 /**
@@ -35,7 +45,7 @@ import type { Direccion } from "./sprites";
  */
 
 const VEGA = "ANALISTA VEGA";
-const APP = "APP BANCO ANDINO";
+const APP = "BANCO ANDINO";
 
 type Siguiente = "victima" | "atacante" | null;
 
@@ -44,17 +54,23 @@ export async function jugar(m: Motor) {
   let siguiente: Siguiente = null;
   for (;;) {
     if (!siguiente) {
-      m.escena = titulo;
+      m.barraSuperior = null;
+      m.escena = titulo(m.t);
+      m.musica("titulo");
       await m.fundirA(false);
-      await m.esperarA();
-      await m.fundirA(true);
+      await m.esperarToque();
+      await m.iris(true);
+      m.descubrirYa();
+      m.fundido = 1;
       if (!alias) alias = await intro(m);
     }
     const rol: "victima" | "atacante" = siguiente ?? (await elegirRol(m));
     try {
       siguiente = rol === "victima" ? await partidaVictima(m, alias!) : await partidaAtacante(m, alias!);
     } catch {
+      m.barraSuperior = null;
       m.escena = laboratorio;
+      m.musica("triste");
       await m.fundirA(false);
       await m.decir("Se perdió la conexión con el sistema. Volvamos al inicio.", VEGA);
       await m.fundirA(true);
@@ -73,6 +89,7 @@ function validarAlias(alias: string): string | null {
 
 async function intro(m: Motor): Promise<string> {
   m.escena = laboratorio;
+  m.musica("barrio");
   await m.fundirA(false);
   await m.decir("¡Hola! Soy la ANALISTA VEGA. Estudio cómo le roban a la gente del barrio... y cómo evitarlo.", VEGA);
   await m.decir("Esto es una SIMULACIÓN: el dinero, el banco y las personas son ficticios.", VEGA);
@@ -90,12 +107,30 @@ async function intro(m: Motor): Promise<string> {
 }
 
 async function elegirRol(m: Motor): Promise<"victima" | "atacante"> {
+  m.barraSuperior = null;
   m.escena = laboratorio;
+  m.musica("barrio");
   await m.fundirA(false);
   await m.decir("En el barrio pasan dos cosas: a la gente la estafan... y alguien está detrás.", VEGA);
-  const i = await m.pregunta("¿Qué lado quieres vivir?", [{ texto: "VÍCTIMA" }, { texto: "ATACANTE" }], VEGA);
+  const i = await m.pregunta(
+    "¿Qué lado quieres vivir?",
+    [
+      { texto: "VÍCTIMA", color: "#bfe8c9" },
+      { texto: "ATACANTE", color: "#f4c7c3" },
+    ],
+    VEGA,
+  );
   await m.fundirA(true);
   return i === 1 ? "atacante" : "victima";
+}
+
+async function tarjeta(m: Motor, etiqueta: string, titulo1: string, sub: string, color: string) {
+  m.barraSuperior = null;
+  m.escena = capitulo(m.t, etiqueta, titulo1, sub, color);
+  await m.fundirA(false, 10);
+  m.audio.sello();
+  await m.esperarToque(3200);
+  await m.fundirA(true, 12);
 }
 
 // ── El barrio ─────────────────────────────────────────────────
@@ -104,18 +139,16 @@ const NPCS = (atacante: boolean): Npc[] => [
   {
     id: "pepe",
     x: 2,
-    y: 8,
+    y: 14,
     dir: "abajo",
     paleta: "pepe",
     nombre: "DON PEPE",
-    lineas: atacante
-      ? ["DON PEPE: Ya cerré, joven. Vuelve mañana."]
-      : ["DON PEPE: ¡Buenas, Rosa! Hoy llegó mercadería fresca."],
+    lineas: atacante ? ["DON PEPE: Ya cerré, joven. Vuelve mañana."] : ["DON PEPE: ¡Buenas, Rosa! Hoy llegó mercadería fresca."],
   },
   {
     id: "vecina",
-    x: 11,
-    y: 8,
+    x: 8,
+    y: 9,
     dir: "izq",
     paleta: "vecina",
     nombre: "VECINA",
@@ -128,11 +161,7 @@ const NPCS = (atacante: boolean): Npc[] => [
   },
 ];
 
-function mundo(
-  atacante: boolean,
-  objetivo: string,
-  inicio: { x: number; y: number; dir: Direccion },
-): ConfigMundo {
+function mundo(atacante: boolean, objetivo: string, inicio: { x: number; y: number; dir: Direccion }): ConfigMundo {
   return {
     jugador: atacante ? "atacante" : "rosa",
     inicio,
@@ -148,33 +177,75 @@ function mundo(
   };
 }
 
-async function caminar(m: Motor, cfg: ConfigMundo, aviso: string) {
+let yaExplico = false;
+
+/**
+ * Lleva al jugador por el barrio hasta el objetivo. Se llama con la pantalla
+ * en negro: el iris se abre desde ahí. Con `cerrar`, al llegar se cierra el
+ * iris sobre la puerta (entrar a un edificio).
+ */
+async function caminar(m: Motor, cfg: ConfigMundo, objetivo: string, aviso: string, cerrar = true) {
+  m.barraSuperior = { texto: `OBJETIVO: ${objetivo}`, color: PAL.verdeOscuro };
+  m.musica(cfg.noche ? "noche" : "barrio");
   const llegada = m.explorar(cfg);
-  await m.fundirA(false);
-  await m.decir(aviso, "OBJETIVO");
+  const abrir = m.iris(false);
+  m.fundido = 0;
+  await abrir;
+  await m.decir(yaExplico ? aviso : `${aviso} Toca el piso para caminar.`);
+  yaExplico = true;
   await llegada;
-  await m.fundirA(true);
+  if (!cerrar) return;
+  const pos = posicionObjetivo(cfg.objetivo, cfg.npcs);
+  await m.iris(true, pos ? pos.x * TILE + 8 : W / 2, pos ? pos.y * TILE + 8 - m.camaraMundo : m.h / 2);
 }
 
-// ── Transiciones ──────────────────────────────────────────────
+// ── Efectos de combate ────────────────────────────────────────
 
-async function transicionCombate(m: Motor) {
-  for (let i = 0; i < 3; i++) {
-    m.fundido = 1;
-    await m.esperar(70);
-    m.fundido = 0;
-    await m.esperar(70);
-  }
-  await m.fundirA(true, 12);
+async function entradaCombate(m: Motor, b: EstadoBatalla) {
+  m.descubrirYa();
+  m.fundido = 0;
+  await m.animar(26, (k) => {
+    const e = facil.salida(k);
+    b.rivalDX = Math.round((1 - e) * W);
+    b.aliadoDX = Math.round((1 - e) * -W);
+  });
+  await m.animar(14, (k) => {
+    b.hud = k;
+  });
+}
+
+async function embestida(m: Motor, b: EstadoBatalla) {
+  await m.animar(5, (k) => {
+    b.rivalDX = -Math.round(k * 14);
+  });
+  m.audio.golpe();
+  m.sacudir(12);
+  m.vibrar(60);
+  b.aliadoGolpe = 24;
+  await m.animar(8, (k) => {
+    b.rivalDX = -Math.round((1 - k) * 14);
+  });
 }
 
 async function cambiarAliado(m: Motor, b: EstadoBatalla, nuevo: EstadoBatalla["aliado"]) {
   await m.animar(14, (k) => {
-    b.aliadoX = -120 * k;
+    b.aliadoDX = Math.round(-W * facil.salida(k));
   });
   b.aliado = nuevo;
-  await m.animar(14, (k) => {
-    b.aliadoX = -120 * (1 - k);
+  m.destello = 10;
+  const pa = puntosBatalla(m.h).aliado;
+  m.particulas_(pa.x, pa.y, 30, { colores: [PAL.verde, PAL.blanco, PAL.ambar], vel: 2.2, g: 0, vida: 40 });
+  await m.animar(20, (k) => {
+    b.aliadoDX = Math.round(-W * (1 - facil.rebote(k)));
+  });
+}
+
+async function huida(m: Motor, b: EstadoBatalla) {
+  const pr = puntosBatalla(m.h).rival;
+  m.particulas_(pr.x, pr.y + 20, 16, { colores: ["#d8c79a", "#efe2bd"], vel: 1.2, g: -0.02, vida: 30 });
+  await m.animar(24, (k) => {
+    b.rivalDX = Math.round(k * 120);
+    b.rivalVisible = 1 - k;
   });
 }
 
@@ -195,43 +266,53 @@ const MOVIMIENTOS: Array<[string, string]> = [
 ];
 
 async function llamada(m: Motor, ronda: "a" | "b", alias: string): Promise<ResultadoLlamada> {
-  const estado: EstadoBodega = { telefono: "normal", cliente: false };
+  const estado: EstadoBodega = { telefono: "normal", cliente: 0 };
   m.escena = bodega(estado);
-  await m.fundirA(false);
+  m.musica("barrio");
+  await m.iris(false, 96, 120);
+  const entra = m.animar(40, (k) => {
+    estado.cliente = k;
+  });
   await m.decir("Son las seis. La bodega está llena y tu proveedor espera su pago.");
+  await entra;
   await m.decir("Se registró un consumo de S/ 1,299 en tu tarjeta. Si no lo reconoces, te llamaremos.", "SMS");
+  estado.cliente = 0;
   estado.telefono = "llamada";
-  m.sonido.ring();
+  m.musica(null);
+  m.audio.ring();
+  m.vibrar([200, 100, 200, 100, 200]);
   m.sacudir(30);
   await m.decir("¡RIIING! ¡RIIING!");
   await m.decir("En la pantalla: «Seguridad Banco Andino».");
-  await transicionCombate(m);
 
+  await m.barras(true);
   const total = SEGUNDOS_LLAMADA * 60;
   const b = nuevaBatalla({ tiempoTotal: total, tiempoRestante: total });
   m.escena = batalla(b, m);
-  await m.fundirA(false);
+  m.musica("llamada");
+  await entradaCombate(m, b);
   await m.decir("¡El ESTAFADOR te está llamando!");
 
   const rec: Recuento = { colgo: 0, esperoBanco: 0, bloqueo: false };
   for (let turno = 0; ; turno++) {
     const [nombre, frase] = MOVIMIENTOS[Math.min(turno, MOVIMIENTOS.length - 1)];
     await m.decir(`¡ESTAFADOR usó ${nombre}!`);
-    m.sonido.golpe();
-    m.sacudir(10);
+    await embestida(m, b);
     b.rivalBarra = Math.min(1, b.rivalBarra + 0.17);
+    m.flotante("+PRESIÓN", 40, 60, PAL.rojo);
     await m.decir(`«${frase}»`, "ESTAFADOR");
 
     if (turno % 3 === 2) {
-      await m.decir("¡Un cliente te pide su vuelto! Le atiendes y pierdes unos segundos.");
+      await m.decir("¡Un cliente te pide su vuelto! Lo atiendes y pierdes 4 segundos.");
       b.tiempoRestante = Math.max(0, b.tiempoRestante - 4 * 60);
+      m.flotante("-4s", 150, puntosBatalla(m.h).aliado.y - 30, PAL.rojo);
     }
     if (b.tiempoRestante <= 0) return { tipo: "tiempo", rec, b };
 
     const inicio = m.t;
     const i = await m.menu(
-      [{ texto: "TRANSFERIR" }, { texto: "COLGAR" }, { texto: "LLAMAR BANCO" }, { texto: "BLOQUEAR" }],
-      { cols: 2, caja: { x: 2, y: 108, w: 236, h: 50 }, titulo: "¿Qué hará ROSA?", limiteFrames: b.tiempoRestante },
+      [{ texto: "TRANSFERIR", color: "#f4c7c3" }, { texto: "COLGAR" }, { texto: "AL BANCO" }, { texto: "BLOQUEAR" }],
+      { estilo: "combate", titulo: "¿Qué hará ROSA?", limiteCuadros: b.tiempoRestante },
     );
     b.tiempoRestante = Math.max(0, b.tiempoRestante - (m.t - inicio));
     if (i === -2) return { tipo: "tiempo", rec, b };
@@ -239,14 +320,18 @@ async function llamada(m: Motor, ronda: "a" | "b", alias: string): Promise<Resul
     if (i === 1) {
       rec.colgo++;
       await m.decir("Colgaste.");
-      m.sonido.ring();
+      m.audio.ring();
+      m.vibrar([150, 80, 150]);
       m.sacudir(16);
       await m.decir("¡El ESTAFADOR volvió a llamar!");
     } else if (i === 2) {
       rec.esperoBanco++;
+      m.musica(null);
       await m.decir("Llamas a la línea oficial de BANCO ANDINO...");
-      await m.decir("«Su llamada es importante para nosotros. Tiempo de espera: 14 minutos.»", "BANCO ANDINO");
+      await m.decir("«Su llamada es importante para nosotros. Tiempo de espera: 14 minutos.»", APP);
       b.tiempoRestante = Math.max(0, b.tiempoRestante - 10 * 60);
+      m.flotante("-10s", 150, puntosBatalla(m.h).aliado.y - 30, PAL.rojo);
+      m.musica("llamada");
       await m.decir("Mientras esperabas, ¡el ESTAFADOR volvió a entrar a la línea!");
     } else if (i === 3) {
       if (!rec.bloqueo) {
@@ -261,7 +346,11 @@ async function llamada(m: Motor, ronda: "a" | "b", alias: string): Promise<Resul
       await m.decir("FaceID... OK. Eres tú.", APP);
       await m.decir("Token digital... OK.", APP);
       if (ronda === "a") {
-        const ok = await m.pregunta("AVISO: ¿Seguro que deseas continuar con esta operación?", [{ texto: "CONTINUAR" }, { texto: "CANCELAR" }], APP);
+        const ok = await m.pregunta(
+          "AVISO: ¿Seguro que deseas continuar con esta operación?",
+          [{ texto: "CONTINUAR", color: "#f4c7c3" }, { texto: "CANCELAR" }],
+          APP,
+        );
         if (ok === 0) return { tipo: "cayo", rec, b };
         await m.decir("Cancelaste. La llamada sigue...");
       } else {
@@ -283,70 +372,80 @@ async function llamada(m: Motor, ronda: "a" | "b", alias: string): Promise<Resul
 }
 
 async function partidaVictima(m: Motor, alias: string): Promise<Siguiente> {
+  await tarjeta(m, "RONDA 1 DE 2", "AVISO", "Genérico y simulado:\nFaceID, token y un\n«¿desea continuar?»", PAL.ambar);
   m.escena = laboratorio;
+  m.musica("barrio");
   await m.fundirA(false);
   await m.decir("Serás ROSA. Tiene una bodega en el barrio y hoy le toca pagarle a su proveedor, DON PEPE.", VEGA);
-  await m.decir("RONDA 1 de 2: el banco solo tiene FaceID, token y un aviso genérico. Es nuestra línea base SIMULADA, no un banco real.", VEGA);
+  await m.decir("En esta ronda el banco solo tiene FaceID, token y un aviso genérico. Es nuestra línea base SIMULADA, no un banco real.", VEGA);
   await m.fundirA(true);
-
-  await caminar(m, mundo(false, "bodega", { x: 8, y: 5, dir: "izq" }), "Ve a tu BODEGA. Camina con la cruceta.");
+  await caminar(m, mundo(false, "bodega", { x: 6, y: 5, dir: "izq" }), "tu bodega", "Ve a tu BODEGA.");
 
   // ── Ronda A: aviso genérico ──
+  m.barraSuperior = { texto: "RONDA 1/2", color: PAL.ambarOscuro };
   const a = await llamada(m, "a", alias);
   const cayo = a.tipo === "cayo";
+  const pts = puntosBatalla(m.h);
   if (cayo) {
-    m.sonido.fallo();
+    m.musica("triste");
+    m.audio.monedas();
+    m.vibrar([80, 50, 80, 50, 200]);
+    m.particulas_(pts.aliado.x, pts.aliado.y, 36, { colores: [PAL.ambar, "#ffe08a", PAL.ambarOscuro], vel: 1, g: 0.02, vida: 50, tam: 3, haciaX: pts.rival.x, haciaY: pts.rival.y });
     a.b.aliadoLinea = "S/ 0";
+    await m.sellar("ROBADO", PAL.rojo, `-${soles(ESTAFA_ROSA.monto)}`);
     await m.decir(`¡Salieron ${soles(ESTAFA_ROSA.monto)} de tu cuenta!`);
-    await m.animar(20, (k) => {
-      a.b.rivalVisible = 1 - k;
-    });
+    await huida(m, a.b);
     await m.decir("El ESTAFADOR colgó. El número ya no existe.");
     await m.fundirA(true);
-    m.escena = bodega({ telefono: "perdio", cliente: false });
+    m.escena = bodega({ telefono: "perdio", cliente: 0 });
     await m.fundirA(false);
-    await m.decir("Bloqueas tu tarjeta: OK. Pero la transferencia ya salió. Bloquear la tarjeta no la regresa.");
+    await m.decir("Bloqueas tu tarjeta: OK. Pero la transferencia ya salió. Bloquearla no la regresa.");
     await m.decir("Presentas un reclamo. El banco tiene hasta 15 días hábiles para responder.");
     await m.decir("... 15 días hábiles después ...");
-    await m.decir("«La operación fue validada con su token digital.»", "BANCO ANDINO");
+    await m.decir("«La operación fue validada con su token digital.»", APP);
   } else {
+    m.musica("barrio");
+    await huida(m, a.b);
     await m.decir("El ESTAFADOR colgó... por ahora.");
     const r = a.rec;
     await m.decir(
-      `No perdiste dinero. Pero fuiste tu propio equipo de seguridad: colgaste ${r.colgo} ${r.colgo === 1 ? "vez" : "veces"} y esperaste en la línea oficial ${r.esperoBanco} ${r.esperoBanco === 1 ? "vez" : "veces"}${r.bloqueo ? ", y bloqueaste tu tarjeta" : ""}. Y la bodega siguió llena.`,
+      `No perdiste dinero. Pero fuiste tu propio equipo de seguridad: colgaste ${r.colgo} ${r.colgo === 1 ? "vez" : "veces"} y esperaste al banco ${r.esperoBanco} ${r.esperoBanco === 1 ? "vez" : "veces"}${r.bloqueo ? ", y bloqueaste tu tarjeta" : ""}. Y la bodega siguió llena.`,
     );
   }
   await m.fundirA(true);
+  m.barraSuperior = null;
   m.escena = laboratorio;
+  m.musica("triste");
   await m.fundirA(false);
   await m.decir("No fue tu culpa. Te autenticaste bien: el sistema esperaba que TÚ te dieras cuenta, bajo presión.", VEGA);
   await m.decir("En Perú, el 47% de usuarios de finanzas digitales estuvo expuesto a fraude o estafas en un año. El 21% de ellos perdió dinero. (SBS y CGAP, 2025)", VEGA);
   await m.decir("En 2026, Indecopi sancionó a un banco por una transferencia inusual de S/ 10,000: autenticar no lo eximía de monitorear.", VEGA);
-  const caras = [{ texto: "1" }, { texto: "2" }, { texto: "3" }, { texto: "4" }, { texto: "5" }];
+  const caras = [1, 2, 3, 4, 5].map((n) => ({ texto: String(n) }));
   const frustracion = (await m.pregunta("¿Cuánta frustración sentiste?", caras, VEGA, { estilo: "caras", inicial: 2 })) + 1;
+  await m.fundirA(true);
 
   // ── Ronda B: con nuestra capa ──
-  await m.decir("RONDA 2 de 2: el mismo día, la misma llamada... pero tu banco tiene NUESTRA CAPA de agentes.", VEGA);
-  await m.decir("Juega como quieras. Esta vez la operación pasa por el sistema real.", VEGA);
-  await m.fundirA(true);
-  await caminar(m, mundo(false, "bodega", { x: 2, y: 5, dir: "arriba" }), "Vuelve a tu BODEGA.");
+  await tarjeta(m, "RONDA 2 DE 2", "LA CAPA", "Mismo día, misma\nllamada... ahora con\nnuestros agentes.", PAL.verde);
+  await caminar(m, mundo(false, "bodega", { x: 2, y: 5, dir: "arriba" }), "tu bodega", "Vuelve a tu BODEGA. Juega como quieras.");
+  m.barraSuperior = { texto: "RONDA 2/2", color: PAL.verdeOscuro };
 
   const r = await llamada(m, "b", alias);
   let casoEstafa: Caso | null = null;
   if (r.tipo === "motor") {
     const b = r.b;
     casoEstafa = r.caso;
-    if (huboPausaPreventiva(r.caso)) {
-      m.sonido.exito();
-      b.destello = 14;
-      await m.decir("¡ALTO! La operación quedó RETENIDA antes de ejecutarse.");
-    }
     b.congelado = true;
+    m.musica(null);
+    if (huboPausaPreventiva(r.caso)) {
+      m.destello = 12;
+      await m.sellar("RETENIDO", PAL.verde, "Antes de cualquier IA");
+    }
     await m.decir("Nadie puede mover tu dinero ahora. El reloj del ESTAFADOR ya no sirve.");
+    m.musica("guardian");
     await m.decir("¡Adelante, GUARDIÁN!");
     await cambiarAliado(m, b, "guardian");
     b.aliadoNombre = "GUARDIÁN";
-    b.aliadoLinea = "S/ 4,800 a salvo";
+    b.aliadoLinea = "A SALVO";
     await m.decir("¡GUARDIÁN entró al combate!");
 
     let actual = r.caso;
@@ -355,36 +454,44 @@ async function partidaVictima(m: Motor, alias: string): Promise<Siguiente> {
       const opciones = [{ texto: "SÍ, ME GUÍAN" }, { texto: "NO, LO HAGO YO" }, { texto: "NO RESPONDER" }];
       const i = await m.pregunta(preguntaPendiente(actual)!, opciones, "GUARDIÁN", { corta: "¿Qué le respondes al GUARDIÁN?" });
       actual = await responderGuardian(r.caso.id, RESPUESTAS_GUARDIAN[Math.max(0, i)].texto);
+      if (actual.salidas.guardian) {
+        b.rivalBarra = Math.max(0, b.rivalBarra - 0.4);
+        m.flotante("-PRESIÓN", 40, 60, PAL.verde);
+      }
     }
     const d = actual.decision!;
     if (retiene(d.accion)) {
-      m.sonido.exito();
       b.rivalBarra = 0;
-      await m.animar(24, (k) => {
-        b.rivalVisible = 1 - k;
-      });
+      b.rivalGolpe = 20;
+      m.audio.golpe();
+      await huida(m, b);
+      m.audio.exito();
+      m.confeti();
       await m.decir("¡El ESTAFADOR huyó!");
       await m.decir(`Tus ${soles(ESTAFA_ROSA.monto)} siguen en tu cuenta. La transferencia nunca se ejecutó.`);
       await m.decir(explicar(d.regla).detalle, "GUARDIÁN");
       await m.decir("Mentir no servía: la cuenta destino te delataba. Y nunca te pedí tu clave, tu token ni tu tarjeta.", "GUARDIÁN");
     } else {
-      m.sonido.fallo();
+      m.audio.fallo();
       await m.decir("La operación pasó. Es un fallo del sistema, no tuyo: lo registramos.");
     }
   } else {
+    await huida(m, r.b);
     await m.decir("El ESTAFADOR colgó. No transferiste nada en esta ronda.");
   }
 
   // ── Pago legítimo a Don Pepe ──
-  await m.fundirA(true);
-  await caminar(m, mundo(false, "pepe", { x: 2, y: 4, dir: "abajo" }), "Ahora págale a DON PEPE en el MERCADO.");
-  await m.fundirA(false);
+  await m.barras(true);
+  m.descubrirYa();
+  m.fundido = 1;
+  await caminar(m, mundo(false, "pepe", { x: 2, y: 5, dir: "abajo" }), "Don Pepe", "Ahora págale a DON PEPE en el MERCADO.", false);
   await m.decir("¡Hola, Rosa! Son S/ 380 de la mercadería de hoy.", "DON PEPE");
-  await m.pregunta("¿Pagarle a DON PEPE?", [{ texto: "PAGAR S/ 380" }]);
+  await m.pregunta("¿Pagarle a DON PEPE?", [{ texto: "PAGAR S/ 380", color: "#bfe8c9" }]);
   const pago = await transferir({ transaccion: { ...PAGO_PROVEEDOR, moneda: "PEN" }, alias });
   if (pago.decision && !retiene(pago.decision.accion)) {
-    m.sonido.exito();
-    await m.decir("¡Pago exitoso al instante! Sin preguntas: es tu proveedor de siempre.", APP);
+    m.audio.exito();
+    await m.sellar("PAGADO", PAL.verde, "Al instante, sin preguntas", 1100);
+    await m.decir("Es tu proveedor de siempre: el sistema no te molestó.", APP);
     await m.decir("¡Gracias, casera!", "DON PEPE");
   } else {
     await m.decir("El pago quedó retenido: es un falso positivo y lo registramos como tal.", APP);
@@ -392,13 +499,15 @@ async function partidaVictima(m: Motor, alias: string): Promise<Siguiente> {
 
   // ── Encuesta (dentro del juego) ──
   await m.fundirA(true);
+  m.barraSuperior = null;
   m.escena = laboratorio;
+  m.musica("barrio");
   await m.fundirA(false);
   await m.decir(`¡Bien jugado, ${alias}! Dos preguntas rápidas.`, VEGA);
   const molesto = await m.pregunta("¿La pausa de seguridad te molestó?", [{ texto: "NO" }, { texto: "UN POCO" }, { texto: "MUCHO" }], VEGA);
   const activaria = await m.pregunta(
     "¿Activarías esta protección en tu banco, aunque a veces retrase un pago?",
-    [{ texto: "SÍ" }, { texto: "NO" }, { texto: "NO SÉ" }],
+    [{ texto: "SÍ", color: "#bfe8c9" }, { texto: "NO" }, { texto: "NO SÉ" }],
     VEGA,
   );
   try {
@@ -425,7 +534,7 @@ async function partidaVictima(m: Motor, alias: string): Promise<Siguiente> {
 async function finDePartida(m: Motor, otro: "victima" | "atacante"): Promise<Siguiente> {
   const i = await m.pregunta(
     "¿Y ahora?",
-    [{ texto: otro === "atacante" ? "SER ATACANTE" : "SER VÍCTIMA" }, { texto: "IR AL TÍTULO" }],
+    [{ texto: otro === "atacante" ? "SER ATACANTE" : "SER VÍCTIMA", color: otro === "atacante" ? "#f4c7c3" : "#bfe8c9" }, { texto: "VOLVER AL TÍTULO" }],
     VEGA,
   );
   await m.fundirA(true);
@@ -440,15 +549,15 @@ async function planear(m: Motor): Promise<Jugada> {
     { titulo: "¿A quién apuntas?" },
   );
   const t = await m.menu(
-    TACTICAS.map((x) => ({ texto: x.nombre.toUpperCase(), info: `${x.gancho} ${x.comun}.` })),
+    TACTICAS.map((x) => ({ texto: x.nombre.toUpperCase(), info: `${x.gancho} ${x.comun}.`, color: x.dificil ? "#f4dcc3" : undefined })),
     { titulo: "¿Qué táctica?" },
   );
   const d = await m.menu(
     DESTINOS.map((x) => ({ texto: x.nombre.toUpperCase(), info: `${x.nombre}: ${x.detalle}.` })),
-    { titulo: "¿A qué cuenta va el dinero?" },
+    { titulo: "¿A qué cuenta va?" },
   );
   const mo = await m.menu(
-    MONTOS.map((x) => ({ texto: `${x.nombre.toUpperCase()}`, info: `${x.nombre}: ${soles(x.monto)}.` })),
+    MONTOS.map((x) => ({ texto: x.nombre.toUpperCase(), info: `${x.nombre}: ${soles(x.monto)}.` })),
     { titulo: "¿Cuánto?" },
   );
   const h = await m.menu(
@@ -476,36 +585,38 @@ const AGENTES: Record<string, { inicial: string; color: string; texto: string }>
 };
 
 async function partidaAtacante(m: Motor, alias: string): Promise<Siguiente> {
+  await tarjeta(m, "MODO ATACANTE", "LA BANDA", "Tu misión: encontrar\nhuecos. No robar.\nTienes 5 intentos.", PAL.rojo);
   m.escena = laboratorio;
+  m.musica("noche");
   await m.fundirA(false);
   await m.decir("Ahora estás del otro lado: eres parte de una BANDA (ficticia).", VEGA);
   await m.decir("Tienes lo que tienen las bandas reales: datos filtrados, cuentas «alquiladas» y un teléfono.", VEGA);
-  await m.decir(`Tu misión NO es robar: es encontrar HUECOS en el sistema. Tienes ${MAX_INTENTOS} intentos.`, VEGA);
   await m.decir("Las tácticas son las que difunden las campañas de la SBS y ASBANC. Sin guiones reales.", VEGA);
   await m.fundirA(true);
-  await caminar(m, mundo(true, "cabina", { x: 8, y: 5, dir: "izq" }), "De noche. Ve a la CABINA telefónica para armar tu golpe.");
+  await caminar(m, mundo(true, "cabina", { x: 6, y: 5, dir: "izq" }), "la cabina", "De noche. Ve a la CABINA telefónica para armar tu golpe.", false);
   const fondoCabina = m.escena;
-  m.escena = fondoCabina;
-  await m.fundirA(false);
 
   const intentos: Array<{ caso: string; tactica: string }> = [];
   let huecos = 0;
   for (let n = 1; n <= MAX_INTENTOS; n++) {
     m.escena = fondoCabina;
-    await m.decir(`Intento ${n} de ${MAX_INTENTOS}. Arma el golpe.`);
+    m.musica("noche");
+    m.barraSuperior = { texto: `GOLPE ${n}/${MAX_INTENTOS} HUECOS ${huecos}`, color: PAL.rojoOscuro };
     const jugada = await planear(m);
     const tactica = TACTICAS.find((x) => x.id === jugada.tactica)!;
     const victima = VICTIMAS.find((x) => x.id === jugada.victima)!;
     const ok = await m.pregunta(
-      `${tactica.nombre} contra ${victima.nombre}, ${soles(jugada.monto)} a la ${DESTINOS.find((x) => x.id === jugada.destino)!.nombre}${jugada.madrugada ? ", de madrugada" : ""}. ¿Ejecutar?`,
-      [{ texto: "EJECUTAR" }, { texto: "CAMBIAR" }],
+      `${tactica.nombre} contra ${victima.nombre}, ${soles(jugada.monto)} a la ${DESTINOS.find((x) => x.id === jugada.destino)!.nombre}${jugada.madrugada ? ", de madrugada" : ""}.`,
+      [{ texto: "EJECUTAR", color: "#f4c7c3" }, { texto: "CAMBIAR" }],
+      undefined,
+      { corta: "¿Ejecutar el golpe?" },
     );
     if (ok !== 0) {
       n--;
       continue;
     }
 
-    await transicionCombate(m);
+    await m.barras(true);
     const b = nuevaBatalla({
       fondo: "sistema",
       rival: "banco",
@@ -516,13 +627,15 @@ async function partidaAtacante(m: Motor, alias: string): Promise<Siguiente> {
       aliado: "atacante",
       aliadoNombre: alias.toUpperCase(),
       aliadoEtiqueta: `INTENTO ${n}/${MAX_INTENTOS}`,
-      aliadoLinea: `HUECOS: ${huecos}`,
+      aliadoLinea: `HUECOS ${huecos}`,
     });
     m.escena = batalla(b, m);
-    await m.fundirA(false);
+    m.musica("llamada");
+    await entradaCombate(m, b);
     await m.decir(`¡Lanzaste ${tactica.nombre.toUpperCase()} contra ${victima.nombre.toUpperCase()}!`);
-    m.sonido.golpe();
+    m.audio.golpe();
     m.sacudir(12);
+    m.vibrar(50);
 
     const caso = await transferir(armarTransferencia(jugada, alias));
     intentos.push({ caso: caso.id, tactica: jugada.tactica });
@@ -533,48 +646,58 @@ async function partidaAtacante(m: Motor, alias: string): Promise<Siguiente> {
       const pts = puntosDe(s);
       acumulado += pts ?? 0;
       b.rivalBarra = Math.min(1, acumulado / 8);
-      m.sonido.mover();
+      m.audio.mover();
+      if (pts !== null) m.flotante(`+${pts}`, 100, 46, PAL.ambar);
       await m.decir(`Las REGLAS detectaron: ${SENALES[s] ?? s}${pts !== null ? ` (+${pts})` : ""}.`);
     }
     if (huboPausaPreventiva(caso)) {
-      b.destello = 12;
-      m.sonido.confirmar();
-      await m.decir(`¡RIESGO ${caso.nivel0.score}! El dinero quedó RETENIDO antes de llamar a ninguna IA.`);
+      m.destello = 10;
+      await m.sellar("RETENIDO", PAL.ambarOscuro, `Riesgo ${caso.nivel0.score}, sin IA aún`);
+      await m.decir("El dinero quedó RETENIDO antes de llamar a ninguna IA.");
     }
     for (const actor of actoresDe(caso)) {
       const ag = AGENTES[actor];
       if (!ag) continue;
-      b.agentes.push({ inicial: ag.inicial, color: ag.color });
-      m.sonido.mover();
+      b.agentes.push({ inicial: ag.inicial, color: ag.color, nace: m.t });
+      m.audio.confirmar();
       await m.decir(ag.texto);
     }
 
     const d = caso.decision!;
     if (retiene(d.accion)) {
       b.rivalBarra = 1;
-      m.sonido.fallo();
-      await m.decir(`¡El SISTEMA frenó tu golpe! ${explicar(d.regla).titulo}.`);
+      b.aliadoGolpe = 30;
+      m.musica("triste");
+      await m.sellar("FRENADO", PAL.rojo, explicar(d.regla).titulo.slice(0, 20));
       await m.decir(explicar(d.regla).detalle);
       if (caso.ia.llamadas === 0) await m.decir("Gasto de IA para frenarte: 0 llamadas.");
     } else {
       huecos++;
-      b.aliadoLinea = `HUECOS: ${huecos}`;
-      m.sonido.exito();
-      await m.decir("¡Encontraste un HUECO! +1 DESCUBRIMIENTO.");
+      b.aliadoLinea = `HUECOS ${huecos}`;
+      m.musica("guardian");
+      m.confeti();
+      await m.sellar("HUECO", PAL.ambar, "+1 descubrimiento");
       await m.decir(explicar(d.regla).detalle);
       await m.decir("Pero cada robo deja rastro: si un analista confirma la cuenta, el próximo golpe a ella cae al instante.");
     }
 
-    await m.fundirA(true);
+    await m.barras(true);
+    m.descubrirYa();
     m.escena = fondoCabina;
-    await m.fundirA(false);
+    m.barraSuperior = { texto: `GOLPE ${n}/${MAX_INTENTOS} HUECOS ${huecos}`, color: PAL.rojoOscuro };
+    m.musica("noche");
+    await m.iris(false);
     if (n < MAX_INTENTOS) {
-      const seguir = await m.pregunta(`Huecos encontrados: ${huecos}. ¿Otro golpe?`, [{ texto: "OTRO GOLPE" }, { texto: "TERMINAR" }]);
+      const seguir = await m.pregunta(`Huecos encontrados: ${huecos}. ¿Otro golpe?`, [{ texto: "OTRO GOLPE", color: "#f4c7c3" }, { texto: "TERMINAR" }]);
       if (seguir === 1) break;
     }
   }
 
+  await m.fundirA(true);
+  m.barraSuperior = null;
   m.escena = laboratorio;
+  m.musica("barrio");
+  await m.fundirA(false);
   await m.decir(`Terminaste: ${intentos.length} ${intentos.length === 1 ? "intento" : "intentos"}, ${huecos} ${huecos === 1 ? "hueco" : "huecos"}.`, VEGA);
   const ideas = ["Montos más chicos", "Otra cuenta nueva", "Otra táctica", "Otro horario", "Nada más"];
   const idea = await m.pregunta(
