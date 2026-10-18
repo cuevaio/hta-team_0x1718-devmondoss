@@ -88,105 +88,71 @@
   </section>
 
   <!-- 5 · La solución -->
-  <section class="slide with-note" aria-label="La solución">
+  <section class="slide with-note" aria-label="La solución: cómo funciona la red de agentes">
     <div class="head">
-      <p class="kicker rise" style="--d:.05s">LA SOLUCIÓN</p>
-      <h2 class="rise" style="--d:.15s">Frenamos. Investigamos. <span class="green">Recordamos.</span></h2>
+      <p class="kicker rise" style="--d:.05s">LA SOLUCIÓN · CÓMO FUNCIONA</p>
+      <h2 class="rise" style="--d:.15s">Cuatro agentes de IA investigan. <span class="green">Una regla fija decide.</span></h2>
     </div>
-    <div class="viz">
-      <svg id="viz-solucion" data-smil viewBox="0 0 1500 460" role="img" aria-label="Tres pasos. Frenar: el dinero de Rosa espera. Investigar: revisamos la cuenta que lo iba a recibir; recibe de 14 personas y lo reenvía en 2 horas, es una mula, y el dinero no sale. Recordar: la cuenta queda marcada, y cuando Jorge intenta pagarle se le frena al instante sin investigar de nuevo.">
-        <!-- Camino del dinero -->
-        <line x1="130" y1="180" x2="1250" y2="180" stroke="#22416a" stroke-width="3" stroke-dasharray="8 10"/>
+    <div class="flow">
+      <div class="phase" style="--c:var(--amber)">
+        <p class="phase-name rise" style="--d:.25s">1 · FRENAR</p>
+        <div class="card rise" style="--d:.35s;--l:.5s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="8,2 16,2 22,8 22,16 16,22 8,22 2,16 2,8" fill="currentColor"/></svg><b>REGLAS</b><i class="no">SIN IA</i></div>
+          <p>Ve señales raras y retiene el dinero</p>
+          <span class="out">retenido antes de la IA</span>
+        </div>
+      </div>
 
-        <!-- Haz de la lupa hacia la cuenta (detrás de las estaciones) -->
-        <polygon points="790,168 1250,104 1250,256 790,192" fill="#79c7e8" opacity="0">
-          <set attributeName="opacity" to="0.16" begin="1.6s"/>
-          <set attributeName="opacity" to="0" begin="3.6s"/>
-        </polygon>
+      <div class="phase wide" style="--c:var(--cyan)">
+        <p class="phase-name rise" style="--d:.25s">2 · INVESTIGAR</p>
+        <div class="card rise" style="--d:.45s;--l:1.2s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l4 10-4 10-4-10z" fill="currentColor"/></svg><b>COORDINADOR</b><i class="ia">IA</i></div>
+          <p>Decide a quién llamar</p>
+          <span class="out">→ Guardián y Detective</span>
+        </div>
+        <div class="pair">
+          <div class="card rise" style="--d:.55s;--l:2s">
+            <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v7c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5z" fill="currentColor"/></svg><b>GUARDIÁN</b><i class="ia">IA</i></div>
+            <p>Habla con Rosa por un canal seguro</p>
+            <span class="out">la guían por teléfono</span>
+          </div>
+          <div class="card rise" style="--d:.65s;--l:2s">
+            <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="3"/><path d="M15 15l6 6" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg><b>DETECTIVE</b><i class="ia">IA</i></div>
+            <p>Revisa la cuenta que recibe</p>
+            <span class="out">14 le envían · reenvía en 2 h</span>
+          </div>
+        </div>
+      </div>
 
-        <!-- Persona -->
-        <circle cx="80" cy="180" r="44" fill="#0f1d33" stroke="#79c7e8" stroke-width="3"/>
-        <circle cx="80" cy="166" r="12" fill="#79c7e8"/>
-        <path d="M58 204 a22 20 0 0 1 44 0 z" fill="#79c7e8"/>
-        <text class="sx" x="80" y="254" text-anchor="middle" font-size="20" font-weight="700" fill="#eef3f8">Rosa<set attributeName="opacity" to="0" begin="6s"/></text>
-        <text class="sx" x="80" y="254" text-anchor="middle" font-size="20" font-weight="700" fill="#eef3f8" opacity="0"><set attributeName="opacity" to="1" begin="6s"/>Jorge</text>
+      <div class="phase" style="--c:var(--red)">
+        <p class="phase-name rise" style="--d:.25s">3 · DECIDIR</p>
+        <div class="card rise" style="--d:.75s;--l:3.1s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 7h14M5 7l-3 7h6zM19 7l-3 7h6z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg><b>POLÍTICA</b><i class="no">SIN IA</i></div>
+          <p>Una regla fija decide qué pasa con el dinero</p>
+          <span class="out">ESCALAR</span>
+        </div>
+        <div class="card rise" style="--d:.85s;--l:3.8s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l4 4v16H6z" fill="currentColor"/><path d="M9 11h7M9 15h7" stroke="#0a0f1a" stroke-width="2"/></svg><b>AUDITOR</b><i class="ia">IA</i></div>
+          <p>Arma el expediente: cada dato con su prueba</p>
+          <span class="out">expediente listo</span>
+        </div>
+      </div>
 
-        <!-- Cuenta que iba a recibir -->
-        <rect x="1250" y="100" width="230" height="160" rx="12" fill="#0f1d33" stroke="#22416a" stroke-width="3">
-          <set attributeName="stroke" to="#e66565" begin="3.7s"/>
-        </rect>
-        <text class="px" x="1365" y="130" text-anchor="middle" font-size="11" fill="#93a8c0">QUIÉN RECIBE</text>
-        <text class="px" x="1365" y="205" text-anchor="middle" font-size="40" fill="#5d7390">?<set attributeName="opacity" to="0" begin="2.2s"/></text>
-        <text class="sx" x="1365" y="178" text-anchor="middle" font-size="18" fill="#eef3f8" opacity="0"><set attributeName="opacity" to="1" begin="2.3s"/>14 personas le envían</text>
-        <text class="sx" x="1365" y="210" text-anchor="middle" font-size="18" fill="#eef3f8" opacity="0"><set attributeName="opacity" to="1" begin="2.9s"/>y lo reenvía en 2 h</text>
-        <g opacity="0" transform="rotate(-8 1365 236)"><set attributeName="opacity" to="1" begin="3.7s"/>
-          <rect x="1300" y="216" width="130" height="40" rx="6" fill="#2a0f14" stroke="#e66565" stroke-width="3"/>
-          <text class="px" x="1365" y="243" text-anchor="middle" font-size="16" fill="#e66565">MULA</text>
-        </g>
-
-        <!-- Estación 1: frenar -->
-        <circle cx="420" cy="180" r="58" fill="#0a0f1a" stroke="#f1b35b" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;3" dur="0.6s" begin="1.1s" fill="freeze"/>
-        </circle>
-        <polygon points="451.4,167 433,148.6 407,148.6 388.6,167 388.6,193 407,211.4 433,211.4 451.4,193" fill="#f1b35b"/>
-        <text class="px" x="420" y="186" text-anchor="middle" font-size="12" fill="#0a0f1a">ALTO</text>
-
-        <!-- Estación 2: investigar -->
-        <circle cx="750" cy="180" r="58" fill="#0a0f1a" stroke="#79c7e8" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;3" dur="0.6s" begin="1.6s" fill="freeze"/>
-        </circle>
-        <circle cx="742" cy="172" r="20" fill="none" stroke="#79c7e8" stroke-width="6"/>
-        <line x1="756" y1="186" x2="774" y2="204" stroke="#79c7e8" stroke-width="8" stroke-linecap="round"/>
-
-        <!-- Estación 3: recordar -->
-        <circle cx="1080" cy="180" r="58" fill="#0a0f1a" stroke="#5d7390" stroke-width="3">
-          <set attributeName="stroke" to="#65be83" begin="5.4s"/>
-          <animate attributeName="stroke-width" values="3;9;3" dur="0.6s" begin="5.4s" fill="freeze"/>
-        </circle>
-        <path d="M1068 180 v-12 a12 12 0 0 1 24 0 v12" fill="none" stroke="#5d7390" stroke-width="5"><set attributeName="stroke" to="#65be83" begin="5.4s"/></path>
-        <rect x="1060" y="178" width="40" height="30" rx="4" fill="#5d7390"><set attributeName="fill" to="#65be83" begin="5.4s"/></rect>
-
-        <!-- Los tres pasos, siempre visibles -->
-        <text class="px" x="420" y="284" text-anchor="middle" font-size="14" fill="#f1b35b">1 · FRENAR</text>
-        <text class="sx" x="420" y="316" text-anchor="middle" font-size="19" fill="#93a8c0">el dinero espera</text>
-        <text class="px" x="750" y="284" text-anchor="middle" font-size="14" fill="#79c7e8">2 · INVESTIGAR</text>
-        <text class="sx" x="750" y="316" text-anchor="middle" font-size="19" fill="#93a8c0">¿quién lo recibe?</text>
-        <text class="px" x="1080" y="284" text-anchor="middle" font-size="14" fill="#65be83">3 · RECORDAR</text>
-        <text class="sx" x="1080" y="316" text-anchor="middle" font-size="19" fill="#93a8c0">la cuenta queda marcada</text>
-
-        <!-- El dinero de Rosa: espera en el alto y nunca sale -->
-        <g>
-          <animateMotion path="M175 180 L352 180" dur="1.1s" begin="0s" fill="freeze" calcMode="linear" keyPoints="0;0;1" keyTimes="0;0.27;1"/>
-          <animateMotion path="M352 180 L175 180" dur="0.8s" begin="4.2s" fill="freeze"/>
-          <set attributeName="opacity" to="0" begin="5.6s"/>
-          <rect x="-52" y="-18" width="104" height="36" rx="18" fill="#f1b35b"/>
-          <text class="sx" x="0" y="6" text-anchor="middle" font-size="16" font-weight="800" fill="#0a0f1a">S/4,800</text>
-        </g>
-
-        <!-- Jorge: la memoria lo frena al instante -->
-        <g opacity="0">
-          <set attributeName="opacity" to="1" begin="6.2s"/>
-          <animateMotion path="M175 180 L352 180" dur="0.7s" begin="6.2s" fill="freeze"/>
-          <rect x="-52" y="-18" width="104" height="36" rx="18" fill="#79c7e8"/>
-          <text class="sx" x="0" y="6" text-anchor="middle" font-size="16" font-weight="800" fill="#0a0f1a">S/1,200</text>
-        </g>
-        <path id="recuerda" d="M1080 122 C 1080 30 420 30 420 122" fill="none" stroke="#65be83" stroke-width="3" stroke-dasharray="6 8" opacity="0">
-          <set attributeName="opacity" to="0.9" begin="6.9s"/>
-        </path>
-        <circle r="10" fill="#65be83" opacity="0">
-          <set attributeName="opacity" to="1" begin="6.9s"/>
-          <set attributeName="opacity" to="0" begin="7.5s"/>
-          <animateMotion dur="0.6s" begin="6.9s" fill="freeze"><mpath href="#recuerda"/></animateMotion>
-        </circle>
-
-        <!-- Resultado -->
-        <text class="sx" x="750" y="410" text-anchor="middle" font-size="26" font-weight="800" fill="#65be83" opacity="0">
-          <set attributeName="opacity" to="1" begin="4.9s"/><set attributeName="opacity" to="0" begin="6s"/>Rosa: el dinero nunca salió</text>
-        <text class="sx" x="750" y="410" text-anchor="middle" font-size="26" font-weight="800" fill="#65be83" opacity="0">
-          <set attributeName="opacity" to="1" begin="7.5s"/>Jorge: frenado al instante, sin investigar otra vez</text>
-      </svg>
+      <div class="phase" style="--c:var(--green)">
+        <p class="phase-name rise" style="--d:.25s">4 · RECORDAR</p>
+        <div class="card rise" style="--d:.95s;--l:4.5s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4.5" fill="currentColor"/><path d="M3 22a9 9 0 0 1 18 0z" fill="currentColor"/></svg><b>ANALISTA</b><i class="hu">HUMANO</i></div>
+          <p>Revisa el expediente y confirma</p>
+          <span class="out">✓ es una mula</span>
+        </div>
+        <div class="card rise" style="--d:1.05s;--l:5.2s">
+          <div class="card-top"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="12" rx="2" fill="currentColor"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><b>MEMORIA</b><i class="no">SIN IA</i></div>
+          <p>Marca la cuenta, también en la red regional</p>
+          <span class="out">cuenta marcada</span>
+        </div>
+      </div>
     </div>
-    <p class="note rise" style="--d:.6s">La IA investiga. Una regla fija decide qué pasa con el dinero.</p>
+    <p class="jorge rise" style="--d:6.1s"><b>Después:</b> Jorge paga a la misma cuenta y la Memoria lo frena en el paso 1. <span>Sin investigar otra vez · 0 llamadas de IA.</span></p>
   </section>
 
   <!-- 6 · La red regional -->
