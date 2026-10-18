@@ -105,3 +105,8 @@
 - [x] **v3 «que enganche»** ([DEMO_JUEGO §12](../../DEMO_JUEGO.md)): arcade ¿REAL O ESTAFA? (16 casuísticas + 8 mensajes reales), SIGUE EL DINERO (Detective + Memoria), ranking del evento, encuesta como bonus de un toque y panel de tracción en el monitor
 - ⚠️ Para Ale: nuevo endpoint aislado `app/api/juego/arcade` + `lib/juego/arcade.ts` (no toca partidas ni el pipeline). En Railway las partidas y el arcade se guardan en un volumen (`PARTIDAS_ARCHIVO`, `ARCADE_ARCHIVO`) para no perder los datos del evento en cada redeploy
 - ⚠️ Para Ale: `tests/juego/partidas.test.ts` › «después de un reset, el nuevo CASO-0001 NO se confunde con el viejo» es **intermitente** (falla ~1 de cada 2). La clave `id@timeline[0].t` tiene resolución de milisegundos y en el test el caso viejo y el nuevo se crean en el mismo ms → 409. En producción no ocurre (entre un reset y una partida pasan segundos). Arreglo sugerido (tuyo): un contador de generación en el store de casos, o esperar 2 ms en el test
+- ⚠️ Para Ale: toqué la portada (`components/demo-dashboard.tsx`, `app/globals.css`, `app/layout.tsx`) a pedido de Tony, tras revisarla en escritorio y celular:
+  1. El teléfono del Acto 3 se quedaba en «Revisando la transferencia…»: ahora toma como protegida cualquier decisión que no sea PERMITIR (P1 no tiene pausa preventiva).
+  2. El Auditor ya no muestra un spinner eterno cuando la Memoria resolvió el caso.
+  3. Modo público (servidor con `DEMO_TOKEN` y pestaña sin token): Reiniciar y Confirmar/Descartar quedan deshabilitados con explicación, en vez de fallar con 401.
+  4. La decisión dice «Dinero retenido…», el encabezado dice «Te están robando» y hay enlaces a /play y /monitor. El pie de página está actualizado.
