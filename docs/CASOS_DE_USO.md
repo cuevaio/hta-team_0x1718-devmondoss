@@ -19,10 +19,10 @@
 | Dato | Fuente (`18`) |
 |---|---|
 | 47% de usuarios de servicios financieros digitales en Perú estuvo expuesto a fraude/estafas en el último año; 21% de los expuestos perdió dinero | #7 CGAP |
-| Entre afectados: 25% redujo el uso, 11% lo dejó, 17% cambió de proveedor | #7 CGAP |
+| Entre usuarios afectados por **riesgos digitales** (fraude, mal uso de datos, fallas de red, falta de transparencia; no solo fraude): 25% redujo el uso, 11% lo dejó, 17% cambió de proveedor | #7 CGAP |
 | Intentos de estafa por ingeniería social en bancos LATAM: +155% (2025) | #4, #5 BioCatch |
 | Cuentas mula reportadas: +42% | #4, #5 BioCatch |
-| Indecopi sancionó a un banco por no adoptar medidas ante una transferencia inusual de S/10,000 | #11 Indecopi |
+| Indecopi sancionó a un banco por no adoptar medidas ante una transferencia inusual de S/10,000 (Puno, 14/07/2026): la autenticación no lo eximía de monitorear | #11 Indecopi |
 | Investigar una alerta AML exige reconstrucción manual de contexto → backlog y riesgo regulatorio | #21 brief B1 |
 
 ### Árbol del problema

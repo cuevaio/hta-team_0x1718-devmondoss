@@ -1,0 +1,17 @@
+{
+  "event_id": "evt-demo-001",
+  "schema_version": 1,
+  "room_id": "room-demo",
+  "run_id": "run-demo",
+  "transaction_id": "tx-demo-001",
+  "seq": 1,
+  "occurred_at": "2026-10-17T20:00:00-05:00",
+  "source": "ledger",
+  "type": "transfer.held",
+  "synthetic": true,
+  "payload": {
+    "state": "HELD",
+    "amount_pen": 4800,
+    "reason_id": "L0_HIGH_RISK"
+  }
+}

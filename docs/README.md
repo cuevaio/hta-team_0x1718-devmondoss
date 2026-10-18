@@ -14,6 +14,7 @@ Cada carpeta tiene una subcarpeta por dev: `tony_dev/` (agentes) y `ale_dev/` (i
 0. **[CASOS_DE_USO.md](CASOS_DE_USO.md) — problema general y específico, casos de uso y solución**
 1. **[SOLUCION.md](SOLUCION.md) — la solución en una página**
 1. **[DEMO_JUEGO.md](DEMO_JUEGO.md) — demo jugable: víctima y atacante sobre casos reales, y cómo valida la propuesta**
+   · Paquete de especificación ampliado: [Te_Estan_Robando/INDICE.md](Te_Estan_Robando/INDICE.md) (referencia; el MVP es DEMO_JUEGO)
 2. [Índice del research pack](context/tony_dev/adaptive_financial_security_docs/00_INDEX.md)
 3. [Infraestructura y orquestación](context/tony_dev/INFRA_Y_ORQUESTACION.md): qué usamos, quién orquesta, por qué no LangGraph, laptop como servidor, plan Ollama, pendientes
 4. [Diseño del sistema multiagente](context/tony_dev/adaptive_financial_security_docs/19_MULTIAGENT_SYSTEM.md)

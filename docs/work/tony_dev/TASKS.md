@@ -93,3 +93,10 @@
 ## Si hay recorte
 - Auditor como plantilla determinista
 - Coordinador como función determinista
+
+## Demo jugable (frontend) — hecho
+- [x] `/play`: víctima (ronda A con aviso genérico simulado, ronda B con el motor real, pago a Don Pepe, 3 preguntas) y atacante (5 cartas, red-teaming, revelación de señales → agentes → decisión). Diseño: [DEMO_JUEGO](../../DEMO_JUEGO.md)
+- [x] `/monitor`: feed en vivo, pipeline en el orden real, expediente con citas, veredicto del analista de simulación, marcador y experimento en vivo (`/api/juego/resumen`)
+- [x] Tests contra el pipeline real: `tests/juego/datos.test.ts`
+- ⚠️ Para Ale: en `next dev` cada ruta tiene su propia copia de los stores en memoria (un caso creado en `/api/transfers` da 404 en `/guardian/reply`). En `next build && next start` (`npm run servidor`) funciona. Si se quiere arreglar dev: singletons en `globalThis`.
+- ⚠️ La entrega exige URL pública (no laptop): desplegar un solo proceso con `MOVIMIENTOS_EN_VIVO=1`.
