@@ -30,7 +30,7 @@ type Ticket = {
 const R = (texto: string) => ({ texto, tono: "riesgo" as const });
 const N = (texto: string) => ({ texto, tono: "normal" as const });
 
-const TICKETS: Ticket[] = [
+export const TICKETS: Ticket[] = [
   { id: "llamada_todo", riesgosa: true, quien: 0, destino: "Cuenta nueva", monto: 4800, senales: [R("En llamada ahora"), R("Destino nuevo"), R("Monto alto: todo")], agente: "guardian", razon: "En llamada y pagando a alguien nuevo." },
   { id: "celular_madrugada", riesgosa: true, quien: 2, destino: "Cuenta nueva", monto: 3000, senales: [R("Celular nuevo hoy"), R("Destino nuevo"), R("3:00 a.m.")], agente: "guardian", razon: "Celular nuevo, de madrugada y a alguien nuevo." },
   { id: "memoria_mula", riesgosa: true, quien: 1, destino: "Cuenta 4471", monto: 300, senales: [N("Monto chico"), N("De día"), { texto: "MEMORIA: es mula", tono: "memoria" }], agente: "memoria", razon: "Ya es mula confirmada: pausa al instante, 0 IA." },
@@ -51,6 +51,48 @@ const AGENTE: Record<Agente, { nombre: string; color: string }> = {
   memoria: { nombre: "MEMORIA", color: PAL.ambar },
   normal: { nombre: "TODO NORMAL", color: PAL.grisClaro },
 };
+
+/** El ticket de una transferencia: monto, quién, a quién y sus señales. También lo usa la sala EN VIVO. */
+export function dibujarTicket(
+  p: Pincel,
+  c: Caja,
+  t: Ticket,
+  o: { pais: Pais; nombre: string; reloj?: number | null; sello?: "pausa" | "pasa" | null; selloK?: number },
+) {
+  p.alfa(0.4, () => p.rect(PAL.negro, c.x + 3, c.y + 5, c.w, c.h));
+  p.rect(PAL.tinta, c.x, c.y, c.w, c.h);
+  p.rect(PAL.crema, c.x + 2, c.y + 2, c.w - 4, c.h - 4);
+  p.rect(PAL.navy, c.x + 2, c.y + 2, c.w - 4, 16);
+  p.texto("ENVÍO", c.x + 8, c.y + 6, PAL.crema);
+  const monto = dinero(o.pais, t.monto);
+  p.texto(monto, c.x + c.w - 8 - p.ancho(monto), c.y + 6, PAL.ambar);
+  p.texto(`De: ${o.nombre}`.slice(0, 19), c.x + 8, c.y + 24, PAL.gris);
+  p.texto(`A:  ${t.destino}`.slice(0, 19), c.x + 8, c.y + 36, PAL.tinta);
+  p.rect(PAL.grisClaro, c.x + 8, c.y + 48, c.w - 16, 1);
+  const hueco = Math.max(14, Math.min(20, Math.floor((c.h - 62) / 3)));
+  t.senales.forEach((s, i) => {
+    const y = c.y + 54 + i * hueco;
+    const color = s.tono === "riesgo" ? PAL.rojo : s.tono === "memoria" ? PAL.ambar : PAL.verde;
+    p.rect(color, c.x + 6, y, c.w - 12, hueco - 3);
+    p.rect("rgba(255,255,255,0.25)", c.x + 6, y, c.w - 12, 1);
+    p.texto(s.texto.slice(0, 19), c.x + 10, y + Math.round((hueco - 3 - 8) / 2), s.tono === "normal" ? PAL.tinta : PAL.blanco);
+  });
+  // reloj de decisión
+  if (o.reloj !== undefined && o.reloj !== null) {
+    const q = Math.max(0, 1 - o.reloj);
+    p.rect(PAL.tinta, c.x, c.y + c.h + 3, c.w, 5);
+    p.rect(q > 0.35 ? PAL.verde : PAL.rojo, c.x + 1, c.y + c.h + 4, Math.round((c.w - 2) * q), 3);
+  }
+  // El sello va sobre la cabecera: no tapa las señales, que son lo que se aprende.
+  if (o.sello) {
+    const kk = facil.salida(Math.min(1, Math.max(0, o.selloK ?? 1)));
+    p.escalado(c.x + c.w / 2, c.y + 10, 1 + (1 - kk) * 1.5, () => {
+      p.rect(PAL.tinta, c.x + 1, c.y, c.w - 2, 20);
+      p.rect(o.sello === "pausa" ? PAL.ambar : PAL.verde, c.x + 2, c.y + 1, c.w - 4, 18);
+      p.centrado(o.sello === "pausa" ? "|| PAUSADA" : "> ENVIADA", c.y + 6, PAL.tinta, 8, undefined, c.x, c.w);
+    });
+  }
+}
 
 export type RespuestaPOP = { carta: string; categoria: string; estafa: boolean; dijo_estafa: boolean; ms: number };
 
@@ -206,42 +248,6 @@ export function pausaOPasa(m: Motor, pais: Pais): Promise<ResultadoPOP> {
     else if (b === "a" && fase === "mal" && m.t - inicioFase > 24) siguiente();
   };
 
-  const dibujarTicket = (p: Pincel, c: Caja, t: Ticket, k: number, sello: "pausa" | "pasa" | null) => {
-    p.alfa(0.4, () => p.rect(PAL.negro, c.x + 3, c.y + 5, c.w, c.h));
-    p.rect(PAL.tinta, c.x, c.y, c.w, c.h);
-    p.rect(PAL.crema, c.x + 2, c.y + 2, c.w - 4, c.h - 4);
-    p.rect(PAL.navy, c.x + 2, c.y + 2, c.w - 4, 16);
-    p.texto("ENVÍO", c.x + 8, c.y + 6, PAL.crema);
-    const monto = dinero(pais, t.monto);
-    p.texto(monto, c.x + c.w - 8 - p.ancho(monto), c.y + 6, PAL.ambar);
-    p.texto(`De: ${nombres[t.quien]}`.slice(0, 19), c.x + 8, c.y + 24, PAL.gris);
-    p.texto(`A:  ${t.destino}`.slice(0, 19), c.x + 8, c.y + 36, PAL.tinta);
-    p.rect(PAL.grisClaro, c.x + 8, c.y + 48, c.w - 16, 1);
-    const hueco = Math.max(14, Math.min(20, Math.floor((c.h - 62) / 3)));
-    t.senales.forEach((s, i) => {
-      const y = c.y + 54 + i * hueco;
-      const color = s.tono === "riesgo" ? PAL.rojo : s.tono === "memoria" ? PAL.ambar : PAL.verde;
-      p.rect(color, c.x + 6, y, c.w - 12, hueco - 3);
-      p.rect("rgba(255,255,255,0.25)", c.x + 6, y, c.w - 12, 1);
-      p.texto(s.texto.slice(0, 19), c.x + 10, y + Math.round((hueco - 3 - 8) / 2), s.tono === "normal" ? PAL.tinta : PAL.blanco);
-    });
-    // reloj de decisión
-    if (fase === "juego") {
-      const q = Math.max(0, 1 - k);
-      p.rect(PAL.tinta, c.x, c.y + c.h + 3, c.w, 5);
-      p.rect(q > 0.35 ? PAL.verde : PAL.rojo, c.x + 1, c.y + c.h + 4, Math.round((c.w - 2) * q), 3);
-    }
-    // El sello va sobre la cabecera: no tapa las señales, que son lo que se aprende.
-    if (sello) {
-      const kk = facil.salida(Math.min(1, (m.t - inicioFase) / 8));
-      p.escalado(c.x + c.w / 2, c.y + 10, 1 + (1 - kk) * 1.5, () => {
-        p.rect(PAL.tinta, c.x + 1, c.y, c.w - 2, 20);
-        p.rect(sello === "pausa" ? PAL.ambar : PAL.verde, c.x + 2, c.y + 1, c.w - 4, 18);
-        p.centrado(sello === "pausa" ? "|| PAUSADA" : "> ENVIADA", c.y + 6, PAL.tinta, 8, undefined, c.x, c.w);
-      });
-    }
-  };
-
   const dibujar = (p: Pincel, t: number) => {
     const h = p.h;
     const f = t - inicioFase;
@@ -292,10 +298,11 @@ export function pausaOPasa(m: Motor, pais: Pais): Promise<ResultadoPOP> {
       p.centrado(`${puntaje} PUNTOS`, c.y + 78, PAL.crema, 8, PAL.tinta);
     } else if (fase === "juego") {
       const kk = facil.salida(Math.min(1, (t - aparecio) / 10));
-      dibujarTicket(p, { ...c, x: c.x + Math.round((1 - kk) * W) }, mazo[idx], (t - aparecio) / limite, null);
+      const tk = mazo[idx];
+      dibujarTicket(p, { ...c, x: c.x + Math.round((1 - kk) * W) }, tk, { pais, nombre: nombres[tk.quien], reloj: (t - aparecio) / limite });
     } else if (ultimo) {
       const u = ultimo;
-      dibujarTicket(p, c, u.t, 1, u.pauso ? "pausa" : "pasa");
+      dibujarTicket(p, c, u.t, { pais, nombre: nombres[u.t.quien], sello: u.pauso ? "pausa" : "pasa", selloK: (m.t - inicioFase) / 8 });
       // explicación
       const ag = AGENTE[u.t.agente];
       const bien = fase === "bien";

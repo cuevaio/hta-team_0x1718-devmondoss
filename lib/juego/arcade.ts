@@ -50,6 +50,8 @@ const Clave = z.string().regex(/^[a-z0-9_]{1,32}$/);
 
 const Base = {
   alias: Alias,
+  /** `sala`: partida EN VIVO (multijugador). Cuenta como dato, pero no entra al ranking arcade. */
+  origen: z.enum(['solo', 'sala']).optional(),
   pais: z.enum(PAISES_JUEGO),
   puntaje: z.number().int().min(0).max(100_000),
   encuesta: Encuesta.optional(),
@@ -117,6 +119,8 @@ export type ResumenArcade = {
   jugadores: number;
   por_pais: Record<string, number>;
   por_modo: Record<string, number>;
+  /** Jugadas hechas en salas EN VIVO (multijugador). */
+  en_sala: number;
   ranking: Record<Modo, FilaRanking[]>;
   /** Suma del mejor puntaje de cada alias en cada modo. */
   general: FilaRanking[];
@@ -253,6 +257,7 @@ export class RegistroArcade {
       jugadores: new Set(j.map((x) => x.alias.toLowerCase())).size,
       por_pais: contar(j.map((x) => x.pais)),
       por_modo: contar(j.map((x) => x.modo)),
+      en_sala: j.filter((x) => x.origen === 'sala').length,
       ranking: Object.fromEntries(MODOS.map((m) => [m, this.mejoresPorAlias(m).slice(0, top)])) as Record<Modo, FilaRanking[]>,
       general: this.general().slice(0, top),
       caidas: [...categorias.entries()]
@@ -271,7 +276,7 @@ export class RegistroArcade {
   private mejoresPorAlias(modo: Modo): FilaRanking[] {
     const mejor = new Map<string, FilaRanking>();
     for (const x of this.jugadas) {
-      if (x.modo !== modo) continue;
+      if (x.modo !== modo || x.origen === 'sala') continue;
       const clave = x.alias.toLowerCase();
       const previa = mejor.get(clave);
       if (!previa || x.puntaje > previa.puntaje) mejor.set(clave, { alias: x.alias, pais: x.pais, puntaje: x.puntaje });

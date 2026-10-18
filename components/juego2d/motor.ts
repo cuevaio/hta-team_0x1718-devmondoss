@@ -43,7 +43,7 @@ const ALTO_DIALOGO = 82;
 const LETRAS = ["ABCDEFG", "HIJKLMN", "ÑOPQRST", "UVWXYZ-"];
 const MAX_NOMBRE = 10;
 const BOTON_SONIDO: Caja = { x: W - 20, y: 2, w: 18, h: 16 };
-const AVISO_CUADROS = 130;
+const AVISO_CUADROS = 105;
 
 type Dialogo = {
   paginas: string[][];
@@ -67,7 +67,16 @@ type Menu = {
   resolver: (i: number) => void;
 };
 
-type Teclado = { nombre: string; idx: number; error: string | null; validar: (s: string) => string | null; resolver: (s: string) => void };
+type Teclado = {
+  nombre: string;
+  idx: number;
+  error: string | null;
+  validar: (s: string) => string | null;
+  resolver: (s: string) => void;
+  max: number;
+  titulo: string;
+  ayuda: string;
+};
 
 type Particula = { x: number; y: number; vx: number; vy: number; vida: number; max: number; color: string; tam: number; g: number };
 type Flotante = { texto: string; x: number; y: number; vida: number; color: string };
@@ -208,7 +217,7 @@ export class Motor {
     if (!k) return;
     if (ch === "Backspace") k.nombre = k.nombre.slice(0, -1);
     else if (ch === "Enter") this.confirmarNombre();
-    else if (/^[a-zñA-ZÑ-]$/.test(ch) && k.nombre.length < MAX_NOMBRE) k.nombre += ch.toUpperCase();
+    else if (/^[a-zñA-ZÑ-]$/.test(ch) && k.nombre.length < k.max) k.nombre += ch.toUpperCase();
   }
 
   get pidiendoNombre() {
@@ -463,9 +472,21 @@ export class Motor {
 
   // ── Teclado de nombre ────────────────────────────────────
 
-  nombre(validar: (s: string) => string | null): Promise<string> {
+  nombre(
+    validar: (s: string) => string | null,
+    o: { titulo?: string; ayuda?: string; max?: number } = {},
+  ): Promise<string> {
     return new Promise((resolver) => {
-      this.teclado = { nombre: "", idx: 0, error: null, validar, resolver };
+      this.teclado = {
+        nombre: "",
+        idx: 0,
+        error: null,
+        validar,
+        resolver,
+        max: o.max ?? MAX_NOMBRE,
+        titulo: o.titulo ?? "¿Cómo te llamas?",
+        ayuda: o.ayuda ?? "Usa un apodo",
+      };
     });
   }
 
@@ -497,7 +518,7 @@ export class Motor {
     if (this.dentro(this.rectListo(), x, y)) return this.confirmarNombre();
     LETRAS.forEach((fila, fi) => {
       [...fila].forEach((ch, ci) => {
-        if (this.dentro(this.rectTecla(fi, ci), x, y) && k.nombre.length < MAX_NOMBRE) {
+        if (this.dentro(this.rectTecla(fi, ci), x, y) && k.nombre.length < k.max) {
           k.nombre += ch;
           k.error = null;
           k.idx = fi * 7 + ci;
@@ -774,25 +795,26 @@ export class Motor {
     a.cuadro++;
     const entrada = facil.salida(Math.min(1, a.cuadro / 12));
     const salida = Math.max(0, (a.cuadro - (AVISO_CUADROS - 12)) / 12);
-    const y = Math.round(-40 + 62 * entrada - 62 * salida);
-    const x = 10;
-    const w = W - 20;
-    p.alfa(0.4, () => p.rect(PAL.negro, x + 2, y + 3, w, 32));
-    p.rect(PAL.tinta, x, y, w, 32);
-    p.rect(a.color, x + 1, y + 1, w - 2, 30);
+    // Arriba de todo, en la franja de cabeceras: no tapa botones ni tarjetas.
+    const y = Math.round(-34 + 36 * entrada - 36 * salida);
+    const x = 4;
+    const w = W - 28;
+    p.alfa(0.4, () => p.rect(PAL.negro, x + 2, y + 3, w, 28));
+    p.rect(PAL.tinta, x, y, w, 28);
+    p.rect(a.color, x + 1, y + 1, w - 2, 26);
     p.rect("rgba(255,255,255,0.35)", x + 2, y + 2, w - 4, 2);
     // brillo que cruza
     const bx = ((a.cuadro * 4) % (w + 60)) - 30;
-    p.alfa(0.35, () => p.rect(PAL.blanco, x + bx, y + 1, 6, 30));
+    p.alfa(0.35, () => p.rect(PAL.blanco, x + bx, y + 1, 6, 26));
     // estrella
-    const sx = x + 8;
-    const sy = y + 8;
+    const sx = x + 6;
+    const sy = y + 6;
     p.rect(PAL.blanco, sx + 6, sy, 4, 16);
     p.rect(PAL.blanco, sx, sy + 6, 16, 4);
     p.rect(PAL.blanco, sx + 3, sy + 3, 10, 10);
     p.rect(a.color, sx + 6, sy + 6, 4, 4);
-    p.texto(limpiar(a.titulo).slice(0, 17), x + 30, y + 6, PAL.tinta);
-    p.texto(limpiar(a.sub).slice(0, 17), x + 30, y + 18, PAL.blanco);
+    p.texto(limpiar(a.titulo).slice(0, 15), x + 28, y + 5, PAL.tinta);
+    p.texto(limpiar(a.sub).slice(0, 15), x + 28, y + 16, PAL.blanco);
     if (a.cuadro >= AVISO_CUADROS) this.avisos.shift();
   }
 
@@ -858,6 +880,18 @@ export class Motor {
       const r0 = this.rectOpcion(m, 0);
       p.caja(6, r0.y - 8, W - 12, 46);
     }
+    if (m.estilo === "tarjetas") {
+      // Tablero sólido detrás de las tarjetas: que no se asome la escena por los huecos.
+      const r0 = this.rectOpcion(m, 0);
+      const arriba = r0.y - (m.titulo ? 28 : 8);
+      const kk = facil.salida(Math.min(1, k * 1.5));
+      const y = Math.round(arriba + (1 - kk) * 40);
+      p.alfa(0.3, () => p.rect(PAL.negro, 0, y - 3, W, 3));
+      p.rect(PAL.tinta, 0, y, W, this.h - y);
+      p.rect("#232c45", 0, y + 2, W, this.h - y - 2);
+      p.rect(PAL.ambar, 0, y, W, 2);
+      for (let i = 6; i < W; i += 12) p.rect("#2b3554", i, y + 6, 2, 2);
+    }
     if (m.titulo && (m.estilo === "lista" || m.estilo === "tarjetas")) {
       const r0 = this.rectOpcion(m, 0);
       const ancho = p.ancho(m.titulo) + 12;
@@ -892,13 +926,13 @@ export class Motor {
     p.rect(PAL.crema, 0, 0, W, this.h);
     for (let i = 0; i < W; i += 16) p.rect("#efe0c4", i, 0, 8, this.h);
     p.caja(6, 24, W - 12, 46);
-    p.texto("¿Cómo te llamas?", 14, 33, PAL.azul);
+    p.texto(k.titulo, 14, 33, PAL.azul);
     if (k.error) envolver(k.error, 20).slice(0, 1).forEach((l) => p.texto(l, 14, 51, PAL.rojo));
-    else p.texto("Usa un apodo", 14, 51, PAL.gris);
+    else p.texto(k.ayuda, 14, 51, PAL.gris);
     // El apodo, grande, en el centro
     const medio = Math.round((70 + this.h - 168) / 2) - 8;
     const visible = k.nombre + (this.t % 40 < 20 ? "_" : " ");
-    p.centrado(visible.padEnd(MAX_NOMBRE + 1, " ").slice(0, MAX_NOMBRE + 1).trimEnd() || "_", medio, PAL.tinta, 16, PAL.ambar);
+    p.centrado(visible.padEnd(k.max + 1, " ").slice(0, k.max + 1).trimEnd() || "_", medio, PAL.tinta, 16, PAL.ambar);
     LETRAS.forEach((fila, fi) => {
       [...fila].forEach((ch, ci) => {
         const r = this.rectTecla(fi, ci);

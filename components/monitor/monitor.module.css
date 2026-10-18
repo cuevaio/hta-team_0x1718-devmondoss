@@ -397,3 +397,31 @@
 .panel h2, .kpi span, .sello { text-transform: none; letter-spacing: 0; }
 .nodo { font-size: 7px; overflow-wrap: anywhere; }
 .kpiAncho strong { font-size: clamp(12px, 1.4vw, 16px); }
+
+.sala {
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.salaCabecera {
+  margin: 0 0 6px;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.salaCarta {
+  margin: 0 0 6px;
+  padding: 8px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 8%);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.salaReparto {
+  margin: 0 0 6px;
+  color: #f1b35b;
+  font-size: 9px;
+  line-height: 1.6;
+}

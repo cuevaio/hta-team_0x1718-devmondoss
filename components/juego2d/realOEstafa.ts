@@ -361,8 +361,8 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
   return terminado;
 }
 
-/** Una notificación del celular: canal, remitente y mensaje. */
-function dibujarCarta(p: Pincel, c: Caja, carta: Carta, giro = 0, aparicion = 1) {
+/** Una notificación del celular: canal, remitente y mensaje. También la usa la sala EN VIVO. */
+export function dibujarCarta(p: Pincel, c: Caja, carta: Carta, giro = 0, aparicion = 1) {
   const draw = () => {
     p.alfa(0.4, () => p.rect(PAL.negro, c.x + 3, c.y + 5, c.w, c.h));
     p.rect(PAL.tinta, c.x, c.y, c.w, c.h);
