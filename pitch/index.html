@@ -118,97 +118,105 @@
   </section>
 
   <!-- 5 · La solución -->
-  <section class="slide" aria-label="La solución">
+  <section class="slide with-note" aria-label="La solución">
     <div class="head">
       <p class="kicker rise" style="--d:.05s">LA SOLUCIÓN</p>
-      <h2 class="rise" style="--d:.15s">Retenemos primero. La IA investiga. <span class="amber">Una regla decide.</span></h2>
+      <h2 class="rise" style="--d:.15s">Frenamos. Investigamos. <span class="green">Recordamos.</span></h2>
     </div>
     <div class="viz">
-      <svg id="viz-solucion" data-smil viewBox="0 0 1500 430" role="img" aria-label="La transferencia de Rosa se retiene antes de la IA, los agentes reúnen evidencia, la política escala y el analista confirma la mula. La Memoria aprende y Jorge, que transfiere a la misma cuenta, se frena al instante con cero llamadas de IA.">
-        <g>
-          <rect x="20" y="60" width="200" height="120" rx="12" fill="#0f1d33" stroke="#22416a" stroke-width="2"/>
-          <text class="px" x="120" y="112" text-anchor="middle" font-size="18" fill="#eef3f8">REGLAS</text>
-          <text class="sx" x="120" y="146" text-anchor="middle" font-size="17" fill="#93a8c0">sin IA</text>
-          <rect x="270" y="60" width="200" height="120" rx="12" fill="#2a1f0e" stroke="#f1b35b" stroke-width="2">
-            <animate attributeName="stroke-width" values="2;7;3" dur="0.6s" begin="1.4s" fill="freeze"/>
-          </rect>
-          <text class="px" x="370" y="112" text-anchor="middle" font-size="18" fill="#f1b35b">PAUSA</text>
-          <text class="sx" x="370" y="146" text-anchor="middle" font-size="17" fill="#f6ebd7">dinero retenido</text>
-          <rect x="520" y="60" width="200" height="120" rx="12" fill="#0f2a1c" stroke="#65be83" stroke-width="2">
-            <animate attributeName="stroke-width" values="2;7;3" dur="0.6s" begin="8.4s" fill="freeze"/>
-          </rect>
-          <text class="px" x="620" y="112" text-anchor="middle" font-size="18" fill="#65be83">MEMORIA</text>
-          <text class="sx" x="620" y="146" text-anchor="middle" font-size="17" fill="#f6ebd7">+ red regional</text>
-          <rect x="770" y="60" width="200" height="120" rx="12" fill="#0f2338" stroke="#79c7e8" stroke-width="2"/>
-          <text class="px" x="870" y="112" text-anchor="middle" font-size="18" fill="#79c7e8">AGENTES</text>
-          <text class="sx" x="870" y="146" text-anchor="middle" font-size="17" fill="#f6ebd7">investigan</text>
-          <rect x="1020" y="60" width="200" height="120" rx="12" fill="#0f1d33" stroke="#22416a" stroke-width="2"/>
-          <text class="px" x="1120" y="112" text-anchor="middle" font-size="18" fill="#eef3f8">POLÍTICA</text>
-          <text class="sx" x="1120" y="146" text-anchor="middle" font-size="17" fill="#93a8c0">decide</text>
-          <rect x="1270" y="60" width="200" height="120" rx="12" fill="#0f1d33" stroke="#22416a" stroke-width="2"/>
-          <text class="px" x="1370" y="112" text-anchor="middle" font-size="18" fill="#eef3f8">ANALISTA</text>
-          <text class="sx" x="1370" y="146" text-anchor="middle" font-size="17" fill="#93a8c0">confirma</text>
+      <svg id="viz-solucion" data-smil viewBox="0 0 1500 460" role="img" aria-label="Tres pasos. Frenar: el dinero de Rosa espera. Investigar: revisamos la cuenta que lo iba a recibir; recibe de 14 personas y lo reenvía en 2 horas, es una mula, y el dinero no sale. Recordar: la cuenta queda marcada, y cuando Jorge intenta pagarle se le frena al instante sin investigar de nuevo.">
+        <!-- Camino del dinero -->
+        <line x1="130" y1="180" x2="1250" y2="180" stroke="#22416a" stroke-width="3" stroke-dasharray="8 10"/>
+
+        <!-- Haz de la lupa hacia la cuenta (detrás de las estaciones) -->
+        <polygon points="790,168 1250,104 1250,256 790,192" fill="#79c7e8" opacity="0">
+          <set attributeName="opacity" to="0.16" begin="1.6s"/>
+          <set attributeName="opacity" to="0" begin="3.6s"/>
+        </polygon>
+
+        <!-- Persona -->
+        <circle cx="80" cy="180" r="44" fill="#0f1d33" stroke="#79c7e8" stroke-width="3"/>
+        <circle cx="80" cy="166" r="12" fill="#79c7e8"/>
+        <path d="M58 204 a22 20 0 0 1 44 0 z" fill="#79c7e8"/>
+        <text class="sx" x="80" y="254" text-anchor="middle" font-size="20" font-weight="700" fill="#eef3f8">Rosa<set attributeName="opacity" to="0" begin="6s"/></text>
+        <text class="sx" x="80" y="254" text-anchor="middle" font-size="20" font-weight="700" fill="#eef3f8" opacity="0"><set attributeName="opacity" to="1" begin="6s"/>Jorge</text>
+
+        <!-- Cuenta que iba a recibir -->
+        <rect x="1250" y="100" width="230" height="160" rx="12" fill="#0f1d33" stroke="#22416a" stroke-width="3">
+          <set attributeName="stroke" to="#e66565" begin="3.7s"/>
+        </rect>
+        <text class="px" x="1365" y="130" text-anchor="middle" font-size="11" fill="#93a8c0">QUIÉN RECIBE</text>
+        <text class="px" x="1365" y="205" text-anchor="middle" font-size="40" fill="#5d7390">?<set attributeName="opacity" to="0" begin="2.2s"/></text>
+        <text class="sx" x="1365" y="178" text-anchor="middle" font-size="18" fill="#eef3f8" opacity="0"><set attributeName="opacity" to="1" begin="2.3s"/>14 personas le envían</text>
+        <text class="sx" x="1365" y="210" text-anchor="middle" font-size="18" fill="#eef3f8" opacity="0"><set attributeName="opacity" to="1" begin="2.9s"/>y lo reenvía en 2 h</text>
+        <g opacity="0" transform="rotate(-8 1365 236)"><set attributeName="opacity" to="1" begin="3.7s"/>
+          <rect x="1300" y="216" width="130" height="40" rx="6" fill="#2a0f14" stroke="#e66565" stroke-width="3"/>
+          <text class="px" x="1365" y="243" text-anchor="middle" font-size="16" fill="#e66565">MULA</text>
         </g>
-        <g fill="#5d7390">
-          <rect x="222" y="118" width="40" height="4"/><polygon points="262,112 270,120 262,128"/>
-          <rect x="472" y="118" width="40" height="4"/><polygon points="512,112 520,120 512,128"/>
-          <rect x="722" y="118" width="40" height="4"/><polygon points="762,112 770,120 762,128"/>
-          <rect x="972" y="118" width="40" height="4"/><polygon points="1012,112 1020,120 1012,128"/>
-          <rect x="1222" y="118" width="40" height="4"/><polygon points="1262,112 1270,120 1262,128"/>
-        </g>
-        <g opacity="0"><set attributeName="opacity" to="1" begin="1.5s"/>
-          <rect x="255" y="196" width="230" height="40" rx="8" fill="#f1b35b"/>
-          <text class="px" x="370" y="222" text-anchor="middle" font-size="11" fill="#0a0f1a">ANTES DE LA IA</text>
-        </g>
-        <g opacity="0"><set attributeName="opacity" to="1" begin="3.8s"/>
-          <rect x="735" y="196" width="270" height="32" rx="6" fill="#0f2338" stroke="#79c7e8"/>
-          <text class="mx" x="870" y="218" text-anchor="middle" font-size="15" fill="#eef3f8">E-01 · 14 remitentes nuevos</text>
-        </g>
-        <g opacity="0"><set attributeName="opacity" to="1" begin="4.2s"/>
-          <rect x="735" y="236" width="270" height="32" rx="6" fill="#0f2338" stroke="#79c7e8"/>
-          <text class="mx" x="870" y="258" text-anchor="middle" font-size="15" fill="#eef3f8">E-02 · 91% reenviado en 2 h</text>
-        </g>
-        <g opacity="0"><set attributeName="opacity" to="1" begin="4.6s"/>
-          <rect x="735" y="276" width="270" height="32" rx="6" fill="#0f2338" stroke="#79c7e8"/>
-          <text class="mx" x="870" y="298" text-anchor="middle" font-size="15" fill="#eef3f8">E-03 · guiada por teléfono</text>
-        </g>
-        <g opacity="0" transform="rotate(-6 1120 226)"><set attributeName="opacity" to="1" begin="5.7s"/>
-          <rect x="1030" y="200" width="180" height="52" rx="6" fill="none" stroke="#e66565" stroke-width="4"/>
-          <text class="px" x="1120" y="233" text-anchor="middle" font-size="15" fill="#e66565">ESCALAR</text>
-        </g>
-        <text class="sx" x="1370" y="222" text-anchor="middle" font-size="18" font-weight="700" fill="#65be83" opacity="0"><set attributeName="opacity" to="1" begin="6.9s"/>✓ es mula</text>
-        <path id="aprende" d="M1370 240 C1370 420 620 420 620 240" fill="none" stroke="#65be83" stroke-width="2" stroke-dasharray="6 8" opacity="0">
-          <set attributeName="opacity" to="0.8" begin="7.4s"/>
-        </path>
-        <circle r="9" fill="#65be83" opacity="0">
-          <set attributeName="opacity" to="1" begin="7.4s"/>
-          <set attributeName="opacity" to="0" begin="8.4s"/>
-          <animateMotion dur="1s" begin="7.4s" fill="freeze"><mpath href="#aprende"/></animateMotion>
+
+        <!-- Estación 1: frenar -->
+        <circle cx="420" cy="180" r="58" fill="#0a0f1a" stroke="#f1b35b" stroke-width="3">
+          <animate attributeName="stroke-width" values="3;9;3" dur="0.6s" begin="1.1s" fill="freeze"/>
         </circle>
-        <text class="sx" x="995" y="412" text-anchor="middle" font-size="17" fill="#65be83" opacity="0"><set attributeName="opacity" to="1" begin="7.6s"/>la Memoria aprende</text>
+        <polygon points="451.4,167 433,148.6 407,148.6 388.6,167 388.6,193 407,211.4 433,211.4 451.4,193" fill="#f1b35b"/>
+        <text class="px" x="420" y="186" text-anchor="middle" font-size="12" fill="#0a0f1a">ALTO</text>
+
+        <!-- Estación 2: investigar -->
+        <circle cx="750" cy="180" r="58" fill="#0a0f1a" stroke="#79c7e8" stroke-width="3">
+          <animate attributeName="stroke-width" values="3;9;3" dur="0.6s" begin="1.6s" fill="freeze"/>
+        </circle>
+        <circle cx="742" cy="172" r="20" fill="none" stroke="#79c7e8" stroke-width="6"/>
+        <line x1="756" y1="186" x2="774" y2="204" stroke="#79c7e8" stroke-width="8" stroke-linecap="round"/>
+
+        <!-- Estación 3: recordar -->
+        <circle cx="1080" cy="180" r="58" fill="#0a0f1a" stroke="#5d7390" stroke-width="3">
+          <set attributeName="stroke" to="#65be83" begin="5.4s"/>
+          <animate attributeName="stroke-width" values="3;9;3" dur="0.6s" begin="5.4s" fill="freeze"/>
+        </circle>
+        <path d="M1068 180 v-12 a12 12 0 0 1 24 0 v12" fill="none" stroke="#5d7390" stroke-width="5"><set attributeName="stroke" to="#65be83" begin="5.4s"/></path>
+        <rect x="1060" y="178" width="40" height="30" rx="4" fill="#5d7390"><set attributeName="fill" to="#65be83" begin="5.4s"/></rect>
+
+        <!-- Los tres pasos, siempre visibles -->
+        <text class="px" x="420" y="284" text-anchor="middle" font-size="14" fill="#f1b35b">1 · FRENAR</text>
+        <text class="sx" x="420" y="316" text-anchor="middle" font-size="19" fill="#93a8c0">el dinero espera</text>
+        <text class="px" x="750" y="284" text-anchor="middle" font-size="14" fill="#79c7e8">2 · INVESTIGAR</text>
+        <text class="sx" x="750" y="316" text-anchor="middle" font-size="19" fill="#93a8c0">¿quién lo recibe?</text>
+        <text class="px" x="1080" y="284" text-anchor="middle" font-size="14" fill="#65be83">3 · RECORDAR</text>
+        <text class="sx" x="1080" y="316" text-anchor="middle" font-size="19" fill="#93a8c0">la cuenta queda marcada</text>
+
+        <!-- El dinero de Rosa: espera en el alto y nunca sale -->
         <g>
-          <animateMotion path="M-60 30 H1370" dur="7.4s" begin="0s" fill="freeze" calcMode="linear"
-            keyPoints="0;0.126;0.126;0.301;0.301;0.476;0.476;0.650;0.650;0.825;0.825;1;1"
-            keyTimes="0;0.081;0.135;0.189;0.324;0.378;0.432;0.486;0.703;0.757;0.865;0.919;1"/>
-          <rect x="-62" y="-17" width="124" height="34" rx="17" fill="#f1b35b"/>
-          <text class="sx" x="0" y="6" text-anchor="middle" font-size="16" font-weight="800" fill="#0a0f1a">Rosa · S/4,800</text>
+          <animateMotion path="M175 180 L352 180" dur="1.1s" begin="0s" fill="freeze" calcMode="linear" keyPoints="0;0;1" keyTimes="0;0.27;1"/>
+          <animateMotion path="M352 180 L175 180" dur="0.8s" begin="4.2s" fill="freeze"/>
+          <set attributeName="opacity" to="0" begin="5.6s"/>
+          <rect x="-52" y="-18" width="104" height="36" rx="18" fill="#f1b35b"/>
+          <text class="sx" x="0" y="6" text-anchor="middle" font-size="16" font-weight="800" fill="#0a0f1a">S/4,800</text>
         </g>
+
+        <!-- Jorge: la memoria lo frena al instante -->
         <g opacity="0">
-          <set attributeName="opacity" to="1" begin="8.9s"/>
-          <animateMotion path="M-60 30 H620" dur="1s" begin="8.9s" fill="freeze"/>
-          <rect x="-52" y="-17" width="104" height="34" rx="17" fill="#79c7e8"/>
-          <text class="sx" x="0" y="6" text-anchor="middle" font-size="16" font-weight="800" fill="#0a0f1a">Jorge</text>
+          <set attributeName="opacity" to="1" begin="6.2s"/>
+          <animateMotion path="M175 180 L352 180" dur="0.7s" begin="6.2s" fill="freeze"/>
+          <rect x="-52" y="-18" width="104" height="36" rx="18" fill="#79c7e8"/>
+          <text class="sx" x="0" y="6" text-anchor="middle" font-size="16" font-weight="800" fill="#0a0f1a">S/1,200</text>
         </g>
-        <circle cx="620" cy="30" r="12" fill="none" stroke="#65be83" stroke-width="3" opacity="0">
-          <animate attributeName="r" values="12;60" dur="0.7s" begin="9.9s" fill="freeze"/>
-          <animate attributeName="opacity" values="1;0" dur="0.7s" begin="9.9s" fill="freeze"/>
+        <path id="recuerda" d="M1080 122 C 1080 30 420 30 420 122" fill="none" stroke="#65be83" stroke-width="3" stroke-dasharray="6 8" opacity="0">
+          <set attributeName="opacity" to="0.9" begin="6.9s"/>
+        </path>
+        <circle r="10" fill="#65be83" opacity="0">
+          <set attributeName="opacity" to="1" begin="6.9s"/>
+          <set attributeName="opacity" to="0" begin="7.5s"/>
+          <animateMotion dur="0.6s" begin="6.9s" fill="freeze"><mpath href="#recuerda"/></animateMotion>
         </circle>
-        <g opacity="0"><set attributeName="opacity" to="1" begin="10s"/>
-          <rect x="505" y="200" width="230" height="40" rx="8" fill="#65be83"/>
-          <text class="px" x="620" y="226" text-anchor="middle" font-size="11" fill="#0a0f1a">0 LLAMADAS DE IA</text>
-        </g>
+
+        <!-- Resultado -->
+        <text class="sx" x="750" y="410" text-anchor="middle" font-size="26" font-weight="800" fill="#65be83" opacity="0">
+          <set attributeName="opacity" to="1" begin="4.9s"/><set attributeName="opacity" to="0" begin="6s"/>Rosa: el dinero nunca salió</text>
+        <text class="sx" x="750" y="410" text-anchor="middle" font-size="26" font-weight="800" fill="#65be83" opacity="0">
+          <set attributeName="opacity" to="1" begin="7.5s"/>Jorge: frenado al instante, sin investigar otra vez</text>
       </svg>
     </div>
+    <p class="note rise" style="--d:.6s">La IA investiga. Una regla fija decide qué pasa con el dinero.</p>
   </section>
 
   <!-- 6 · La red regional -->
