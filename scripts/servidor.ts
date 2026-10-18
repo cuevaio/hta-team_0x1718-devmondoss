@@ -3,13 +3,18 @@
  *
  *   npm run servidor                      # localhost:3000, demo limpio
  *   npm run servidor -- --red --juego     # celulares por Wi-Fi + movimientos en vivo
- *   npm run servidor -- --tunel           # imprime el comando del túnel público
+ *   npm run servidor -- --tunel           # abre un túnel público de Cloudflare (si está instalado)
  *   npm run servidor -- --persistir       # Memoria y partidas sobreviven a un reinicio
  *
  * Opciones:
  *   --puerto N     puerto (por defecto 3000)
  *   --red          escucha en 0.0.0.0 (celulares en la misma red). Exige token.
- *   --tunel        imprime el comando de Cloudflare Tunnel. Exige token.
+ *   --tunel        abre Cloudflare Tunnel e imprime la URL pública. Exige token.
+ *
+ * Agentes con modelo local: con `OLLAMA_MODELO` (en .env.local o el entorno)
+ * los agentes usan Ollama. Al arrancar se verifica que Ollama responda y se
+ * precarga el modelo. Ollama queda en localhost: el túnel publica la app, no
+ * el modelo.
  *   --juego        MOVIMIENTOS_EN_VIVO=1 (DEMO_JUEGO §9)
  *   --persistir    guarda Memoria, partidas y arcade en .datos/ y NO reinicia al arrancar
  *   --sin-build    no corre `next build` (si ya está hecho)
@@ -27,7 +32,9 @@ import { randomBytes } from 'node:crypto';
 import { createServer as createHttpServer } from 'node:http';
 import { createServer } from 'node:net';
 import { networkInterfaces, platform } from 'node:os';
-import { resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 interface Opciones {
   puerto: number;
@@ -119,6 +126,53 @@ async function esperarSalud(url: string, intentos = 60): Promise<Record<string, 
   throw new Error(`el servidor no respondió en ${url}/api/health`);
 }
 
+/** cloudflared en el PATH o en ~/.local/bin (donde lo deja la instalación manual). */
+function binarioCloudflared(): string | null {
+  const r = spawnSync(platform() === 'win32' ? 'where' : 'which', ['cloudflared'], { encoding: 'utf8' });
+  const enPath = r.status === 0 ? r.stdout.split(/\r?\n/)[0].trim() : '';
+  if (enPath) return enPath;
+  const local = join(homedir(), '.local', 'bin', 'cloudflared');
+  return existsSync(local) ? local : null;
+}
+
+/** Abre un túnel rápido de Cloudflare y resuelve con su URL pública (o null). */
+function abrirTunel(local: string): Promise<{ url: string | null; proceso: ChildProcess | null }> {
+  const bin = binarioCloudflared();
+  if (!bin) return Promise.resolve({ url: null, proceso: null });
+  const proceso = spawn(bin, ['tunnel', '--no-autoupdate', '--url', local], { stdio: ['ignore', 'pipe', 'pipe'] });
+  return new Promise((ok) => {
+    const t = setTimeout(() => ok({ url: null, proceso }), 30_000);
+    const leer = (b: Buffer) => {
+      const m = /https:\/\/[a-z0-9-]+\.trycloudflare\.com/.exec(b.toString());
+      if (m) {
+        clearTimeout(t);
+        ok({ url: m[0], proceso });
+      }
+    };
+    proceso.stdout?.on('data', leer);
+    proceso.stderr?.on('data', leer);
+    proceso.once('exit', () => ok({ url: null, proceso: null }));
+  });
+}
+
+/** Si los agentes usan Ollama: ¿responde? ¿está el modelo? Lo deja cargado. */
+async function prepararOllama(): Promise<string> {
+  const { calentarOllama, configOllamaDesdeEnv } = await import('../lib/agents/llm-ollama');
+  const modelos = [process.env.OLLAMA_MODELO?.trim(), process.env.OLLAMA_MODELO_CAPAZ?.trim()].filter((x): x is string => !!x);
+  const cfg = configOllamaDesdeEnv();
+  try {
+    const r = await fetch(`${cfg.url}/api/tags`, { signal: AbortSignal.timeout(3000) });
+    const tags = (await r.json()) as { models?: Array<{ name: string }> };
+    const faltan = modelos.filter((m) => !tags.models?.some((t) => t.name === m || t.name === `${m}:latest`));
+    if (faltan.length) return `⚠ Ollama no tiene ${faltan.join(', ')}: ollama pull ${faltan[0]}  (mientras, los agentes usan su fallback)`;
+  } catch {
+    return `⚠ Ollama no responde en ${cfg.url}: abre la app de Ollama (mientras, los agentes usan su fallback)`;
+  }
+  const listos = await calentarOllama(modelos, cfg);
+  const extra = modelos.length > 1 ? '  ⚠ dos modelos a la vez pueden no caber en memoria: mejor uno solo' : '';
+  return `✓ Ollama listo con ${listos.join(', ') || modelos.join(', ')}${extra}`;
+}
+
 async function main() {
   const o = leerOpciones(process.argv.slice(2));
   const { env, expuesto, tokenGenerado } = entornoServidor(o);
@@ -171,8 +225,10 @@ async function main() {
     caffeinate = spawn('caffeinate', ['-i', '-w', String(process.pid)], { stdio: 'ignore' });
   }
 
+  let tunelProceso: ChildProcess | null = null;
   const cerrar = () => {
     caffeinate?.kill();
+    tunelProceso?.kill();
     servidor.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 2000).unref();
   };
@@ -191,6 +247,8 @@ async function main() {
 
   const local = `http://localhost:${o.puerto}`;
   const salud = await esperarSalud(local);
+  const estadoOllama = salud.agentes === 'ollama' ? await prepararOllama() : null;
+  const tunel = o.tunel ? await abrirTunel(local) : { url: null, proceso: null };
   const token = env.DEMO_TOKEN?.trim();
 
   if (!o.persistir) {
@@ -201,12 +259,14 @@ async function main() {
     if (!r.ok) throw new Error(`reset falló (${r.status})`);
   }
 
+  tunelProceso = tunel.proceso;
   const modos = salud.modos as Record<string, boolean>;
   const memoria = salud.memoria as { veredictos: number };
   const conToken = (u: string) => (token ? `${u}/?token=${encodeURIComponent(token)}` : u);
 
   console.log('\n────────────────────────────────────────────────────────────');
   console.log(` ✓ Servidor listo · agentes: ${String(salud.agentes)}`);
+  if (estadoOllama) console.log(`   ${estadoOllama}`);
   console.log(`   modos: ${JSON.stringify(modos)}`);
   console.log(o.persistir ? `   Memoria recuperada: ${memoria.veredictos} veredicto(s) (no se reinició)` : '   demo reiniciado: casos, Memoria y movimientos en cero');
   console.log(`\n   Consola del operador: ${conToken(local)}`);
@@ -219,8 +279,15 @@ async function main() {
     console.log('   Solo el operador abre la consola con ?token=…: reiniciar y confirmar mulas lo exigen.');
   }
   if (o.tunel) {
-    console.log('\n   URL pública (requiere cloudflared instalado):');
-    console.log(`     cloudflared tunnel --url ${local}`);
+    if (tunel.url) {
+      console.log(`\n   URL pública: ${tunel.url}`);
+      console.log(`     Juego:   ${tunel.url}/play     (el QR del monitor ya apunta aquí)`);
+      console.log(`     Monitor: ${tunel.url}/monitor`);
+      console.log('   La URL cambia en cada arranque; mientras esté abierta, sirve con datos móviles.');
+    } else {
+      console.log('\n   No se pudo abrir el túnel. Instala cloudflared o ábrelo a mano:');
+      console.log(`     cloudflared tunnel --url ${local}`);
+    }
   }
   if (expuesto) console.log('\n   ⚠ Expuesto fuera de esta máquina: no compartas el token.');
   if (platform() === 'win32') console.log('\n   Windows: enchufa la laptop y desactiva la suspensión mientras presentas.');

@@ -10,7 +10,8 @@ import { modoAgentes } from '@/lib/agents';
  * no se ve. Diferido, la respuesta sale con la decisión y el expediente
  * aparece por polling.
  *
- * Por defecto se difiere SOLO con `claude`: en modo simulado el Auditor es
+ * Por defecto se difiere con un modelo real (`claude` u `ollama`, que en una
+ * laptop también tarda segundos): en modo simulado el Auditor es
  * instantáneo y esperar mantiene el orden del timeline documentado y los tests
  * deterministas. `AUDITOR_DIFERIDO=1|0` fuerza un modo u otro.
  *
@@ -19,7 +20,7 @@ import { modoAgentes } from '@/lib/agents';
 export function debeDiferirAuditor(env: NodeJS.ProcessEnv = process.env): boolean {
   if (env.AUDITOR_DIFERIDO === '1') return true;
   if (env.AUDITOR_DIFERIDO === '0') return false;
-  return modoAgentes(env) === 'claude';
+  return modoAgentes(env) !== 'simulado';
 }
 
 /**
