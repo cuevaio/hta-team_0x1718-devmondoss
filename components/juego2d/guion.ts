@@ -68,7 +68,8 @@ import { cuadroEstrella, escenaRanking, escenaResultado, type DatosResultado } f
 import { mazo, realOEstafa } from "./realOEstafa";
 import { escenaMemoria, sigueElDinero } from "./sigueElDinero";
 import { comoSeJuega, icono, teLlevas, type Paso } from "./tutorial";
-import { menuHub } from "./hub";
+import { frase } from "./jerga";
+import { menuHub, menuPaises } from "./hub";
 import { pantallaSala, type ResultadoSala } from "./sala";
 import type { Direccion } from "./sprites";
 
@@ -105,9 +106,21 @@ type Sesion = {
   vioDatos: boolean;
 };
 
+/** `/play?sala=ABCD` (el QR de una sala): se entra directo a esa sala. */
+function salaDelEnlace(): string | null {
+  try {
+    const c = new URLSearchParams(window.location.search).get("sala")?.trim().toUpperCase() ?? "";
+    return /^[A-Z]{4}$/.test(c) ? c : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function jugar(m: Motor) {
   let sesion: Sesion | null = null;
-  if (!introVista()) await videoIntro(m);
+  let salaDirecta = salaDelEnlace();
+  // Quien llega por el QR de una sala va al grano: sin video.
+  if (!introVista() && !salaDirecta) await videoIntro(m);
   for (;;) {
     m.barraSuperior = null;
     m.escena = titulo(m.t);
@@ -123,8 +136,14 @@ export async function jugar(m: Motor) {
       const alias = await intro(m);
       const pais = await elegirPais(m);
       sesion = { alias, pais, prog: cargarProgreso(alias), resultados: {}, respondidas: new Set(), vistos: new Set(), vioDatos: false };
-      // Sin vueltas: la primera partida es el arcade.
-      await protegido(m, () => modoArcade(m, sesion!, ARCADES.real_o_estafa));
+      if (salaDirecta) {
+        const codigo = salaDirecta;
+        salaDirecta = null;
+        await protegido(m, () => unirseASala(m, sesion!, codigo));
+      } else {
+        // Sin vueltas: la primera partida es el arcade.
+        await protegido(m, () => modoArcade(m, sesion!, ARCADES.real_o_estafa));
+      }
     }
     const s = sesion;
 
@@ -236,14 +255,19 @@ async function elegirPais(m: Motor): Promise<Pais> {
   m.escena = laboratorio;
   m.musica("barrio");
   await m.fundirA(false);
-  const ids: PaisId[] = ["pe", "co", "mx", "ar"];
-  const i = await m.menu(
-    ids.map((id) => ({ texto: PAISES[id].nombre, sub: PAISES[id].billeterasCortas, bandera: PAISES[id].bandera, color: PAL.navy })),
-    { estilo: "tarjetas", titulo: "¿Desde dónde juegas?" },
+  const ids = Object.keys(PAISES) as PaisId[];
+  await m.fundirA(true, 8);
+  const eligiendo = menuPaises(
+    m,
+    ids.map((id) => ({ id, nombre: PAISES[id].nombre, bandera: PAISES[id].bandera })),
   );
-  const pais = PAISES[ids[Math.max(0, i)]];
-  m.audio.confirmar();
-  await m.decir(`¡${pais.nombre}! El banco será «${pais.banco}» y la billetera «${pais.billetera}» (ficticios).`, VEGA);
+  await m.fundirA(false, 8);
+  const pais = PAISES[(await eligiendo) as PaisId];
+  await m.fundirA(true, 8);
+  m.escena = laboratorio;
+  await m.fundirA(false, 8);
+  await m.decir(frase(pais.id, "saludo"), VEGA);
+  await m.decir(`El banco será «${pais.banco}» y la billetera «${pais.billetera}»: ficticios, como todo aquí.`, VEGA);
   await m.fundirA(true);
   return pais;
 }
@@ -447,8 +471,8 @@ const ARCADES: Record<ModoArcade, DefArcade> = {
     ],
     meta: "40 s · 3 vidas · el JEFE DE RED vale x5",
     preguntas: ["espera", "activaria", "recomendaria"],
-    async jugar(m) {
-      const r = await atrapaLaMula(m);
+    async jugar(m, s) {
+      const r = await atrapaLaMula(m, s.pais);
       const logros: IdLogro[] = [];
       if (r.aciertos >= 15) logros.push("cazamulas");
       if (r.errores === 0 && r.aciertos >= 5) logros.push("sin_inocentes");
@@ -604,7 +628,7 @@ async function modoArcade(m: Motor, s: Sesion, def: DefArcade): Promise<void> {
     m.descubrirYa();
     const inicio = m.t;
     m.escena = escenaResultado(inicio, {
-      titulo: r.gano ? "¡BIEN!" : "¡CASI!",
+      titulo: frase(s.pais.id, r.gano ? "ganaste" : "perdiste"),
       color: r.gano ? PAL.verde : PAL.ambar,
       puntaje,
       lineas: r.lineas,
@@ -682,20 +706,31 @@ async function modoEnVivo(m: Motor, s: Sesion) {
   }
   if (i !== 1) return m.fundirA(true, 10);
   await m.fundirA(true, 10);
+  const pidiendo = m.nombre(validarCodigo, { titulo: "Código de la sala", ayuda: "Las 4 letras", max: 4 });
+  await m.fundirA(false, 10);
+  await unirseASala(m, s, await pidiendo);
+}
+
+/** Entra a una sala con su código (escrito o desde el QR); si no existe, ofrece otro. */
+async function unirseASala(m: Motor, s: Sesion, primerCodigo: string) {
+  let codigo = primerCodigo;
   for (;;) {
-    const pidiendo = m.nombre(validarCodigo, { titulo: "Código de la sala", ayuda: "Las 4 letras", max: 4 });
-    await m.fundirA(false, 10);
-    const codigo = await pidiendo;
     try {
       const v = await accionSala(codigo, { accion: "unirse", alias: s.alias, pais: s.pais.id });
       await m.fundirA(true, 10);
       await jugarSala(m, s, codigo, null, v.juego);
       return;
     } catch {
+      m.barraSuperior = null;
+      m.descubrirYa();
       m.escena = laboratorio;
-      const otra = await m.pregunta(`No encontré la sala ${codigo}. ¿Probamos otra vez?`, [{ texto: "OTRO CÓDIGO" }, { texto: "VOLVER" }], VEGA);
+      await m.fundirA(false, 10);
+      const otra = await m.pregunta(`No encontré la sala ${codigo}. Puede que ya haya cerrado. ¿Probamos otro código?`, [{ texto: "OTRO CÓDIGO" }, { texto: "VOLVER" }], VEGA);
       await m.fundirA(true, 10);
       if (otra !== 0) return;
+      const pidiendo = m.nombre(validarCodigo, { titulo: "Código de la sala", ayuda: "Las 4 letras", max: 4 });
+      await m.fundirA(false, 10);
+      codigo = await pidiendo;
     }
   }
 }

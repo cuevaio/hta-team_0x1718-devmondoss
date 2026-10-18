@@ -425,3 +425,20 @@
   font-size: 9px;
   line-height: 1.6;
 }
+
+.qr {
+  image-rendering: pixelated;
+  border: 3px solid #fff;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-right: 10px;
+}
+
+.salaQr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 10px;
+  line-height: 1.6;
+}

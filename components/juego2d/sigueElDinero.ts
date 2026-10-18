@@ -1,4 +1,5 @@
 import type { Boton, Motor } from "./motor";
+import { frase } from "./jerga";
 import { dinero, type Pais } from "./paises";
 import { PAL, Pincel, W, facil, type Caja } from "./pincel";
 import { PALETAS, persona } from "./sprites";
@@ -158,6 +159,7 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
       m.vibrar([20, 30, 20]);
       m.particulas_(p.x, p.y, 26, { colores: [PAL.celeste, PAL.blanco, "#bfe8ff"], vel: 2, g: 0, vida: 30 });
       mensaje = { texto: "¡MULA CONGELADA!", sub: `Cuenta ${nd.codigo}`, color: PAL.celeste, hasta: m.t + 90 };
+      m.comentar(frase(pais.id, "mula"), { y: 68 });
       seleccion = null;
       if (mulas() === 3) window.setTimeout(terminar, 500);
     } else {
@@ -168,6 +170,7 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
       m.sacudir(12);
       const quien = nd.id === "bodega" ? `Era ${pais.pepe}` : nd.id === "hotel" ? "Era un hotel" : "Era un mayorista";
       mensaje = { texto: "¡FALSO POSITIVO!", sub: quien, color: PAL.rojo, hasta: m.t + 150 };
+      m.comentar(frase(pais.id, "inocente"), { y: 68, color: "#f4c7c3" });
       seleccion = null;
     }
   };

@@ -7,6 +7,7 @@ import { SENALES, TACTICAS, explicar, retiene, soles } from "@/components/juego/
 import { PAISES } from "@/components/juego2d/paises";
 import { TICKETS } from "@/components/juego2d/pausaOPasa";
 import { mazo } from "@/components/juego2d/realOEstafa";
+import QRCode from "qrcode";
 import s from "./monitor.module.css";
 
 /**
@@ -338,6 +339,22 @@ function cuota(r: Record<string, number> | undefined, ok: (k: string) => boolean
   return { pct: Math.round((si / n) * 100), n };
 }
 
+/** QR como imagen (para escanear desde el proyector). */
+function Qr({ texto, tam }: { texto: string; tam: number }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    QRCode.toDataURL(texto, { margin: 1, width: tam * 2, errorCorrectionLevel: "M" })
+      .then((u) => vivo && setUrl(u))
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, [texto, tam]);
+  // eslint-disable-next-line @next/next/no-img-element
+  return url ? <img src={url} width={tam} height={tam} alt={`Código QR: ${texto}`} className={s.qr} /> : null;
+}
+
 type SalaVivo = {
   codigo: string;
   juego: "real_o_estafa" | "pausa_o_pasa";
@@ -380,11 +397,20 @@ function PanelSalas({ salas }: { salas: SalaVivo[] }) {
     <section className={s.panel}>
       <h2>🔴 Salas en vivo</h2>
       {vivas.map((sala) => {
+        const enlace = `${window.location.origin}/play?sala=${sala.codigo}`;
         const r = sala.reparto;
         const tot = r ? Math.max(1, r.estafa + r.real + r.sin_responder) : 1;
         const [a, b] = sala.juego === "pausa_o_pasa" ? ["Pausa", "Pasa"] : ["Estafa", "Real"];
         return (
           <div key={sala.codigo} className={s.sala}>
+            {sala.fase === "espera" && (
+              <div className={s.salaQr}>
+                <Qr texto={enlace} tam={120} />
+                <p>
+                  Escanea para entrar a la sala <strong>{sala.codigo}</strong>
+                </p>
+              </div>
+            )}
             <p className={s.salaCabecera}>
               <strong>{sala.codigo}</strong> · {sala.juego === "pausa_o_pasa" ? "¿Pausa o pasa?" : "¿Real o estafa?"} · {FASE_SALA[sala.fase] ?? sala.fase}
               {sala.fase === "responder" || sala.fase === "revelar" ? ` · ronda ${sala.ronda + 1}/${sala.rondas}` : ""} · {sala.jugadores.length} jugando
@@ -628,6 +654,7 @@ export default function Monitor() {
           Te están robando · <span>Monitor de agentes</span>
         </h1>
         <span className={s.jugar}>
+          {origen && <Qr texto={`${window.location.protocol}//${origen}/play`} tam={64} />}
           Juega desde tu celular: <strong>{origen ? `${origen}/play` : "/play"}</strong>
         </span>
         <span className={s.sello}>

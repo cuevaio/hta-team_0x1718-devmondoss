@@ -81,6 +81,7 @@ type Teclado = {
 type Particula = { x: number; y: number; vx: number; vy: number; vida: number; max: number; color: string; tam: number; g: number };
 type Flotante = { texto: string; x: number; y: number; vida: number; color: string };
 type Sello = { texto: string; sub?: string; color: string; cuadro: number };
+type Comentario = { texto: string[]; y: number; color: string; cuadro: number };
 type Aviso = { titulo: string; sub: string; color: string; cuadro: number };
 type Cortina = { tipo: "barras" | "iris"; k: number; cx: number; cy: number };
 
@@ -106,6 +107,7 @@ export class Motor {
   private flotantes: Flotante[] = [];
   private sello: Sello | null = null;
   private avisos: Aviso[] = [];
+  private comentario: Comentario | null = null;
   private cortina: Cortina | null = null;
   private cola: Boton[] = [];
   private sostenidos = new Set<Boton>();
@@ -639,6 +641,14 @@ export class Motor {
     this.avisos.push({ titulo, sub, color, cuadro: 0 });
   }
 
+  /**
+   * El comentarista: un globo corto (jerga del país) que aparece en `y` y se
+   * va solo. Reemplaza al anterior; no bloquea el juego.
+   */
+  comentar(texto: string, o: { y?: number; color?: string } = {}) {
+    this.comentario = { texto: envolver(texto, 21).slice(0, 3), y: o.y ?? 40, color: o.color ?? PAL.ambar, cuadro: 0 };
+  }
+
   /** Cuadros que faltan para que se vean todos los avisos en cola. */
   get avisosPendientes() {
     return this.avisos.reduce((s, a) => s + (AVISO_CUADROS - a.cuadro), 0);
@@ -742,6 +752,7 @@ export class Motor {
       if (this.destello % 4 < 2) p.alfa(0.7, () => p.rect(PAL.blanco, 0, 0, W, this.h));
     }
     if (this.sello) this.dibujarSello(p, this.sello);
+    if (this.comentario) this.dibujarComentario(p, this.comentario);
     if (this.avisos.length > 0) this.dibujarAviso(p, this.avisos[0]);
     if (this.barraSuperior && !this.teclado) this.dibujarBarraSuperior(p);
     if (this.dialogo) this.dibujarDialogo(p, this.dialogo);
@@ -783,6 +794,32 @@ export class Motor {
         p.rect("rgba(255,255,255,0.35)", x + 2, cy - alto / 2 + 2, ancho - 4, 2);
         p.centrado(s.texto, cy - alto / 2 + 7, PAL.blanco, 16, PAL.tinta);
         if (s.sub) p.centrado(s.sub, cy + 8, PAL.tinta);
+      }),
+    );
+  }
+
+  private dibujarComentario(p: Pincel, c: Comentario) {
+    c.cuadro++;
+    const dura = 80 + c.texto.join("").length * 2;
+    if (c.cuadro > dura) {
+      this.comentario = null;
+      return;
+    }
+    const k = facil.rebote(Math.min(1, c.cuadro / 10));
+    const salida = Math.max(0, (c.cuadro - (dura - 10)) / 10);
+    const alto = c.texto.length * 11 + 8;
+    const ancho = Math.max(...c.texto.map((l) => l.length)) * 8 + 16;
+    const x = Math.round((W - ancho) / 2);
+    p.alfa(1 - salida, () =>
+      p.escalado(W / 2, c.y + alto / 2, 0.6 + 0.4 * k, () => {
+        p.alfa(0.4, () => p.rect(PAL.negro, x + 2, c.y + 3, ancho, alto));
+        p.rect(PAL.tinta, x, c.y, ancho, alto);
+        p.rect(c.color, x + 1, c.y + 1, ancho - 2, alto - 2);
+        p.rect("rgba(255,255,255,0.3)", x + 2, c.y + 2, ancho - 4, 1);
+        // colita del globo
+        p.rect(PAL.tinta, x + 10, c.y + alto, 6, 3);
+        p.rect(c.color, x + 11, c.y + alto - 1, 4, 3);
+        c.texto.forEach((l, i) => p.centrado(l, c.y + 5 + i * 11, PAL.tinta, 8, undefined, x, ancho));
       }),
     );
   }

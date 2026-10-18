@@ -106,7 +106,7 @@ describe('/api/juego/arcade', () => {
     expect((await registrar(json('POST', realOEstafa('ana@correo.com', 1)))).status).toBe(400);
     expect((await registrar(json('POST', realOEstafa('Ana', 1, { encuesta: { vivido: 'quizas' } })))).status).toBe(400);
     expect((await registrar(json('POST', realOEstafa('Ana', 1, { encuesta: { comentario: 'hola' } })))).status).toBe(400);
-    expect((await registrar(json('POST', realOEstafa('Ana', 1, { pais: 'cl' })))).status).toBe(400);
+    expect((await registrar(json('POST', realOEstafa('Ana', 1, { pais: 'xx' })))).status).toBe(400);
     expect(arcade.cantidad).toBe(0);
   });
 

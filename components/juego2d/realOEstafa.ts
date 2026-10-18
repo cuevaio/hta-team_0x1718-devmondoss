@@ -1,4 +1,5 @@
 import type { Boton, Motor } from "./motor";
+import { frase } from "./jerga";
 import { dinero, type Pais } from "./paises";
 import { PAL, Pincel, W, envolver, facil, type Caja } from "./pincel";
 
@@ -212,6 +213,8 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
       m.vibrar(10);
       m.particulas_(W / 2, caja.y + caja.h / 2, 18, { colores: [PAL.verde, PAL.blanco, PAL.ambar], vel: 2, g: 0.05, vida: 30 });
       if (combo > 0 && combo % 3 === 0) m.flotante(`COMBO x${mult}!`, 54, caja.y + 20, PAL.ambar);
+      if ([3, 5, 8, 12].includes(combo)) m.comentar(frase(pais.id, "racha"), { y: m.h - 86 });
+      else if (Math.random() < 0.3) m.comentar(frase(pais.id, "acierto"), { y: m.h - 86 });
       cambiar("bien");
     } else {
       combo = 0;
@@ -219,6 +222,7 @@ export function realOEstafa(m: Motor, pais: Pais): Promise<ResultadoROE> {
       m.vibrar([60, 40, 90]);
       m.sacudir(14);
       m.destello = 6;
+      m.comentar(frase(pais.id, carta.estafa ? "cayo" : "desconfiado"), { y: 38, color: carta.estafa ? "#f4c7c3" : PAL.celeste });
       if (carta.estafa) vidas--;
       else restante = Math.max(0, restante - 5 * 60);
       cambiar("mal");

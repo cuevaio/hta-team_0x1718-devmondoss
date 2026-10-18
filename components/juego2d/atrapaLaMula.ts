@@ -1,4 +1,6 @@
+import { frase } from "./jerga";
 import type { Boton, Motor } from "./motor";
+import type { Pais } from "./paises";
 import { PAL, Pincel, W, facil } from "./pincel";
 
 /**
@@ -51,7 +53,7 @@ const SEGUNDOS = 40;
 const VIDAS = 3;
 const CORAZON = [".XX.XX.", "XXXXXXX", "XXXXXXX", ".XXXXX.", "..XXX..", "...X..."];
 
-export function atrapaLaMula(m: Motor): Promise<ResultadoALM> {
+export function atrapaLaMula(m: Motor, pais: Pais): Promise<ResultadoALM> {
   const hoyos: Hoyo[] = Array.from({ length: 9 }, () => ({ cuenta: null, desde: 0, dura: 0, golpe: 0, resultado: null }));
   let fase: "cuenta" | "juego" | "fin" = "cuenta";
   let inicioFase = m.t;
@@ -119,6 +121,8 @@ export function atrapaLaMula(m: Motor): Promise<ResultadoALM> {
       m.particulas_(g.x + g.w / 2, g.y + g.h / 2, 16, { colores: [PAL.celeste, PAL.blanco], vel: 1.8, g: 0, vida: 24 });
       m.flotante(`+${pts}`, g.x + 8, g.y + 4, hh.cuenta.jefe ? PAL.ambar : PAL.celeste);
       if (combo > 0 && combo % 4 === 0) m.flotante(`COMBO x${mult}!`, 50, 46, PAL.ambar);
+      if (hh.cuenta.jefe) m.comentar(frase(pais.id, "racha"), { y: 30 });
+      else if ([4, 8, 12, 16].includes(combo)) m.comentar(frase(pais.id, "mula"), { y: 30 });
     } else {
       hh.resultado = "mal";
       combo = 0;
@@ -128,6 +132,7 @@ export function atrapaLaMula(m: Motor): Promise<ResultadoALM> {
       m.vibrar([60, 40, 60]);
       m.sacudir(10);
       m.flotante("¡INOCENTE!", g.x, g.y + 4, PAL.rojo);
+      m.comentar(frase(pais.id, "inocente"), { y: 30, color: "#f4c7c3" });
       if (vidas <= 0) terminar();
     }
   };
