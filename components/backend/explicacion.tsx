@@ -72,22 +72,22 @@ export function Explicacion({ nota, velocidad, onContinuar }: { nota: Nota | nul
   return (
     <Dialog open={nota !== null} onOpenChange={(abierto) => !abierto && onContinuar()}>
       {nota && (
-        <DialogContent className="ui-oscuro dark text-foreground gap-5 overflow-hidden sm:max-w-xl" showCloseButton={false}>
+        <DialogContent className="ui-oscuro dark text-foreground gap-6 overflow-hidden p-8 sm:max-w-3xl" showCloseButton={false}>
           <DialogHeader className="gap-3">
             <div className="flex items-center gap-3">
               <span
                 className={cn(
-                  "flex size-10 items-center justify-center rounded-full ring-4",
+                  "flex size-14 items-center justify-center rounded-full ring-4",
                   rojo ? "bg-rose-400/15 text-rose-300 ring-rose-400/10" : "bg-sky-400/15 text-sky-300 ring-sky-400/10",
                 )}
               >
-                <Icono className="size-5" />
+                <Icono className="size-7" />
               </span>
-              <span className="text-muted-foreground font-mono text-xs tracking-wide uppercase">{nota.quien}</span>
+              <span className="text-muted-foreground font-mono text-base tracking-wide uppercase">{nota.quien}</span>
             </div>
-            <DialogTitle className="text-2xl tracking-tight">{nota.titulo}</DialogTitle>
+            <DialogTitle className="text-4xl tracking-tight">{nota.titulo}</DialogTitle>
             {/* Radix pide una descripción; vacía, solo para lectores de pantalla. */}
-            <DialogDescription className={cn("text-base leading-relaxed", !nota.texto && "sr-only")}>{nota.texto || nota.titulo}</DialogDescription>
+            <DialogDescription className={cn("text-xl leading-relaxed", !nota.texto && "sr-only")}>{nota.texto || nota.titulo}</DialogDescription>
           </DialogHeader>
 
           {nota.docs && nota.docs.length > 0 && (
@@ -95,18 +95,18 @@ export function Explicacion({ nota, velocidad, onContinuar }: { nota: Nota | nul
               {nota.docs.map((d, i) => (
                 <div
                   key={d.id}
-                  className={cn("animate-entra flex gap-3 rounded-md border p-3", d.marcado && "border-amber-400/40 bg-amber-400/5")}
+                  className={cn("animate-entra flex gap-3 rounded-lg border p-4", d.marcado && "border-amber-400/40 bg-amber-400/5")}
                   style={{ animationDelay: `${300 + i * 260}ms` }}
                 >
-                  <FileText className={cn("mt-0.5 size-4 shrink-0", d.marcado ? "text-amber-300" : "text-muted-foreground")} />
+                  <FileText className={cn("mt-0.5 size-5 shrink-0", d.marcado ? "text-amber-300" : "text-muted-foreground")} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-[10px]">
+                      <Badge variant="outline" className="font-mono text-xs">
                         {d.id}
                       </Badge>
-                      <span className="truncate text-sm font-medium">{d.titulo}</span>
+                      <span className="truncate text-base font-medium">{d.titulo}</span>
                     </div>
-                    <p className={cn("mt-1 text-sm", d.marcado ? "text-amber-200" : "text-muted-foreground")}>{d.hecho}</p>
+                    <p className={cn("mt-1 text-lg", d.marcado ? "text-amber-200" : "text-muted-foreground")}>{d.hecho}</p>
                   </div>
                 </div>
               ))}
@@ -115,24 +115,24 @@ export function Explicacion({ nota, velocidad, onContinuar }: { nota: Nota | nul
 
           {nota.chat && (
             <div className="bg-card flex flex-col gap-3 rounded-xl border p-4">
-              <div className="text-muted-foreground flex items-center justify-between font-mono text-[11px]">
+              <div className="text-muted-foreground flex items-center justify-between font-mono text-sm">
                 <span>Guardián → {nota.chat.cliente}</span>
                 <Badge variant="outline" className="font-mono text-[10px]">
                   por {nota.chat.canal}
                 </Badge>
               </div>
-              <p className="bg-secondary animate-entra max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm" style={{ animationDelay: "250ms" }}>
+              <p className="bg-secondary animate-entra max-w-[85%] rounded-2xl rounded-tl-sm px-5 py-3 text-xl" style={{ animationDelay: "250ms" }}>
                 {nota.chat.pregunta}
               </p>
               {nota.chat.respuesta ? (
                 <p
-                  className="animate-entra max-w-[85%] self-end rounded-2xl rounded-tr-sm bg-sky-400/15 px-4 py-2.5 text-sm text-sky-100"
+                  className="animate-entra max-w-[85%] self-end rounded-2xl rounded-tr-sm bg-sky-400/15 px-5 py-3 text-xl text-sky-100"
                   style={{ animationDelay: "1400ms" }}
                 >
                   {nota.chat.respuesta}
                 </p>
               ) : (
-                <p className="text-muted-foreground animate-entra self-end text-sm italic" style={{ animationDelay: "1400ms" }}>
+                <p className="text-muted-foreground animate-entra self-end text-xl italic" style={{ animationDelay: "1400ms" }}>
                   {nota.chat.cliente} no responde…
                 </p>
               )}
@@ -146,7 +146,7 @@ export function Explicacion({ nota, velocidad, onContinuar }: { nota: Nota | nul
               </div>
               <ol className="divide-border divide-y">
                 {nota.afirmaciones.map((a, i) => (
-                  <li key={i} className="animate-entra flex items-start justify-between gap-3 px-4 py-2.5 text-sm" style={{ animationDelay: `${250 + i * 220}ms` }}>
+                  <li key={i} className="animate-entra flex items-start justify-between gap-3 px-5 py-3 text-lg" style={{ animationDelay: `${250 + i * 220}ms` }}>
                     <span>{a.texto}</span>
                     <span className="flex shrink-0 gap-1">
                       {a.evidencia.map((e) => (
@@ -163,7 +163,7 @@ export function Explicacion({ nota, velocidad, onContinuar }: { nota: Nota | nul
 
           {nota.decision && (
             <div className="bg-card flex flex-col items-center gap-2 rounded-xl border p-6 text-center">
-              <span className={cn("animate-entra font-mono text-4xl font-semibold tracking-tight", COLOR_ACCION[nota.decision.accion])} style={{ animationDelay: "200ms" }}>
+              <span className={cn("animate-entra font-mono text-6xl font-semibold tracking-tight", COLOR_ACCION[nota.decision.accion])} style={{ animationDelay: "200ms" }}>
                 {nota.decision.accion}
               </span>
               <Badge variant="outline" className="font-mono">
@@ -176,8 +176,8 @@ export function Explicacion({ nota, velocidad, onContinuar }: { nota: Nota | nul
           {nota.invariantes && (
             <ul className="grid gap-2">
               {nota.invariantes.map((v, i) => (
-                <li key={i} className="animate-entra flex items-center gap-2 text-sm" style={{ animationDelay: `${200 + i * 200}ms` }}>
-                  {v.ok ? <Check className="size-4 text-emerald-400" /> : <X className="size-4 text-rose-400" />}
+                <li key={i} className="animate-entra flex items-center gap-3 text-xl" style={{ animationDelay: `${200 + i * 200}ms` }}>
+                  {v.ok ? <Check className="size-6 text-emerald-400" /> : <X className="size-6 text-rose-400" />}
                   {v.texto}
                 </li>
               ))}
@@ -185,16 +185,16 @@ export function Explicacion({ nota, velocidad, onContinuar }: { nota: Nota | nul
           )}
 
           <DialogFooter className="items-center sm:justify-between">
-            <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={() => setMantener((m) => !m)}>
+            <Button variant="ghost" size="lg" className="text-muted-foreground text-base" onClick={() => setMantener((m) => !m)}>
               {mantener ? <Play /> : <Pause />}
               {mantener ? "Seguir solo" : "Mantener"}
             </Button>
-            <Button onClick={onContinuar} autoFocus>
+            <Button size="lg" className="text-base" onClick={onContinuar} autoFocus>
               Continuar <ArrowRight />
             </Button>
           </DialogFooter>
           {!mantener && (
-            <div className="absolute inset-x-0 bottom-0 h-0.5 bg-sky-400/10">
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-sky-400/10">
               <div key={nota.titulo} className="animate-vaciar h-full bg-sky-400/70" style={{ "--dura": `${dura}ms` } as React.CSSProperties} />
             </div>
           )}

@@ -55,8 +55,8 @@ const NODOS: Array<{
 ];
 
 const centro = (i: number) => `${((i + 0.5) / NODOS.length) * 100}%`;
-/** Altura del centro de los círculos (pt-16 + la mitad de size-11). */
-const Y_LINEA = "top-[85px]";
+/** Altura del centro de los círculos (pt-20 + la mitad de size-16). */
+const Y_LINEA = "top-[111px]";
 
 export function Flujo({ caso, eventos, terminado, esperando }: { caso?: Caso; eventos: number; terminado: boolean; esperando: boolean }) {
   const vistos = caso?.timeline.slice(0, eventos) ?? [];
@@ -93,7 +93,7 @@ export function Flujo({ caso, eventos, terminado, esperando }: { caso?: Caso; ev
   const mitad = 100 / NODOS.length / 2;
 
   return (
-    <div className="relative grid grid-cols-9 pt-16 max-md:grid-cols-3 max-md:gap-y-6 max-md:pt-0">
+    <div className="relative grid shrink-0 grid-cols-9 pt-20 max-md:grid-cols-3 max-md:gap-y-6 max-md:pt-0">
       <div
         className={cn("bg-border absolute h-0.5 rounded-full max-md:hidden", Y_LINEA, esperando && "bg-muted-foreground/40 animate-pulse")}
         style={{ left: `${mitad}%`, right: `${mitad}%` }}
@@ -106,11 +106,11 @@ export function Flujo({ caso, eventos, terminado, esperando }: { caso?: Caso; ev
       {viaje && !terminado && (
         <div
           key={viaje.k}
-          className="animate-viaje pointer-events-none absolute top-[74px] z-20 -translate-x-1/2 max-md:hidden"
+          className="animate-viaje pointer-events-none absolute top-[98px] z-20 -translate-x-1/2 max-md:hidden"
           style={{ "--desde": centro(viaje.desde), "--hasta": centro(viaje.hasta) } as React.CSSProperties}
         >
-          <Badge className="gap-1 bg-sky-400 font-mono text-[10px] text-sky-950 shadow-lg shadow-sky-400/20">
-            <FileText className="size-3" />
+          <Badge className="h-7 gap-1.5 bg-sky-400 px-2.5 font-mono text-sm text-sky-950 shadow-lg shadow-sky-400/20 [&>svg]:size-4">
+            <FileText />
             {viaje.texto}
           </Badge>
         </div>
@@ -121,11 +121,11 @@ export function Flujo({ caso, eventos, terminado, esperando }: { caso?: Caso; ev
           className={cn("absolute top-0 flex -translate-x-1/2 flex-col items-center transition-[left,color] duration-700 max-md:hidden", colorDinero)}
           style={{ left: centro(pos) }}
         >
-          <Badge variant="outline" className="bg-background border-current font-mono text-current">
+          <Badge variant="outline" className="bg-background h-8 border-current px-3 font-mono text-base text-current">
             S/ {caso.transaccion.monto.toLocaleString("es-PE")}
             {(accion || retenidoEn >= 0) && <span className="opacity-70">· {accion === "PERMITIR" ? "pagado" : "retenido"}</span>}
           </Badge>
-          <span className="mt-1 h-4 w-px bg-current opacity-50" />
+          <span className="mt-1 h-5 w-px bg-current opacity-50" />
         </div>
       )}
 
@@ -137,7 +137,7 @@ export function Flujo({ caso, eventos, terminado, esperando }: { caso?: Caso; ev
             <span className="relative z-10">
               <span
                 className={cn(
-                  "flex size-11 items-center justify-center rounded-full border-2 transition-all duration-500",
+                  "flex size-16 items-center justify-center rounded-full border-2 transition-all duration-500",
                   n.falla
                     ? "border-rose-400 bg-rose-400/15 text-rose-300 ring-4 ring-rose-400/10"
                     : n.activo
@@ -146,12 +146,12 @@ export function Flujo({ caso, eventos, terminado, esperando }: { caso?: Caso; ev
                   trabajando && !n.falla && "scale-110",
                 )}
               >
-                <Icono className="size-[18px]" />
+                <Icono className="size-7" />
               </span>
-              {trabajando && <span className="absolute -inset-1.5 animate-spin rounded-full border-2 border-transparent border-t-sky-400" />}
+              {trabajando && <span className="absolute -inset-2 animate-spin rounded-full border-[3px] border-transparent border-t-sky-400" />}
             </span>
-            <span className={cn("mt-2 text-sm transition-colors duration-500", n.activo ? "text-foreground font-medium" : "text-muted-foreground/40")}>{n.nombre}</span>
-            <span className={cn("min-h-4 font-mono text-[11px]", n.falla ? "text-rose-400" : trabajando ? "text-sky-300" : "text-muted-foreground")}>
+            <span className={cn("mt-3 text-lg transition-colors duration-500", n.activo ? "text-foreground font-medium" : "text-muted-foreground/40")}>{n.nombre}</span>
+            <span className={cn("min-h-5 font-mono text-sm", n.falla ? "text-rose-400" : trabajando ? "text-sky-300" : "text-muted-foreground")}>
               {trabajando && !n.texto ? "trabajando…" : n.texto}
             </span>
           </div>
