@@ -1371,12 +1371,17 @@ async function rutaBanda(m: Motor, pais: Pais, alias: string): Promise<Marca> {
   await vega(m, `Terminaste: ${intentos.length} ${intentos.length === 1 ? "intento" : "intentos"}, ${huecos} ${huecos === 1 ? "hueco" : "huecos"}.`);
   const ideas = ["Montos más chicos", "Otra cuenta nueva", "Otra táctica", "Otro horario", "Nada más"];
   const idea = await m.pregunta("Para el equipo de seguridad: ¿qué intentarías después?", ideas.map((x) => ({ texto: x.toUpperCase() })), VEGA);
+  let guardada = false;
   try {
     await registrarPartida({ rol: "atacante", alias, intentos, ...(idea >= 0 && idea < ideas.length - 1 ? { idea: ideas[idea] } : {}) });
+    guardada = true;
   } catch {
     // la partida sigue aunque no se guarde
   }
-  await m.decir("Tus intentos ya aparecen en el MONITOR del evento. ¡Gracias por ayudarnos a encontrar huecos!", VEGA);
+  await m.decir(
+    guardada ? "Tus intentos ya aparecen en el MONITOR del evento. ¡Gracias por ayudarnos a encontrar huecos!" : "No pude guardar tu partida, pero gracias por ayudarnos a encontrar huecos.",
+    VEGA,
+  );
   await m.fundirA(true);
   return { texto: `${huecos}H`, color: huecos > 0 ? PAL.ambarOscuro : PAL.verdeOscuro };
 }

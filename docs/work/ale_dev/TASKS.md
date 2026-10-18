@@ -156,7 +156,7 @@ consola. **El juego está sólido**; esto es lo que salió:
 |---|---|---|---|
 | 1 | `lib/juego/partidas.ts` (mío) | tras un reset los ids vuelven a `CASO-0001` y toda partida nueva daba **409**: se perdían los datos del evento | ✅ corregido (id + hora de creación) |
 | 2 | `lib/agents/auditor.ts` | un caso PAUSADO por P7 (Guardián esperando) mostraba «Recomendación: descartar» en el monitor | ✅ corregido (`guardianPendiente`) y regla en el prompt |
-| 3 | `components/juego2d/guion.ts` ~l.522 y ~l.715 | si `registrarPartida` falla, el juego dice «No pude guardar tu partida» y **a continuación** «ya aparece en el MONITOR». Se contradice | ⏳ tuyo: un `guardada` booleano y decir lo segundo solo si es `true` |
+| 3 | `components/juego2d/guion.ts` ~l.522 y ~l.715 | si `registrarPartida` falla, el juego dice «No pude guardar tu partida» y **a continuación** «ya aparece en el MONITOR». Se contradice | ✅ corregido por Tony (`guardada` en `rutaBanda`) |
 
 Lo que sí funciona, verificado en el juego: la mentira «NO, LO HAGO YO» tres
 veces no libera nada (P5, la cuenta destino delata); el pago a Don Pepe pasa
