@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --ink: #122521;
   --ink-soft: #4f645e;
@@ -25,12 +27,32 @@
 }
 
 @theme inline {
-  --color-background: var(--canvas);
-  --color-foreground: var(--ink);
+  /* Fuera de .ui-oscuro no hay tokens de shadcn: se usan los de siempre. */
+  --color-background: var(--background, var(--canvas));
+  --color-foreground: var(--foreground, var(--ink));
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* Estilos del demo de dos paneles: en la capa base para que las utilidades de
+   Tailwind (shadcn/ui en /demo) les ganen. Las páginas con CSS Modules no cambian. */
+@layer base {
 * {
   box-sizing: border-box;
 }
@@ -1397,5 +1419,57 @@ input {
     order: 3;
     width: 100%;
     margin: 0 0 0.75rem;
+  }
+}
+}
+
+@theme {
+  --animate-entra: entra 0.3s ease-out backwards;
+  @keyframes entra {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+}
+
+/* ── shadcn/ui · tema oscuro del panel /demo ───────────────────────────
+   Los tokens viven solo dentro de .ui-oscuro: el resto de las páginas
+   (juego, monitor) no cambia. */
+@layer base {
+  .ui-oscuro {
+    --background: oklch(0.15 0.012 262);
+    --foreground: oklch(0.97 0.004 262);
+    --card: oklch(0.185 0.014 262);
+    --card-foreground: oklch(0.97 0.004 262);
+    --popover: oklch(0.185 0.014 262);
+    --popover-foreground: oklch(0.97 0.004 262);
+    --primary: oklch(0.95 0.004 262);
+    --primary-foreground: oklch(0.2 0.014 262);
+    --secondary: oklch(0.25 0.014 262);
+    --secondary-foreground: oklch(0.97 0.004 262);
+    --muted: oklch(0.25 0.014 262);
+    --muted-foreground: oklch(0.68 0.016 262);
+    --accent: oklch(0.25 0.014 262);
+    --accent-foreground: oklch(0.97 0.004 262);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 9%);
+    --input: oklch(1 0 0 / 14%);
+    --ring: oklch(0.556 0.02 262);
+    --radius: 0.625rem;
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    color-scheme: dark;
+  }
+  .ui-oscuro *,
+  .ui-oscuro ::before,
+  .ui-oscuro ::after {
+    border-color: var(--border);
+  }
+  /* El demo viejo pide 44 px de alto mínimo en los botones; los de shadcn traen su altura. */
+  .ui-oscuro button {
+    min-height: 0;
   }
 }
