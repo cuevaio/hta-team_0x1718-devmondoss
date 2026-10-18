@@ -146,8 +146,8 @@ describe('Datos semilla', () => {
     expect(repo.notaDatos()).toMatch(/SINTÉTICOS/i);
   });
 
-  it('tiene los 200 movimientos de la población de fondo', () => {
-    expect(repo.movimientos().length).toBe(200);
+  it('tiene los 200 movimientos de la población de fondo + 5 de la red regional (M-04)', () => {
+    expect(repo.movimientos().length).toBe(205);
   });
 
   it('los movimientos están ordenados cronológicamente', () => {

@@ -22,6 +22,11 @@ import { nivelDeScore } from '@/lib/rules/level0';
 export interface EntradaPolicy {
   /** ¿La Memoria tiene a la cuenta destino como mula confirmada y vigente? */
   mulaEnMemoria: boolean;
+  /**
+   * ¿OTRO banco de la red regional la confirmó como mula (vigente)? Pesa menos
+   * que un veredicto propio: retiene, pero no escala por sí solo (P1R).
+   */
+  mulaEnRed?: boolean;
   /** Atajo de las reglas nivel 0 (P2: beneficiario habitual sin compromiso). */
   atajo?: 'P1' | 'P2';
   score: number;
@@ -59,7 +64,10 @@ const ESTADOS_SIN_ALERTA: EstadoUsuario[] = ['confirmado_seguro', 'no_consultado
  * El orden de los `if` ES la especificación. No reordenar sin cambiar el doc 19.
  */
 export function decide(entrada: EntradaPolicy): ResultadoPolicy {
-  const { mulaEnMemoria, atajo, score, riesgoDestino, estadoUsuario, guardianPendiente, degradado } = entrada;
+  const { mulaEnMemoria, mulaEnRed, score, riesgoDestino, estadoUsuario, guardianPendiente, degradado } = entrada;
+  // Un veredicto de la red anula el atajo P2: un beneficiario «de siempre» que
+  // otro banco confirmó como mula no pasa sin verificar.
+  const atajo = mulaEnRed && entrada.atajo === 'P2' ? undefined : entrada.atajo;
 
   // P10 se evalúa primero en la práctica porque un sistema degradado no puede
   // confiar en las salidas de los agentes. El doc lo lista al final porque es
@@ -87,6 +95,27 @@ export function decide(entrada: EntradaPolicy): ResultadoPolicy {
     };
   }
 
+  // P1R — mula confirmada por OTRO banco de la red regional.
+  //
+  // Confianza graduada: un veredicto ajeno no tiene la evidencia de este banco,
+  // así que no escala solo. Retiene siempre (nunca PERMITIR) y escala si el
+  // cliente está en un estado no seguro. Con destino `alto` según NUESTRO
+  // Detective sigue de largo hasta P4/P5, que escalan con evidencia propia.
+  if (mulaEnRed && riesgoDestino !== 'alto') {
+    const clienteEnRiesgo = estadoUsuario !== undefined && ESTADOS_NO_SEGUROS.includes(estadoUsuario);
+    return clienteEnRiesgo
+      ? {
+          accion: 'ESCALAR',
+          regla: 'P1R',
+          motivo: `cuenta destino confirmada como mula por otro banco de la red y cliente en estado ${estadoUsuario}`,
+        }
+      : {
+          accion: 'PAUSAR',
+          regla: 'P1R',
+          motivo: 'cuenta destino confirmada como mula por otro banco de la red; se retiene hasta verificar',
+        };
+  }
+
   // P2 — beneficiario habitual/recurrente sin señales de compromiso.
   // Es lo que deja pasar el pago del hotel de Lucía aunque ella no responda (CU-04).
   if (atajo === 'P2') {
@@ -109,7 +138,7 @@ export function decide(entrada: EntradaPolicy): ResultadoPolicy {
   // P3 exige además que no haya un veredicto de riesgo alto. No cambia ningún
   // comportamiento alcanzable; solo evita que una llamada inconsistente libere
   // dinero. Ver tests/policy/engine.test.ts → "Estados inalcanzables".
-  if (nivelDeScore(score) === 'bajo' && riesgoDestino !== 'alto') {
+  if (nivelDeScore(score) === 'bajo' && riesgoDestino !== 'alto' && !mulaEnRed) {
     return { accion: 'PERMITIR', regla: 'P3', motivo: `score ${score} en nivel bajo` };
   }
 
@@ -221,10 +250,11 @@ export function decide(entrada: EntradaPolicy): ResultadoPolicy {
       };
 }
 
-/** Conveniencia: decide a partde un Caso ya armado. */
-export function decideCaso(caso: Caso, mulaEnMemoria: boolean, degradado = false): ResultadoPolicy {
+/** Conveniencia: decide a partir de un Caso ya armado. */
+export function decideCaso(caso: Caso, mulaEnMemoria: boolean, degradado = false, mulaEnRed = false): ResultadoPolicy {
   return decide({
     mulaEnMemoria,
+    mulaEnRed,
     atajo: caso.nivel0.atajo,
     score: caso.nivel0.score,
     riesgoDestino: caso.salidas.detective?.riesgo_destino,

@@ -4,7 +4,9 @@ import type {
   ResultadoFanIn,
   ResultadoListas,
   ResultadoPerfil,
+  ResultadoRed,
   ResultadoReenvio,
+  ResultadoTransfronterizo,
   RiesgoDestino,
   SalidaDetective,
   Tipologia,
@@ -23,7 +25,9 @@ export type ToolDetective =
   | 'fan_in'
   | 'reenvio_rapido'
   | 'estructuracion'
-  | 'ciclos';
+  | 'ciclos'
+  | 'reenvio_transfronterizo'
+  | 'red_regional';
 
 /** Lo que han devuelto las tools hasta ahora (todo opcional: se llenan por pasos). */
 export interface Hallazgos {
@@ -33,6 +37,9 @@ export interface Hallazgos {
   reenvio?: ResultadoReenvio;
   estructuracion?: ResultadoEstructuracion;
   ciclos?: ResultadoCiclos;
+  transfronterizo?: ResultadoTransfronterizo;
+  /** Solo se pide si la red tiene algo sobre la cuenta (ver detective.ts). */
+  red?: ResultadoRed;
 }
 
 /**
@@ -60,6 +67,8 @@ export function siguientesTools(h: Hallazgos): ToolDetective[] {
   const paso2: ToolDetective[] = [];
   if (h.reenvio.marcado && !h.ciclos) paso2.push('ciclos');
   if (!h.estructuracion) paso2.push('estructuracion');
+  // Si reenvía rápido, ¿hacia dónde? Una mula regional saca el dinero del país.
+  if (h.reenvio.marcado && !h.transfronterizo) paso2.push('reenvio_transfronterizo');
   return paso2;
 }
 
@@ -70,35 +79,63 @@ export function tipologiasMarcadas(h: Hallazgos): Tipologia[] {
   if (h.estructuracion?.marcado) t.push('estructuracion');
   if (h.ciclos?.marcado) t.push('circular');
   if (h.listas?.en_lista) t.push('en_lista');
+  if (h.transfronterizo?.marcado) t.push('transfronterizo');
+  if (h.red?.en_red) t.push('en_red');
   return t;
 }
 
-/** Tabla de riesgo base. Cuenta externa: se limita a `medio` salvo que esté en lista. */
+/**
+ * Tabla de riesgo base. Cuenta externa: se limita a `medio` salvo que esté en
+ * lista o en la red.
+ *
+ * Red regional: `en_red` sola es `medio` (un veredicto ajeno no escala solo,
+ * P1R); con cualquier hallazgo PROPIO pasa a `alto`. `transfronterizo` con
+ * reenvío rápido es `alto`: es la mula que saca el dinero del país en horas.
+ */
 export function riesgoBase(tipologias: Tipologia[], bancoPropio = true): RiesgoDestino {
   const t = new Set(tipologias);
+  const propias = tipologias.filter((x) => x !== 'en_red');
   let riesgo: RiesgoDestino;
-  if (t.has('en_lista') || t.has('circular') || (t.has('fan_in') && t.has('reenvio_rapido'))) {
+  if (
+    t.has('en_lista') ||
+    t.has('circular') ||
+    (t.has('fan_in') && t.has('reenvio_rapido')) ||
+    (t.has('reenvio_rapido') && t.has('transfronterizo')) ||
+    (t.has('en_red') && propias.length > 0)
+  ) {
     riesgo = 'alto';
   } else if (t.size > 0) {
     riesgo = 'medio';
   } else {
     riesgo = 'bajo';
   }
-  if (!bancoPropio && riesgo === 'alto' && !t.has('en_lista')) return 'medio';
+  if (!bancoPropio && riesgo === 'alto' && !t.has('en_lista') && !t.has('en_red')) return 'medio';
   return riesgo;
 }
 
-/** Solo el caso ambiguo justifica una llamada al modelo. */
-export function requiereLLMDetective(base: RiesgoDestino): boolean {
-  return base === 'medio';
+/**
+ * Solo el caso ambiguo justifica una llamada al modelo. Con `en_red` no hay
+ * ambigüedad que resolver: el modelo no puede bajarla (no es descartable) y la
+ * decisión la toma P1R. Llamarlo sería gastar IA sin efecto.
+ */
+export function requiereLLMDetective(base: RiesgoDestino, tipologias: Tipologia[] = []): boolean {
+  return base === 'medio' && !tipologias.includes('en_red');
 }
 
 export function plantillaHipotesis(tipologias: Tipologia[], riesgo: RiesgoDestino): string {
   const t = new Set(tipologias);
   if (t.has('en_lista')) return 'Cuenta presente en lista de riesgo';
   if (t.has('circular')) return 'Movimiento circular de fondos entre cuentas relacionadas';
+  if (t.has('reenvio_rapido') && t.has('transfronterizo')) {
+    return 'Mula regional: recibe y saca el dinero a otro país en menos de 2 h';
+  }
   if (t.has('fan_in') && t.has('reenvio_rapido')) {
     return 'Cuenta de paso (posible mula): recibe de varios remitentes nuevos y reenvía rápido';
+  }
+  if (t.has('en_red')) {
+    return tipologias.length > 1
+      ? 'Confirmada como mula por otro banco de la red, y con hallazgos propios que lo respaldan'
+      : 'Confirmada como mula por otro banco de la red regional; sin hallazgos propios todavía';
   }
   if (riesgo === 'bajo') return 'Sin patrones de riesgo marcados por las tools';
   return `Patrón parcial (${tipologias.join(', ')}); sin evidencia suficiente para considerarla mula`;

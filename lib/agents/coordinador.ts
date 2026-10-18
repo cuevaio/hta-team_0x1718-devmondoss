@@ -30,6 +30,11 @@ export async function coordinador(caso: Caso, ctx: ToolContext): Promise<AgentRe
       perfil.data.antiguedad_dias >= DIAS_CUENTA_CONOCIDA;
   }
 
+  // Red regional y país: lecturas sin evidencia (la evidencia la emite el Detective).
+  const red_hit = !memoria_hit && ctx.red?.get(destino)?.veredicto === 'mula_confirmada';
+  const paisDe = (cuenta: string) => ctx.data?.cuenta(cuenta)?.pais ?? 'pe';
+  const destino_extranjero = caso.puerta === 'transferencia' && paisDe(destino) !== paisDe(caso.transaccion.origen);
+
   const briefing: BriefingCoordinador = {
     puerta: caso.puerta,
     score: caso.nivel0.score,
@@ -37,6 +42,8 @@ export async function coordinador(caso: Caso, ctx: ToolContext): Promise<AgentRe
     atajo: caso.nivel0.atajo,
     memoria_hit,
     destino_conocido_limpio,
+    red_hit,
+    destino_extranjero,
   };
   return { salida: decidirCoordinador(briefing), uso: { ...USO_CERO, ms: Date.now() - t0 } };
 }

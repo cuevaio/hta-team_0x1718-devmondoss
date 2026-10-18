@@ -83,6 +83,7 @@ export function crearAgentesMock(): AgentsApi {
         atajo: caso.nivel0.atajo,
         memoria_hit: v?.veredicto === 'mula_confirmada',
         destino_conocido_limpio: false,
+        red_hit: ctx?.red?.get(caso.transaccion.destino)?.veredicto === 'mula_confirmada',
       });
       return { salida, uso: USO_CERO };
     },

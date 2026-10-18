@@ -186,6 +186,69 @@ while (movimientos.length < 200) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Red regional (después del fondo: no altera los movimientos de arriba)
+// ─────────────────────────────────────────────────────────────
+
+// Bancos sintéticos de la red. Ninguno es real.
+const BANCO_CO = { banco: 'co-banco-cafetero', pais: 'co' as const };
+
+cuentas.push(
+  // CU-06: mula en Colombia que el banco colombiano ya confirmó.
+  { id: 'CO-M-11', nombre: 'Cuenta CO-M-11', tipo: 'desconocido', abierta: '2026-10-05', pais: 'co', banco: BANCO_CO.banco },
+  { id: 'BO-Q-02', nombre: 'Cuenta BO-Q-02', tipo: 'desconocido', abierta: '2026-10-08', pais: 'bo', banco: 'bo-banco-altiplano' },
+  // CU-07: cuenta de este banco que recibe de pocos y saca el dinero del país en menos de 2 h.
+  { id: 'M-04', nombre: 'Cuenta M-04', tipo: 'desconocido', abierta: '2026-10-12' },
+  { id: 'C-ANA', nombre: 'Ana Torres', tipo: 'persona', abierta: '2020-09-14' },
+);
+clientes.push({
+  id: 'ana',
+  nombre: 'Ana Torres',
+  cuenta: 'C-ANA',
+  promedio_90d: 520,
+  beneficiarios_habituales: [],
+  dispositivo_habitual: 'dev-ana-01',
+  canales_disponibles: ['app', 'sms'],
+  canales_comprometidos: [],
+  alcanzable: true,
+});
+
+// M-04: solo 3 remitentes (no llega a fan-in), pero reenvía el 88% al exterior.
+const recibidoM04 = [2300, 1900, 2600];
+recibidoM04.forEach((monto, i) => {
+  const remitente = `C-REG-0${i + 1}`;
+  cuentas.push({ id: remitente, nombre: `Cliente regional ${i + 1}`, tipo: 'persona', abierta: '2021-03-03' });
+  mov(remitente, 'M-04', monto, -5 + i);
+});
+const totalM04 = recibidoM04.reduce((s, m) => s + m, 0);
+mov('M-04', 'CO-M-11', totalM04 * 0.55, -1.4);
+mov('M-04', 'BO-Q-02', totalM04 * 0.33, -0.8);
+
+const redRegional = [
+  {
+    veredicto: {
+      cuenta: 'CO-M-11',
+      veredicto: 'mula_confirmada',
+      validado_por: 'analista-co-07',
+      fecha: '2026-10-14',
+      expira: '2027-01-12',
+      expediente: 'CO-EXP-0042',
+      apelacion_abierta: false,
+      emisor: BANCO_CO,
+    },
+    ficha: {
+      cuenta: 'CO-M-11',
+      tipologias: ['fan_in', 'reenvio_rapido'],
+      hipotesis: 'Cuenta de paso (posible mula): recibe de varios remitentes nuevos y reenvía rápido',
+      afirmaciones: [
+        { texto: 'La cuenta CO-M-11 recibió de 9 remitentes nuevos en 48 h', evidencia: ['E-02'] },
+        { texto: 'Reenvió el 87% de lo recibido en menos de 2 h', evidencia: ['E-03'] },
+      ],
+      basado_en_red: false,
+    },
+  },
+];
+
+// ─────────────────────────────────────────────────────────────
 // Escribir
 // ─────────────────────────────────────────────────────────────
 
@@ -199,6 +262,7 @@ const semilla: Semilla = {
   cuentas,
   clientes,
   movimientos: movimientos.sort((a, b) => a.t.localeCompare(b.t)),
+  red_regional: redRegional,
 };
 
 const destino = resolve(import.meta.dirname, '../lib/data/seed.json');

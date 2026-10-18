@@ -1,6 +1,8 @@
 import type {
   Afirmacion,
+  Caso,
   Evidencia,
+  FichaCompartible,
   RiesgoDestino,
   SalidaAuditor,
 } from '@/lib/contracts';
@@ -11,7 +13,9 @@ import {
   ResultadoFanIn,
   ResultadoListas,
   ResultadoPerfil,
+  ResultadoRed,
   ResultadoReenvio,
+  ResultadoTransfronterizo,
   validarCitasAuditor,
 } from '@/lib/contracts';
 import type { AccionAuditor, AuditorLLM, HipotesisAuditor } from '../esquemas';
@@ -72,6 +76,24 @@ export function afirmacionDe(e: Evidencia): Afirmacion | null {
       const d = ResultadoListas.safeParse(e.dato);
       return d.success && d.data.en_lista
         ? { texto: `La cuenta figura en: ${d.data.listas.join(', ')}`, evidencia: cita }
+        : null;
+    }
+    case 'reenvio_transfronterizo': {
+      const d = ResultadoTransfronterizo.safeParse(e.dato);
+      if (!d.success || d.data.destinos.length === 0) return null;
+      const paises = [...new Set(d.data.destinos.map((x) => x.pais.toUpperCase()))].join(', ');
+      return {
+        texto: `Envió el ${Math.round(d.data.porcentaje_al_exterior * 100)}% de lo recibido a cuentas de otro país (${paises}) en menos de ${d.data.ventana_horas} h`,
+        evidencia: cita,
+      };
+    }
+    case 'red_regional': {
+      const d = ResultadoRed.safeParse(e.dato);
+      return d.success && d.data.en_red && d.data.emisor
+        ? {
+            texto: `El banco ${d.data.emisor.banco} (${d.data.emisor.pais.toUpperCase()}) confirmó la cuenta ${d.data.cuenta} como mula el ${d.data.fecha} (expediente ${d.data.expediente})`,
+            evidencia: cita,
+          }
         : null;
     }
     case 'perfil_cuenta': {
@@ -191,5 +213,45 @@ export function auditorDeterministico(
     acciones_sugeridas: [alto ? TEXTO_ACCION.confirmar_mula : TEXTO_ACCION.mantener_pausa],
     confianza: 'baja',
     requiere_revision_manual: true,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// 🌎 Ficha compartible con la red regional
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Fuentes que describen la CUENTA destino. Fuera quedan las del cliente
+ * (`guardian_*`): la conversación con la víctima no sale del banco. También
+ * queda fuera `red_regional`: reenviar el veredicto de otro banco como propio
+ * sería eco, no evidencia.
+ */
+const FUENTES_COMPARTIBLES = new Set([
+  'perfil_cuenta',
+  'fan_in',
+  'reenvio_rapido',
+  'reenvio_transfronterizo',
+  'estructuracion',
+  'ciclos',
+  'listas_riesgo',
+]);
+
+/**
+ * Lo que este banco publica en la red al confirmar una mula: los hechos de la
+ * cuenta con sus citas, sin nada del cliente. 0 llamadas de IA: las
+ * afirmaciones salen de las mismas plantillas que el expediente.
+ */
+export function fichaCompartible(caso: Caso): FichaCompartible {
+  const cuenta = caso.transaccion.destino;
+  const deLaCuenta = caso.evidencia.filter(
+    (e) => FUENTES_COMPARTIBLES.has(e.fuente) && (e.dato as { cuenta?: string } | null)?.cuenta === cuenta,
+  );
+  const tipologias = (caso.salidas.detective?.tipologias ?? []).filter((t) => t !== 'en_red');
+  return {
+    cuenta,
+    tipologias,
+    hipotesis: caso.salidas.detective?.hipotesis ?? null,
+    afirmaciones: afirmacionesCandidatas(deLaCuenta).slice(0, MAX_AFIRMACIONES),
+    basado_en_red: caso.evidencia.some((e) => e.fuente === 'red_regional'),
   };
 }

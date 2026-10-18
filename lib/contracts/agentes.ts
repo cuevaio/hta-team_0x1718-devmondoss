@@ -64,6 +64,10 @@ export const Tipologia = z.enum([
   'estructuracion',
   'circular',
   'en_lista',
+  /** Reenvía rápido hacia cuentas de otro país (red regional). */
+  'transfronterizo',
+  /** Otro banco de la red regional la confirmó como mula. Pesa menos que un veredicto propio. */
+  'en_red',
 ]);
 export type Tipologia = z.infer<typeof Tipologia>;
 

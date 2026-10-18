@@ -14,8 +14,11 @@ import { z } from 'zod';
 export const DecisionAccion = z.enum(['PERMITIR', 'PAUSAR', 'VERIFICAR', 'ESCALAR']);
 export type DecisionAccion = z.infer<typeof DecisionAccion>;
 
-/** Reglas del Policy Engine, en orden de evaluación (19 §4). */
-export const ReglaPolicy = z.enum(['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']);
+/**
+ * Reglas del Policy Engine, en orden de evaluación (19 §4).
+ * `P1R`: mula confirmada por OTRO banco de la red regional (lib/memory/red.ts).
+ */
+export const ReglaPolicy = z.enum(['P1', 'P1R', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']);
 export type ReglaPolicy = z.infer<typeof ReglaPolicy>;
 
 /** Puerta de entrada: transferencia del cliente (Track 04) o alerta AML (B1). */

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { Emisor, Pais } from './memoria';
 
 /**
  * Contrato entre el bloque de Ale (analytics, reglas) y el de Tony (agentes).
@@ -33,6 +34,8 @@ export const UMBRALES = {
   estructuracion_operaciones: 3,
   estructuracion_banda_min: 0.9,
   ciclo_profundidad_max: 3,
+  /** Parte de lo recibido que salió a cuentas de OTRO país dentro de la ventana de reenvío. */
+  transfronterizo_porcentaje: 0.5,
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -49,6 +52,9 @@ export const FUENTES = [
   'guardian_respuesta',
   /** Pregunta que el Guardián envió: registra el estado de la conversación. */
   'guardian_pregunta',
+  /** Veredicto de otro banco de la red regional sobre la cuenta. */
+  'red_regional',
+  'reenvio_transfronterizo',
 ] as const;
 export type Fuente = (typeof FUENTES)[number];
 
@@ -106,6 +112,29 @@ export const ResultadoListas = z.object({
   listas: z.array(z.string()),
 });
 export type ResultadoListas = z.infer<typeof ResultadoListas>;
+
+/** Lo que la red regional sabe de una cuenta (solo veredictos de OTROS bancos, vigentes). */
+export const ResultadoRed = z.object({
+  cuenta: z.string().min(1),
+  en_red: z.boolean(),
+  emisor: Emisor.nullable(),
+  fecha: z.string().nullable(),
+  expediente: z.string().nullable(),
+  /** Tipologías que el banco emisor documentó en su ficha. */
+  tipologias: z.array(z.string()),
+});
+export type ResultadoRed = z.infer<typeof ResultadoRed>;
+
+export const ResultadoTransfronterizo = z.object({
+  cuenta: z.string().min(1),
+  pais_cuenta: Pais,
+  /** 0..1, parte de lo recibido que salió a cuentas de otro país dentro de la ventana. */
+  porcentaje_al_exterior: z.number().min(0).max(1),
+  ventana_horas: z.number().positive(),
+  destinos: z.array(z.object({ cuenta: z.string().min(1), pais: Pais })),
+  marcado: z.boolean(),
+});
+export type ResultadoTransfronterizo = z.infer<typeof ResultadoTransfronterizo>;
 
 /**
  * Respuesta del cliente al Guardián, registrada como evidencia

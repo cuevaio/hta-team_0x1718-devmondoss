@@ -22,7 +22,9 @@ import type {
   ResultadoFanIn,
   ResultadoListas,
   ResultadoPerfil,
+  ResultadoRed,
   ResultadoReenvio,
+  ResultadoTransfronterizo,
 } from './analytics';
 import type { Cliente, Cuenta, Movimiento } from '@/lib/data/types';
 import type { ResultadoCanales, ResultadoDisponibilidad } from '@/lib/analytics';
@@ -185,6 +187,9 @@ export interface ToolContext {
     estructuracion: ToolDe<ResultadoEstructuracion>;
     ciclos: ToolDe<ResultadoCiclos, [cuenta: string, profundidad?: number]>;
     listas_riesgo: ToolDe<ResultadoListas>;
+    /** Red regional: emite evidencia `red_regional`. */
+    red_regional: ToolDe<ResultadoRed>;
+    reenvio_transfronterizo: ToolDe<ResultadoTransfronterizo, [cuenta: string, horas?: number]>;
     cadena_reenvio: ToolDe<string[], [cuenta: string, saltos?: number]>;
     disponibilidad: ToolDe<ResultadoDisponibilidad, [cliente: string]>;
     canales_seguros: ToolDe<ResultadoCanales, [cliente: string]>;
@@ -193,6 +198,12 @@ export interface ToolContext {
 
   /** Solo lectura para los agentes: escribir exige un analista (R10). */
   memoria: Pick<Memoria, 'get'>;
+  /**
+   * Veredictos de OTROS bancos de la red regional, solo lectura y sin emitir
+   * evidencia (para decidir a quién invocar). La evidencia la emite la tool
+   * `analytics.red_regional`. Opcional: sin red, el sistema es el de un banco.
+   */
+  red?: { get(cuenta: string): Veredicto | null };
   /** Asigna ids E-xx. */
   evidencia: { registrar(fuente: string, dato: unknown): Evidencia };
   /** Canal simulado con el cliente (Guardián). */
