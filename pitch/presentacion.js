@@ -1,4 +1,5 @@
 // Mule Zero · pitch: navegación y escenas animadas (SMIL en los SVG, CSS en el texto).
+// La portada dibuja su red de fondo aquí; las demás escenas están en index.html.
 (() => {
   const NS = 'http://www.w3.org/2000/svg';
   const crear = (tag, attrs, padre) => {
@@ -16,33 +17,33 @@
   const salidas = [[1540, 330], [1500, 610], [1420, 810]];
   entradas.forEach(([x, y], i) => {
     const d = `M${x} ${y} L${mula[0]} ${mula[1]}`;
-    crear('path', { d, stroke: '#22416a', 'stroke-width': 1.5, fill: 'none' }, red);
-    crear('circle', { cx: x, cy: y, r: 7, fill: '#0f1d33', stroke: '#79c7e8', 'stroke-width': 2 }, red);
-    const moneda = crear('circle', { r: 4, fill: '#f1b35b' }, red);
+    crear('path', { d, stroke: '#24324a', 'stroke-width': 1.5, fill: 'none' }, red);
+    crear('circle', { cx: x, cy: y, r: 7, fill: '#111a2b', stroke: '#7cc4e6', 'stroke-width': 2 }, red);
+    const moneda = crear('circle', { r: 4, fill: '#e3b25a' }, red);
     crear('animateMotion', { path: d, dur: '2.6s', begin: `${i * 0.4}s`, repeatCount: 'indefinite' }, moneda);
   });
   salidas.forEach(([x, y], i) => {
     const d = `M${mula[0]} ${mula[1]} L${x} ${y}`;
-    crear('path', { d, stroke: '#e66565', 'stroke-width': 2, 'stroke-dasharray': '6 8', fill: 'none', opacity: 0.6 }, red);
-    crear('circle', { cx: x, cy: y, r: 6, fill: '#0f1d33', stroke: '#e66565', 'stroke-width': 2 }, red);
-    const moneda = crear('circle', { r: 4, fill: '#e66565' }, red);
+    crear('path', { d, stroke: '#e5645e', 'stroke-width': 2, 'stroke-dasharray': '6 8', fill: 'none', opacity: 0.6 }, red);
+    crear('circle', { cx: x, cy: y, r: 6, fill: '#111a2b', stroke: '#e5645e', 'stroke-width': 2 }, red);
+    const moneda = crear('circle', { r: 4, fill: '#e5645e' }, red);
     crear('animateMotion', { path: d, dur: '1.3s', begin: `${1 + i * 0.45}s`, repeatCount: 'indefinite' }, moneda);
   });
-  const onda = crear('circle', { cx: mula[0], cy: mula[1], r: 22, fill: 'none', stroke: '#e66565', 'stroke-width': 2 }, red);
+  const onda = crear('circle', { cx: mula[0], cy: mula[1], r: 22, fill: 'none', stroke: '#e5645e', 'stroke-width': 2 }, red);
   crear('animate', { attributeName: 'r', values: '22;70', dur: '1.8s', repeatCount: 'indefinite' }, onda);
   crear('animate', { attributeName: 'opacity', values: '0.8;0', dur: '1.8s', repeatCount: 'indefinite' }, onda);
-  crear('circle', { cx: mula[0], cy: mula[1], r: 22, fill: '#2a0f14', stroke: '#e66565', 'stroke-width': 3 }, red);
+  crear('circle', { cx: mula[0], cy: mula[1], r: 22, fill: '#2a0f14', stroke: '#e5645e', 'stroke-width': 3 }, red);
 
   // El problema: 14 víctimas hacia una sola cuenta
   const victimas = document.getElementById('victimas');
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; victimas && i < 14; i++) {
     const y = 70 + i * 34;
     const d = `M92 ${y} Q 280 ${y} 424 300`;
     const t = 0.5 + i * 0.22;
-    crear('path', { d, stroke: '#22416a', 'stroke-width': 1.5, fill: 'none', opacity: 0.8 }, victimas);
-    const v = crear('circle', { cx: 80, cy: y, r: 9, fill: '#0f1d33', stroke: '#79c7e8', 'stroke-width': 2 }, victimas);
-    crear('set', { attributeName: 'stroke', to: '#e66565', begin: `${t}s` }, v);
-    const moneda = crear('circle', { r: 6, fill: '#f1b35b', opacity: 0 }, victimas);
+    crear('path', { d, stroke: '#24324a', 'stroke-width': 1.5, fill: 'none', opacity: 0.8 }, victimas);
+    const v = crear('circle', { cx: 80, cy: y, r: 9, fill: '#111a2b', stroke: '#7cc4e6', 'stroke-width': 2 }, victimas);
+    crear('set', { attributeName: 'stroke', to: '#e5645e', begin: `${t}s` }, v);
+    const moneda = crear('circle', { r: 6, fill: '#e3b25a', opacity: 0 }, victimas);
     crear('animateMotion', { path: d, begin: `${t}s`, dur: '0.8s', fill: 'freeze' }, moneda);
     crear('animate', { attributeName: 'opacity', values: '0;1;1;0', keyTimes: '0;0.1;0.85;1', begin: `${t}s`, dur: '0.8s', fill: 'freeze' }, moneda);
   }
@@ -124,7 +125,7 @@
     actual = n;
     contador.textContent = `${dos(n + 1)} / ${dos(total)}`;
     segmentos.forEach((b, i) => { b.classList.toggle('done', i < n); b.setAttribute('aria-current', String(i === n)); });
-    if (!sinMovimiento) { barrido.classList.remove('run'); void barrido.offsetWidth; barrido.classList.add('run'); }
+    if (barrido && !sinMovimiento) { barrido.classList.remove('run'); void barrido.offsetWidth; barrido.classList.add('run'); }
     try { history.replaceState(null, '', `#${n + 1}`); } catch {
       // Sin historial (archivo local en algunos navegadores): no pasa nada.
     }
