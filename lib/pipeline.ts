@@ -9,7 +9,7 @@ import { aplicarConsistenciaDetective, MAX_LLAMADAS_POR_CASO } from '@/lib/contr
 import { evaluateRules, requierePausaPreventiva } from '@/lib/rules/level0';
 import { decide } from '@/lib/policy/engine';
 import { memoria } from '@/lib/memory/store';
-import { repo } from '@/lib/data/repo';
+import { movimientosEnVivoActivos, repo } from '@/lib/data/repo';
 import { analytics } from '@/lib/analytics';
 import { storeCasos, type CasoVivo } from '@/lib/cases/store';
 import { construirToolContext, nuevoBuzon, type BuzonMensajes } from '@/lib/tool-context';
@@ -50,6 +50,8 @@ export interface OpcionesPipeline {
   contexto?: Partial<ContextoOperacion>;
   /** Fuerza el modo degradado para probar P10. */
   degradado?: boolean;
+  /** Alias del jugador (modo juego), ya validado con `Alias`. Se asocia al crear el caso. */
+  alias?: string;
 }
 
 export interface ResultadoPipeline {
@@ -89,6 +91,7 @@ export async function evaluarTransferencia(
   opciones: OpcionesPipeline = {},
 ): Promise<ResultadoPipeline> {
   const vivo = storeCasos.crear('transferencia', tx);
+  if (opciones.alias) storeCasos.etiquetar(vivo.caso.id, opciones.alias);
   return ejecutar(vivo, opciones);
 }
 
@@ -100,6 +103,7 @@ export async function evaluarAlerta(
 ): Promise<ResultadoPipeline> {
   const tx: Transaccion = { origen: 'monitoreo', destino: cuenta, monto: 1, moneda: 'PEN' };
   const vivo = storeCasos.crear('alerta_aml', tx);
+  if (opciones.alias) storeCasos.etiquetar(vivo.caso.id, opciones.alias);
   storeCasos.registrarEvento(vivo.caso.id, 'monitoreo', 'alerta_recibida', { motivo });
   return ejecutar(vivo, opciones);
 }
@@ -337,7 +341,31 @@ function finalizar(
     degradado: resultado.regla === 'P10',
     llamadas_ia_del_caso: caso.ia.llamadas,
   });
+  moverDineroSiPermitido(caso);
   return { caso, buzon };
+}
+
+/**
+ * Modo juego (`MOVIMIENTOS_EN_VIVO=1`): una transferencia PERMITIDA movió
+ * dinero, así que pasa a ser un movimiento de la cuenta destino y alimenta su
+ * fan-in. Una retenida (PAUSAR/VERIFICAR/ESCALAR) NO: ese dinero no llegó.
+ * Idempotente: un caso mueve dinero como mucho una vez.
+ */
+const casosQueMovieronDinero = new Set<string>();
+
+function moverDineroSiPermitido(caso: Caso): void {
+  if (!movimientosEnVivoActivos()) return;
+  if (caso.puerta !== 'transferencia' || caso.decision?.accion !== 'PERMITIR') return;
+  if (casosQueMovieronDinero.has(caso.id)) return;
+  casosQueMovieronDinero.add(caso.id);
+  const m = repo.registrarMovimiento(caso.transaccion.origen, caso.transaccion.destino, caso.transaccion.monto);
+  storeCasos.registrarEvento(caso.id, 'sistema', 'movimiento_registrado', { movimiento: m.id });
+}
+
+/** Para `/api/demo/reset`: vuelve a la semilla. */
+export function limpiarMovimientosEnVivo(): void {
+  casosQueMovieronDinero.clear();
+  repo.limpiarMovimientosEnVivo();
 }
 
 /** Una entrada de registro por agente que corrió en la investigación (doc 19 §9). */
@@ -431,6 +459,7 @@ export async function responderGuardian(
     degradado: resultado.regla === 'P10',
     llamadas_ia_del_caso: caso.ia.llamadas,
   });
+  moverDineroSiPermitido(caso);
 
   if (debeAuditar(caso) && !caso.salidas.auditor) {
     const a = await auditar(caso, ctx, agentes).catch((error: unknown) => ({

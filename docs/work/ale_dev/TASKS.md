@@ -2,7 +2,7 @@
 
 > Fuente de verdad: [../00_WORK_BLUEPRINT.md](../00_WORK_BLUEPRINT.md). **Trabajas solo en `main`, sin pedir permiso.** Avisa solo si cambias un contrato (`CONTRACT:` en el commit).
 
-**Eres dueño de:** `app/api/**` · `lib/contracts/{caso,memoria,validadores,firmas,context}.ts` · `lib/data/` · `lib/analytics/` · `lib/rules/` · `lib/policy/` · `lib/memory/` · `lib/evidence/` · `lib/cases/` · `lib/observability/` · `lib/pipeline.ts` · `scripts/demo.ts` · deploy · README.
+**Eres dueño de:** `app/api/**` · `lib/contracts/{caso,memoria,validadores,firmas,context}.ts` · `lib/data/` · `lib/analytics/` · `lib/rules/` · `lib/policy/` · `lib/memory/` · `lib/evidence/` · `lib/cases/` · `lib/observability/` · `lib/juego/` · `lib/seguridad/` · `lib/pipeline.ts` · `scripts/demo.ts` · `scripts/servidor.ts` · deploy · README.
 
 **Entregas a Tony:** `ToolContext` (datos, analytics, memoria, evidencia, mensajes).
 **Recibes de Tony:** `AgentsApi` + mocks (a la hora 5).
@@ -25,7 +25,7 @@
 
 ## H2–4 · Deploy
 - [x] `.env.example` versionado, `.env.local` ignorado
-- [ ] ⚠️ Deploy inicial con URL pública (Vercel; requiere cuenta) + `/api/health`
+- [x] ~~Deploy en Vercel~~ → **reemplazado por la laptop como servidor**: Tony decidió no usar serverless ([INFRA_Y_ORQUESTACION](../../context/tony_dev/INFRA_Y_ORQUESTACION.md) §4: en Vercel cada instancia tiene su propia RAM y el acto de Jorge fallaría al azar). Ver «Producción».
 
 ## H4–6 · Datos
 - [x] `lib/data/seed.json` generado por `scripts/seed.ts` (PRNG determinista, 200 movimientos)
@@ -69,11 +69,23 @@
 ## 🔁 SYNC 2 (H22)
 - [x] Agentes reales dan las mismas decisiones que los mocks: demo 8/8, 5 llamadas de IA
 
-## H22–26 · Producción
+## H22–26 · Producción (la laptop como servidor)
 - [x] Prueba local de producción: `next build` + `next start`, los 6 casos del demo por HTTP con la regla correcta, caminos 400/404, reset
-- [ ] Deploy final; demo corre contra la URL pública
+- [x] **`npm run servidor`** (INFRA §5, §7): compila, arranca, reinicia y muestra URLs. Next corre dentro del proceso (sin hijos huérfanos); avisa con claridad si el puerto está ocupado; `caffeinate` en macOS. `--red` · `--tunel` · `--juego` · `--persistir`
+- [x] **Token de operador** (INFRA §5): con `DEMO_TOKEN`, `reset`, `verdict` y borrar partidas exigen `x-demo-token` (comparación en tiempo constante). `--red`/`--tunel` lo exigen y lo generan si falta. El frontend lo toma de `/?token=…` y lo quita de la URL
+- [x] **Memoria persistente opcional** (INFRA §4, `MEMORIA_ARCHIVO`): escritura atómica, R10 se vuelve a exigir al cargar, un archivo corrupto se aparta en vez de sobrescribirse. Verificado: tras matar el proceso, Jorge sigue en P1 con 0 IA
+- [x] `/api/health` muestra `modos` (y si hay token, nunca cuál)
+- [x] `next.config.ts`: `outputFileTracingRoot` fijado (un lockfile suelto en `C:\Users\HP` confundía la raíz)
 - [x] README (cómo correrlo, qué es simulado, sección sobre sesgos)
-- [x] [`docs/work/API.md`](../API.md) con la API para el frontend de la Fase 2
+- [x] [`docs/work/API.md`](../API.md) con la API para el frontend (§12: modo juego y servidor)
+- [ ] ❓ ¿La entrega exige URL pública? Si sí: `npm run servidor -- --red --tunel` + `cloudflared` (decisión del equipo, INFRA §5)
+
+## 🎮 Lo que el juego necesita del backend (DEMO_JUEGO §9)
+- [x] `GET /api/cases`: feed en vivo, del más nuevo al más viejo, con los agentes en el orden en que actuaron
+- [x] `alias` anónimo por intento en `transfers`/`alerts` (rechaza correo, teléfono y enlaces — §8)
+- [x] Movimientos en vivo (`MOVIMIENTOS_EN_VIVO=1`): solo lo **permitido** mueve dinero y alimenta el fan-in; el reset vuelve a la semilla
+- [x] `POST/GET/DELETE /api/juego/partidas` + `GET /api/juego/resumen` (tabla de §6). Lo robado lo calcula el sistema; caso inexistente → 400, repetido → 409. Las partidas sobreviven al reset del demo (`PARTIDAS_ARCHIVO` opcional)
+- [x] Guardián multiturno y métricas para el marcador: ya existían
 
 ## Si hay recorte
 - Quitar CU-04 (Lucía)
@@ -97,34 +109,15 @@ Dos cambios en `lib/contracts/firmas.ts`, commiteados con `CONTRACT:`:
    indefinido y el caso caía hasta P10 pese al riesgo alto. Ahora P4 y P5
    cubren juntos todo destino `alto`.
 
-`lib/agents-provisional.ts` ya se borró: el pipeline usa el orquestador de
-Tony (`investigar` / `continuarGuardian` / `auditar`) con el bucle multiturno
-del Guardián y la sincronización de evidencia que pide `lib/agents/README.md`.
-
-**Para Tony:** `investigar` documenta que nunca lanza, pero lanza de forma
-sincrónica si al `AgentsApi` le falta un método (`agentes.detective is not a
-function`). Mi pipeline lo captura y degrada a P10, pero conviene envolver la
-llamada sincrónica dentro del orquestador.
+✅ **Resuelto por Tony** (56cad02): `investigar` lanzaba de forma sincrónica
+si al `AgentsApi` le faltaba un método. Ahora el orquestador lo envuelve y
+degrada a P10. Mi captura en el pipeline queda como segunda barrera.
 
 ---
 
-## Deploy — pasos cuando haya cuenta de Vercel
+## Para Tony — pendientes que son de tu bloque (no los toqué)
 
-Ya verificado en local con el mismo artefacto (`next build` + `next start`):
-las 8 rutas responden, `/api/stats` y `/api/health` son dinámicas (no se
-prerenderizan con datos vacíos) y la secuencia del demo da las reglas correctas.
-
-1. `npx vercel login` y `npx vercel link` (proyecto nuevo, framework Next.js, sin cambios de build).
-2. Sin variables de entorno el runtime corre en **simulado**. La API key se
-   agrega después en el panel de Vercel (Settings → Environment Variables),
-   nunca en el repo.
-3. `npx vercel --prod` y luego `curl <url>/api/health` → `"agentes":"simulado"`.
-4. Correr la secuencia del demo contra la URL **en una sola sesión seguida**:
-   el estado vive en memoria y cada instancia tiene el suyo (API.md §10).
-
----
-
-## Para Tony — hallazgo en cuentas externas (no lo toqué: es tu bloque)
+### 1. Cuentas externas: una afirmación sin respaldo con cita válida ⏳
 
 **Repro:** `POST /api/transfers` de `C-ROSA` a `X-99` (cuenta de otro banco,
 `banco_propio: false`). `reenvio_rapido` devuelve `porcentaje_reenviado: 0` y
@@ -140,3 +133,25 @@ para cuentas externas en `lib/analytics/`; tu Auditor omite la afirmación (o
 escribe «no observable: cuenta de otra entidad») cuando es `false`. No cambia
 ningún caso del demo: todas sus cuentas son del banco propio.
 
+### 2. Juego: una mula nueva no se «quema» sola (DEMO_JUEGO §4) ⏳
+
+El mecanismo de movimientos en vivo funciona (fan-in de M-02: 1 → 4 con tres
+jugadores), pero la escena «cada robo quema la cuenta» **no ocurre sola**:
+
+- Hay 3 víctimas, así que una mula nueva llega como mucho a 4 remitentes
+  nuevos; el umbral de fan-in es 5 (`UMBRALES.fan_in_remitentes_nuevos`).
+- Aunque llegara, el Detective exige `fan_in` **y** `reenvio_rapido`, y una
+  mula del juego no reenvía en vivo lo que recibe.
+
+Opciones de diseño (decisión tuya, no la invento): más cuentas víctima en el
+juego; simular que la mula reenvía al recibir (es lo que hace una mula real);
+o montar la escena sobre M-01, que ya funciona hoy (alerta → «Confirmar mula»
+→ P1 para todos, sin IA). `tests/data/movimientos-en-vivo.test.ts` fija el
+límite actual: si cambia el diseño, ese test avisa.
+
+### 3. Juego: ¿3 preguntas o 4? (DEMO_JUEGO §6)
+
+La tabla dice «máximo 3 por partida» (frustración, pausa, activaría), pero la
+fila de **Confianza** (CGAP) pide «1 pregunta por ronda» (¿seguirías usando tu
+banca digital?), lo que daría 4 o 5. Implementé las 3 de la tabla. Si la de
+confianza entra, es un campo más en `lib/juego/partidas.ts`.

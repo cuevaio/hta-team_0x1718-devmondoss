@@ -7,7 +7,12 @@
 > servidor, no inventadas. Los datos son sintéticos (ver `/api/health`).
 
 **Base local:** `http://localhost:3000`
-**Formato:** JSON en cuerpo y respuesta. Sin autenticación en el MVP.
+**Formato:** JSON en cuerpo y respuesta.
+**Autenticación:** ninguna por defecto. Si el servidor corre con `DEMO_TOKEN`
+(al exponerlo por red o túnel), las tres acciones del operador —reiniciar el
+demo, confirmar una mula y borrar partidas— exigen la cabecera
+`x-demo-token`; sin ella responden `401`. Todo lo demás sigue abierto: los
+jugadores transfieren sin token.
 
 ---
 
@@ -93,11 +98,18 @@ Salud del servicio y confirmación de que los datos son simulados.
   "t": "2026-10-17T22:19:38.431Z",
   "agentes": "simulado",
   "datos": {
-    "cuentas": 46, "clientes": 3, "movimientos": 200,
+    "cuentas": 46, "clientes": 3, "movimientos": 200, "movimientos_en_vivo": 0,
     "nota": "DATOS 100% SINTÉTICOS, generados por scripts/seed.ts..."
-  }
+  },
+  "modos": { "movimientos_en_vivo": false, "token_operador": false, "memoria_persistente": false },
+  "memoria": { "veredictos": 0, "carga": { "cargados": 0, "descartados": 0, "apartado": null } }
 }
 ```
+
+`modos` es lo que el operador revisa antes de presentar (§12). Dice **si** hay
+token de operador, nunca cuál es. `memoria.carga` informa cuántos veredictos se
+recuperaron del archivo al arrancar y cuántos se descartaron (R10 se vuelve a
+exigir al cargar).
 
 `agentes` es `"claude"` si hay `ANTHROPIC_API_KEY` real, o `"simulado"` si
 corre el LLM determinista. En modo simulado el contador de IA **sí** cuenta las
@@ -165,6 +177,13 @@ la respuesta llega por `/api/cases/[id]/guardian/reply`.
 
 **Errores:** `400` con `{ error, detalle }` si el cuerpo no valida.
 
+**`alias`** (opcional, modo juego): el apodo del jugador que hace el intento,
+p. ej. `"alias": "Zorro"`. Se asocia al caso **al crearlo**, así el monitor lo
+muestra mientras los agentes todavía trabajan. Es anónimo por diseño
+(DEMO_JUEGO §8): `400` si parece un correo, un teléfono (7 o más dígitos) o un
+enlace, o si pasa de 24 caracteres. No forma parte del `Caso`: aparece en
+`GET /api/cases`. `POST /api/alerts` lo acepta igual.
+
 ---
 
 ## 4. `POST /api/alerts` — Puerta B (AML)
@@ -187,7 +206,53 @@ caso (antes se abría el caso y la falta de datos terminaba en PERMITIR).
 
 ---
 
-## 5. `GET /api/cases/[id]`
+## 5. `GET /api/cases` — feed en vivo
+
+Casos recientes, **del más nuevo al más viejo**, con un resumen para leer a
+5 metros (DEMO_JUEGO §5). `?limite=N` (1–100, por defecto 50; `400` fuera de
+rango). Respuesta real:
+
+```json
+{
+  "total": 3,
+  "casos": [
+    {
+      "id": "CASO-0003", "puerta": "transferencia", "alias": "Ana",
+      "t": "2026-10-18T02:08:14.576Z",
+      "origen": "C-JORGE", "destino": "M-01", "monto": 2200,
+      "score": 4, "senales": ["beneficiario_nuevo", "monto_atipico"],
+      "decision": { "accion": "ESCALAR", "regla": "P1" },
+      "pausa_preventiva": false, "resuelto_por_memoria": true,
+      "esperando_cliente": false, "llamadas_ia": 0, "ttpa_ms": 0,
+      "actores": ["memoria"]
+    },
+    {
+      "id": "CASO-0002", "puerta": "alerta_aml", "alias": "Jurado",
+      "t": "2026-10-18T02:08:13.900Z",
+      "origen": "monitoreo", "destino": "M-01", "monto": 1,
+      "score": 5, "senales": ["alerta_aml"],
+      "decision": { "accion": "ESCALAR", "regla": "P5" },
+      "pausa_preventiva": true, "resuelto_por_memoria": false,
+      "esperando_cliente": false, "llamadas_ia": 1, "ttpa_ms": 0,
+      "actores": ["coordinador", "detective", "auditor"]
+    }
+  ]
+}
+```
+
+En una **alerta AML** (`puerta: "alerta_aml"`), `origen: "monitoreo"` y
+`monto: 1` son de relleno: no hay una transferencia detrás. El monitor debe
+mostrar la cuenta alertada, no «S/1».
+
+**`actores`** son los agentes en el orden en
+que aparecen en el timeline: es lo que el monitor «enciende». Un intento a una
+mula confirmada muestra solo `["memoria"]`, el atajo sin IA de CU-03.
+`esperando_cliente` es `true` cuando el Guardián preguntó y nadie respondió
+todavía. El detalle completo sigue en `GET /api/cases/[id]`.
+
+---
+
+## 5b. `GET /api/cases/[id]`
 
 Estado del caso. **Es el endpoint de polling** (blueprint §2: cada 1 s).
 
@@ -283,7 +348,9 @@ El analista confirma o descarta. **Es el único camino hacia la Memoria.**
 
 **Errores:** `400` si falta `validado_por` o es solo espacios (no identifica a
 ningún humano, R10), o si la Memoria rechaza el veredicto; `404` si el caso no
-existe. En todos los `400`, nada entra a la Memoria.
+existe. En todos los `400`, nada entra a la Memoria. Con `DEMO_TOKEN`, `401`
+sin la cabecera `x-demo-token`; se comprueba **antes** que el `404`, así sin
+token no se revela si un caso existe.
 
 Después de esto, una transferencia nueva al mismo destino se pausa por **P1 con
 0 llamadas de IA** (CU-03). Es el momento más fuerte del demo: conviene que la
@@ -370,20 +437,28 @@ campos son una lista cerrada y un test lo verifica.
 
 ## 9. `POST /api/demo/reset`
 
-Vacía casos, Memoria y registro para repetir el demo desde cero. Sin cuerpo.
+Vacía casos, Memoria (también su archivo, si hay persistencia), registro y
+movimientos en vivo para repetir el demo desde cero. Sin cuerpo. Con
+`DEMO_TOKEN`, `401` sin la cabecera.
 
 ```json
 { "ok": true, "reiniciado": true }
 ```
+
+**No borra las partidas del juego** (§12): el reset se hace antes de presentar
+y se llevaría los datos de validación del evento.
 
 ---
 
 ## 10. Notas de estado para el frontend
 
 **El estado vive en memoria del proceso.** No hay base de datos (blueprint §2),
-así que un reinicio del servidor borra casos y Memoria. En Vercel, además, cada
-instancia tiene su propio estado: el demo debe correrse como una secuencia
-continua contra la misma instancia, no en pestañas independientes.
+así que un reinicio del servidor borra casos y Memoria (salvo con
+`--persistir`, §12). Por eso el demo corre en **un solo proceso continuo**
+(`npm run servidor`) y **no en serverless**: en Vercel cada instancia tendría su
+propio estado y el acto de Jorge fallaría al azar
+([INFRA_Y_ORQUESTACION](../context/tony_dev/INFRA_Y_ORQUESTACION.md) §4).
+Celulares y monitor ven los mismos casos porque hablan con el mismo proceso.
 
 **Los ids son secuenciales por proceso** (`CASO-0001`, `CASO-0002`…). No
 asumir que un id sobrevive un reinicio.
@@ -398,10 +473,112 @@ explicabilidad es un criterio de aceptación de los tres casos de uso *must*.
 ```bash
 npm run dev          # servidor en :3000
 npm run demo         # los 5 casos de uso en consola, con sus reglas
-npm test             # 271 tests
+npm test             # 359 tests
 npm run typecheck
 ```
 
 El script `npm run demo` recorre CU-01 a CU-05 e imprime decisión, regla,
 evidencia y consumo de IA de cada caso. Es la forma más rápida de ver qué debe
 devolver la API antes de escribir la UI.
+
+---
+
+## 12. Modo juego y servidor del demo
+
+Lo que el demo jugable necesita del backend (DEMO_JUEGO §9). Todo es
+**opcional**: sin las variables, la API se comporta exactamente como en las
+secciones anteriores.
+
+### Levantar el servidor
+
+```bash
+npm run servidor                          # localhost:3000, demo limpio
+npm run servidor -- --red --juego         # celulares por Wi-Fi + movimientos en vivo
+npm run servidor -- --red --juego --persistir --tunel
+```
+
+| Flag | Efecto |
+|---|---|
+| `--red` | escucha en `0.0.0.0` para los celulares. **Exige token** (lo genera si falta) |
+| `--tunel` | imprime el comando de Cloudflare Tunnel. **Exige token**. No instala ni lanza nada |
+| `--juego` | `MOVIMIENTOS_EN_VIVO=1` |
+| `--persistir` | Memoria y partidas en `.datos/` (ignorada por git) y **no reinicia** al arrancar: sirve para recuperarse si el proceso se cae a mitad del demo |
+| `--puerto N` · `--sin-build` | puerto (3000) · saltar `next build` |
+
+Next corre **dentro** del proceso del script, sin procesos hijos. Si el puerto
+está ocupado (un servidor anterior que quedó abierto), el script lo dice y
+muestra cómo liberarlo. El operador abre la consola con `/?token=…`: el
+frontend guarda el token en la pestaña y lo quita de la URL, para que no quede
+a la vista en el proyector.
+
+### Movimientos en vivo (`MOVIMIENTOS_EN_VIVO=1`)
+
+Una transferencia **permitida** movió dinero: pasa a ser un movimiento de la
+cuenta destino y alimenta su fan-in, y el caso registra el evento
+`movimiento_registrado`. Una retenida (PAUSAR, VERIFICAR, ESCALAR) **no**: ese
+dinero no llegó. Las alertas nunca mueven dinero. La semilla no se modifica; el
+reset vuelve a ella.
+
+> **Límite del diseño actual:** con 3 víctimas (Rosa, Jorge, Lucía), una mula
+> *nueva* llega como mucho a 4 remitentes nuevos (el umbral es 5), y el
+> Detective además exige reenvío rápido, que una mula del juego no hace en
+> vivo. Así que una mula nueva **no se «quema» sola**. La escena funciona con
+> M-01 (alerta → «Confirmar mula» → P1 para todos). Hay un test que fija este
+> límite.
+
+### `POST /api/juego/partidas`
+
+Registra una partida al terminar. **`201`**. Dos formas, según `rol`:
+
+```json
+{
+  "rol": "victima",
+  "alias": "Ana",
+  "ronda_a": { "cayo": true, "frustracion": 4 },
+  "ronda_b": { "casos": ["CASO-0007"], "pausa_molesto": "un_poco" },
+  "activaria": "si"
+}
+```
+
+```json
+{
+  "rol": "atacante",
+  "alias": "Zorro",
+  "intentos": [
+    { "caso": "CASO-0001", "tactica": "falso_familiar" },
+    { "caso": "CASO-0005", "tactica": "falso_banco" }
+  ],
+  "idea": "probaría con montos aún más chicos"
+}
+```
+
+- `frustracion`: 1 😌 … 5 😫. `pausa_molesto`: `no` · `un_poco` · `mucho`.
+  `activaria`: `si` · `no` · `no_se`. `tactica`: `falso_banco` · `link_falso` ·
+  `falso_familiar` · `app_falsa` · `duplicado_chip`. Máximo 5 intentos.
+- **Los resultados los calcula el sistema:** lo robado y lo frenado salen de
+  los casos reales. `400` si un caso no existe o aparece dos veces; `409` si
+  ya está en otra partida. No se pueden inventar ni contar dos veces.
+- Al registrar se **copian los hechos** de cada caso (acción, regla, monto,
+  destino): la partida sobrevive al reset del demo.
+- Anónimo: `alias` e `idea` rechazan correos, teléfonos y enlaces.
+
+`GET /api/juego/partidas` las lista. `DELETE /api/juego/partidas` las borra
+(acción del operador: con `DEMO_TOKEN`, exige el token).
+
+### `GET /api/juego/resumen`
+
+La tabla de validación de DEMO_JUEGO §6, calculada a partir de las partidas:
+
+| Campo | Hipótesis | Qué es |
+|---|---|---|
+| `victima.h3_cayeron_ronda_a` | H3 | `{ n, pct }` que transfirieron en la ronda «Hoy» |
+| `victima.e3_perdieron_ronda_b` | E3 | `{ n, pct }` con algún caso **permitido** en la ronda B |
+| `victima.frustracion_ronda_a` | — | distribución 1–5 y **mediana** (es ordinal: no hay promedio) |
+| `victima.friccion_pausa_molesto` | fricción | conteo `no` / `un_poco` / `mucho` |
+| `victima.h5_activaria` | H5 | conteo y `pct_si` |
+| `atacante.soles_robados` / `soles_intentados` | — | suma de montos permitidos / de todos |
+| `atacante.por_tactica` | robustez | `{ intentos, logrados }` por carta |
+| `atacante.h8_frenados_por_memoria` | H8 | intentos frenados por P1, sin IA |
+| `limites` | — | los 4 límites que el doc pide decir en voz alta |
+
+Siempre va el `n`. Sin partidas, los cocientes son `null`, no 0.

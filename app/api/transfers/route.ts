@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Transaccion } from '@/lib/contracts';
 import { z } from 'zod';
 import { evaluarTransferencia } from '@/lib/pipeline';
+import { Alias } from '@/lib/juego/alias';
 
 /**
  * POST /api/transfers — Puerta A: evaluar una transferencia (blueprint §3).
@@ -22,6 +23,8 @@ const Cuerpo = z.object({
     .optional(),
   /** Respuesta del cliente al Guardián, si el escenario la trae precargada. */
   respuestaCliente: z.string().optional(),
+  /** Alias del jugador (modo juego). Anónimo: sin correo, teléfono ni enlace. */
+  alias: Alias.optional(),
 });
 
 export async function POST(req: Request) {
@@ -29,7 +32,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: 'cuerpo inválido', detalle: parsed.error.issues }, { status: 400 });
   }
-  const { transaccion, contexto, respuestaCliente } = parsed.data;
-  const { caso } = await evaluarTransferencia(transaccion, { contexto, respuestaCliente });
+  const { transaccion, contexto, respuestaCliente, alias } = parsed.data;
+  const { caso } = await evaluarTransferencia(transaccion, { contexto, respuestaCliente, alias });
   return NextResponse.json(caso, { status: 201 });
 }

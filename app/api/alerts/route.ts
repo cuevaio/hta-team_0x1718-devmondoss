@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { evaluarAlerta } from '@/lib/pipeline';
 import { repo } from '@/lib/data/repo';
+import { Alias } from '@/lib/juego/alias';
 
 /**
  * POST /api/alerts — Puerta B: alerta AML (blueprint §3).
@@ -17,6 +18,7 @@ import { repo } from '@/lib/data/repo';
 const Cuerpo = z.object({
   cuenta: z.string().trim().min(1),
   motivo: z.string().trim().min(1).default('monitoreo transaccional'),
+  alias: Alias.optional(),
 });
 
 export async function POST(req: Request) {
@@ -27,6 +29,8 @@ export async function POST(req: Request) {
   if (!repo.cuenta(parsed.data.cuenta)) {
     return NextResponse.json({ error: 'cuenta no encontrada', cuenta: parsed.data.cuenta }, { status: 404 });
   }
-  const { caso } = await evaluarAlerta(parsed.data.cuenta, parsed.data.motivo);
+  const { caso } = await evaluarAlerta(parsed.data.cuenta, parsed.data.motivo, {
+    alias: parsed.data.alias,
+  });
   return NextResponse.json(caso, { status: 201 });
 }

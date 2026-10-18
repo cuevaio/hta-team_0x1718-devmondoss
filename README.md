@@ -39,14 +39,31 @@ la decisión, la regla aplicada, la evidencia citada y el consumo de IA. Es la
 forma más rápida de ver qué hace el sistema.
 
 ```bash
-npm run dev        # servidor en http://localhost:3000
-npm test           # 271 tests
+npm run dev        # desarrollo en http://localhost:3000
+npm test           # 359 tests
 npm run typecheck
 npm run seed       # regenera lib/data/seed.json (determinista)
 ```
 
-Hoy el proyecto es **solo backend**: route handlers de Next.js. El frontend es
-la Fase 2 y consumirá la API documentada en [docs/work/API.md](docs/work/API.md).
+La pantalla de dos paneles (📱 cliente · 🖥️ consola del analista) está en `/`
+y consume la API documentada en [docs/work/API.md](docs/work/API.md).
+
+### Para presentar: la laptop como servidor
+
+```bash
+npm run servidor                                  # localhost:3000, demo limpio
+npm run servidor -- --red --juego                 # + celulares por Wi-Fi y movimientos en vivo
+npm run servidor -- --red --juego --persistir     # + sobrevive a un reinicio
+```
+
+Un solo proceso continuo, **no serverless**: el estado vive en RAM y en
+Vercel cada instancia tendría el suyo, con lo que el acto de Jorge fallaría al
+azar. El script compila, arranca, reinicia el demo y muestra las URLs. Si se
+expone fuera de `localhost` (`--red`, `--tunel`) exige un **token de
+operador** para reiniciar y confirmar mulas, y lo genera si falta. Detalle en
+[API.md §12](docs/work/API.md).
+
+Antes de presentar: `GET /api/health` → revisar `modos`.
 
 ---
 
@@ -130,23 +147,27 @@ sin investigar de nuevo y sin gastar una sola llamada de modelo.
 ## Estructura
 
 ```
-app/api/**            8 route handlers (ver docs/work/API.md)
+app/page.tsx          pantalla de dos paneles (components/demo-dashboard.tsx)
+app/api/**            route handlers (ver docs/work/API.md)
 lib/
   contracts/          esquemas zod y firmas compartidas entre los dos devs
   data/               seed.json determinista + repositorio
   rules/level0.ts     6 señales, puntajes del doc 19 §2
   policy/engine.ts    P1–P10, determinista
-  memory/store.ts     veredictos validados por un humano, expiran a 90 días
+  memory/store.ts     veredictos validados por un humano, expiran a 90 días (archivo opcional)
   evidence/ledger.ts  ids E-xx emitidos por el sistema
   analytics/          fan-in, reenvío rápido, estructuración, ciclos, canales…
-  cases/store.ts      objeto Caso + timeline + contador de IA
+  cases/              objeto Caso + timeline + contador de IA; resumen para el feed
   observability/      métricas del doc 14 (TTPA, trazabilidad, E6) + registro
+  juego/              partidas anónimas del demo jugable y su resumen (DEMO_JUEGO §6)
+  seguridad/token.ts  token del operador (solo si hay DEMO_TOKEN)
   pipeline.ts         orquestación
   agents/             agentes con LLM (Tony_dev)
 scripts/
   seed.ts             genera los datos
   demo.ts             los 5 casos de uso en consola
-tests/                271 tests
+  servidor.ts         la laptop como servidor del demo
+tests/                359 tests
 ```
 
 ---
@@ -187,10 +208,14 @@ identidad.
 ## Estado
 
 **Backend completo y verificado**: datos, reglas, policy, memoria, ledger de
-evidencia, analytics, observabilidad, pipeline, las 8 rutas y el script de
-demo. 271 tests, typecheck y lint limpios, `next build` correcto, y la
-secuencia del demo verificada por HTTP contra el build de producción
-(`next start`).
+evidencia, analytics, observabilidad, pipeline, la API y los scripts de demo y
+de servidor. 359 tests, typecheck y lint limpios, `next build` correcto, y la
+secuencia del demo verificada por HTTP contra el build de producción.
+
+**Listo para el demo jugable** (DEMO_JUEGO §9): feed en vivo
+(`GET /api/cases`), alias anónimo por intento, movimientos en vivo, registro y
+resumen de partidas, token de operador y Memoria que sobrevive a un reinicio.
+Todo es opcional: sin activarlo, la API se comporta igual que antes.
 
 **Métricas medidas, no supuestas** (`GET /api/stats`): TTPA, % de afirmaciones
 del expediente con cita válida (12/12 en el demo), llamadas evitadas por la
@@ -200,5 +225,6 @@ las métricas» en [docs/work/API.md](docs/work/API.md) antes de mostrar una cif
 **Agentes integrados**: el pipeline usa el orquestador de `lib/agents`
 (Tony_dev). `npm run demo` da 8/8 con los agentes reales en modo simulado.
 
-**Pendiente**: probar contra la API real de Claude (falta una
-`ANTHROPIC_API_KEY`), el deploy público y el frontend de la Fase 2.
+**Pendiente**: probar contra un LLM real (Ollama primero, luego Claude con
+`ANTHROPIC_API_KEY`), confirmar si la entrega exige URL pública (si sí:
+`npm run servidor -- --tunel`) y las pantallas del juego (celular y monitor).

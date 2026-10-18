@@ -108,12 +108,53 @@ function detailRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+const CLAVE_TOKEN = "afs-demo-token";
+/** Respaldo en memoria de la página si sessionStorage está bloqueado. */
+let tokenEnMemoria: string | null = null;
+
+/**
+ * Token del operador (solo si el servidor corre con DEMO_TOKEN, p. ej. detrás
+ * de un túnel). Se abre la consola con `/?token=…`: primero se QUITA de la URL
+ * (para que no quede visible en el proyector) y luego se guarda en la pestaña.
+ */
+export function tokenOperador(): string | null {
+  try {
+    const url = new URL(window.location.href);
+    const enUrl = url.searchParams.get("token");
+    if (enUrl) {
+      url.searchParams.delete("token");
+      window.history.replaceState(null, "", url.toString());
+      tokenEnMemoria = enUrl;
+      try {
+        window.sessionStorage.setItem(CLAVE_TOKEN, enUrl);
+      } catch {
+        // almacenamiento bloqueado: queda en memoria mientras dure la página
+      }
+    }
+    try {
+      return window.sessionStorage.getItem(CLAVE_TOKEN) ?? tokenEnMemoria;
+    } catch {
+      return tokenEnMemoria;
+    }
+  } catch {
+    return tokenEnMemoria;
+  }
+}
+
+/** Solo para tests: olvida el token en memoria. */
+export function olvidarTokenOperador(): void {
+  tokenEnMemoria = null;
+}
+
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = tokenOperador();
   const response = await fetch(url, {
     ...init,
-    headers: init?.body
-      ? { "Content-Type": "application/json", ...init.headers }
-      : init?.headers,
+    headers: {
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { "x-demo-token": token } : {}),
+      ...init?.headers,
+    },
   });
   const body = (await response.json().catch(() => null)) as
     | (T & { error?: string })

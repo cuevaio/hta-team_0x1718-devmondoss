@@ -1,4 +1,6 @@
-import { DIAS_VIGENCIA_VEREDICTO, veredictoVigente, type Veredicto } from '@/lib/contracts';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { DIAS_VIGENCIA_VEREDICTO, Veredicto, veredictoVigente } from '@/lib/contracts';
 
 /**
  * 🧠 Memoria de riesgo.
@@ -11,11 +13,36 @@ import { DIAS_VIGENCIA_VEREDICTO, veredictoVigente, type Veredicto } from '@/lib
  *  2. Todo veredicto expira (90 días por defecto).
  *  3. El efecto es PAUSAR para verificación, nunca confiscar.
  *
+ * Persistencia opcional (INFRA_Y_ORQUESTACION §4): con `MEMORIA_ARCHIVO`, los
+ * veredictos se guardan en un JSON y sobreviven a un reinicio del proceso a
+ * mitad del demo. Sin la variable, vive solo en RAM, como antes.
+ *  - Al cargar, R10 se vuelve a exigir: un veredicto sin `validado_por` o mal
+ *    formado se descarta, aunque alguien haya editado el archivo a mano.
+ *  - Escritura atómica (temporal + rename): un corte no deja JSON a medias.
+ *  - Un archivo ilegible no tumba el servidor: se aparta como `.corrupto-…`
+ *    (no se sobrescribe) y la Memoria arranca vacía.
+ *
  * Dueño: Ale_dev. Los agentes la ven como solo lectura (`ToolContext.memoria`).
  */
 
+export interface CargaMemoria {
+  cargados: number;
+  descartados: number;
+  apartado: string | null;
+}
+
 export class MemoriaRiesgo {
   private registro = new Map<string, Veredicto>();
+  /** Resultado de la última carga desde archivo (para `/api/health` y tests). */
+  carga: CargaMemoria = { cargados: 0, descartados: 0, apartado: null };
+
+  constructor(private readonly archivo?: string) {
+    if (archivo) this.cargar(archivo);
+  }
+
+  get persistente(): boolean {
+    return Boolean(this.archivo);
+  }
 
   /** Devuelve el veredicto solo si está vigente. Un expirado es como no tenerlo. */
   get(cuenta: string, hoy: Date = new Date()): Veredicto | null {
@@ -43,6 +70,7 @@ export class MemoriaRiesgo {
       );
     }
     this.registro.set(cuenta, veredicto);
+    this.guardar();
   }
 
   /** ¿Es mula confirmada y vigente? Es la condición de P1. */
@@ -53,7 +81,10 @@ export class MemoriaRiesgo {
   /** Abre una apelación: suspende la vigencia sin borrar el registro. */
   abrirApelacion(cuenta: string): void {
     const v = this.registro.get(cuenta);
-    if (v) this.registro.set(cuenta, { ...v, apelacion_abierta: true });
+    if (v) {
+      this.registro.set(cuenta, { ...v, apelacion_abierta: true });
+      this.guardar();
+    }
   }
 
   todos(): Veredicto[] {
@@ -63,10 +94,47 @@ export class MemoriaRiesgo {
   /** Para `/api/demo/reset`. */
   limpiar(): void {
     this.registro.clear();
+    this.guardar();
   }
 
   get cantidad(): number {
     return this.registro.size;
+  }
+
+  private cargar(archivo: string): void {
+    if (!existsSync(archivo)) return;
+    let crudo: unknown;
+    try {
+      crudo = JSON.parse(readFileSync(archivo, 'utf8'));
+    } catch {
+      const apartado = `${archivo}.corrupto-${Date.now()}`;
+      renameSync(archivo, apartado);
+      this.carga = { cargados: 0, descartados: 0, apartado };
+      console.warn(`Memoria: ${archivo} ilegible; apartado como ${apartado}. Arranca vacía.`);
+      return;
+    }
+    const lista = Array.isArray(crudo) ? crudo : [];
+    let descartados = Array.isArray(crudo) ? 0 : 1;
+    for (const item of lista) {
+      const v = Veredicto.safeParse(item);
+      if (!v.success || !v.data.validado_por.trim()) {
+        descartados++;
+        continue;
+      }
+      this.registro.set(v.data.cuenta, v.data);
+    }
+    this.carga = { cargados: this.registro.size, descartados, apartado: null };
+    if (descartados > 0) {
+      console.warn(`Memoria: ${descartados} veredicto(s) descartados al cargar ${archivo} (R10 o formato).`);
+    }
+  }
+
+  private guardar(): void {
+    if (!this.archivo) return;
+    mkdirSync(dirname(this.archivo), { recursive: true });
+    const temporal = `${this.archivo}.tmp`;
+    writeFileSync(temporal, JSON.stringify(this.todos(), null, 2), 'utf8');
+    renameSync(temporal, this.archivo);
   }
 }
 
@@ -96,5 +164,8 @@ export function crearVeredicto(params: {
   };
 }
 
-/** Instancia de proceso. Sin base de datos en el MVP (blueprint §2). */
-export const memoria = new MemoriaRiesgo();
+/**
+ * Instancia de proceso. Sin base de datos en el MVP (blueprint §2); con
+ * `MEMORIA_ARCHIVO`, respaldada en un JSON.
+ */
+export const memoria = new MemoriaRiesgo(process.env.MEMORIA_ARCHIVO?.trim() || undefined);

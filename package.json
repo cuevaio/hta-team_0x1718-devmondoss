@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "demo": "tsx scripts/demo.ts",
     "seed": "tsx scripts/seed.ts",
-    "evals": "tsx scripts/evals.ts"
+    "evals": "tsx scripts/evals.ts",
+    "servidor": "tsx scripts/servidor.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

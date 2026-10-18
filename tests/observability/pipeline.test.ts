@@ -158,7 +158,7 @@ describe('Registro estructurado (doc 19 §9)', () => {
   it('/api/demo/reset también vacía el registro', async () => {
     await evaluarTransferencia(tx('C-ROSA', 'M-01', 4800), ROSA);
     expect(registro.cantidad).toBeGreaterThan(0);
-    await reset();
+    await reset(new Request('http://test/api/demo/reset', { method: 'POST' }));
     expect(registro.cantidad).toBe(0);
   });
 });

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # La plantilla sí se versiona; las keys reales nunca.
 !.env.example
+
+# datos del demo en vivo (Memoria y partidas del evento): nunca al repo
+.datos/

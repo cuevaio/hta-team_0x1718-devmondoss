@@ -13,6 +13,47 @@ import type { Cliente, Cuenta, Movimiento, Semilla } from './types';
 const semilla = semillaJson as Semilla;
 
 /**
+ * Movimientos en vivo: transferencias del juego que SÍ movieron dinero.
+ *
+ * Es una capa encima de la semilla, que nunca se modifica. Solo se llena con
+ * `MOVIMIENTOS_EN_VIVO=1` (modo juego, DEMO_JUEGO §9): así el fan-in de una
+ * mula crece con los jugadores y se «quema» en vivo. Sin la variable, el
+ * comportamiento es exactamente el de la semilla (demo, tests, frontend).
+ *
+ * `POST /api/demo/reset` la vacía y vuelve a la semilla.
+ */
+const enVivo: Movimiento[] = [];
+
+export function movimientosEnVivoActivos(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.MOVIMIENTOS_EN_VIVO === '1';
+}
+
+/** Registra una transferencia que movió dinero. Ocurre en el instante `ahora()`. */
+export function registrarMovimiento(origen: string, destino: string, monto: number): Movimiento {
+  const m: Movimiento = {
+    id: `VIVO-${String(enVivo.length + 1).padStart(4, '0')}`,
+    origen,
+    destino,
+    monto,
+    moneda: 'PEN',
+    t: ahora().toISOString(),
+  };
+  enVivo.push(m);
+  return m;
+}
+
+export function movimientosEnVivo(): Movimiento[] {
+  return [...enVivo];
+}
+
+export function limpiarMovimientosEnVivo(): void {
+  enVivo.length = 0;
+}
+
+const todos = (): Movimiento[] =>
+  enVivo.length === 0 ? semilla.movimientos : [...semilla.movimientos, ...enVivo];
+
+/**
  * Ancla temporal. Los datos son sintéticos y fijos, así que "ahora" también
  * debe serlo o las analytics darían resultados distintos cada día.
  */
@@ -50,7 +91,7 @@ export function clientePorCuenta(cuentaId: string): Cliente | null {
 }
 
 export function movimientos(): Movimiento[] {
-  return semilla.movimientos;
+  return todos();
 }
 
 function horasAtras(t: string, ref: Date): number {
@@ -59,7 +100,7 @@ function horasAtras(t: string, ref: Date): number {
 
 /** Movimientos entrantes a una cuenta dentro de una ventana de horas hacia atrás. */
 export function entrantes(cuentaId: string, horas: number, ref: Date = ahora()): Movimiento[] {
-  return semilla.movimientos.filter((m) => {
+  return todos().filter((m) => {
     if (m.destino !== cuentaId) return false;
     const h = horasAtras(m.t, ref);
     return h >= 0 && h <= horas;
@@ -68,7 +109,7 @@ export function entrantes(cuentaId: string, horas: number, ref: Date = ahora()):
 
 /** Movimientos salientes de una cuenta dentro de una ventana de horas hacia atrás. */
 export function salientes(cuentaId: string, horas: number, ref: Date = ahora()): Movimiento[] {
-  return semilla.movimientos.filter((m) => {
+  return todos().filter((m) => {
     if (m.origen !== cuentaId) return false;
     const h = horasAtras(m.t, ref);
     return h >= 0 && h <= horas;
@@ -77,12 +118,12 @@ export function salientes(cuentaId: string, horas: number, ref: Date = ahora()):
 
 /** Todo el historial saliente, sin ventana. */
 export function historialSalientes(cuentaId: string): Movimiento[] {
-  return semilla.movimientos.filter((m) => m.origen === cuentaId);
+  return todos().filter((m) => m.origen === cuentaId);
 }
 
 /** ¿El origen ya transfirió antes a ese destino? Base de "beneficiario nuevo". */
 export function yaTransfirio(origen: string, destino: string, ref: Date = ahora()): boolean {
-  return semilla.movimientos.some(
+  return todos().some(
     (m) => m.origen === origen && m.destino === destino && new Date(m.t) <= ref,
   );
 }
@@ -101,6 +142,9 @@ export const repo = {
   salientes,
   historialSalientes,
   yaTransfirio,
+  registrarMovimiento,
+  movimientosEnVivo,
+  limpiarMovimientosEnVivo,
 };
 
 export type Repo = typeof repo;

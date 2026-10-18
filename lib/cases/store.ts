@@ -26,6 +26,8 @@ function nuevoId(): string {
 
 export class StoreCasos {
   private casos = new Map<string, CasoVivo>();
+  /** Alias del jugador que originó el caso (modo juego). Fuera del `Caso`: no es parte del contrato. */
+  private alias = new Map<string, string>();
 
   crear(puerta: Puerta, transaccion: Transaccion): CasoVivo {
     const caso: Caso = {
@@ -50,6 +52,15 @@ export class StoreCasos {
 
   todos(): Caso[] {
     return [...this.casos.values()].map((v) => v.caso);
+  }
+
+  /** Asocia un alias (ya validado con `Alias`) a un caso. */
+  etiquetar(id: string, alias: string): void {
+    if (this.casos.has(id)) this.alias.set(id, alias);
+  }
+
+  aliasDe(id: string): string | null {
+    return this.alias.get(id) ?? null;
   }
 
   /** Añade un evento al timeline. Es lo que el demo imprime y la UI mostrará. */
@@ -84,6 +95,7 @@ export class StoreCasos {
   /** Para `/api/demo/reset`. */
   limpiar(): void {
     this.casos.clear();
+    this.alias.clear();
     contador = 0;
   }
 

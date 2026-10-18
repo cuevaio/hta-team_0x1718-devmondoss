@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { storeCasos } from '@/lib/cases/store';
 import { crearVeredicto, memoria } from '@/lib/memory/store';
 import { repo } from '@/lib/data/repo';
+import { exigirToken } from '@/lib/seguridad/token';
 
 /**
  * POST /api/cases/[id]/verdict — el analista confirma o descarta la mula.
@@ -17,6 +18,9 @@ const Cuerpo = z.object({
 });
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  // Primero el token: sin él no se revela si el caso existe.
+  const denegado = exigirToken(req);
+  if (denegado) return denegado;
   const { id } = await ctx.params;
   const vivo = storeCasos.get(id);
   if (!vivo) return NextResponse.json({ error: 'caso no encontrado' }, { status: 404 });
