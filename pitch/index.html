@@ -112,82 +112,95 @@
     <div class="head">
       <p class="kicker rise" style="--d:.05s">LA SOLUCIÓN</p>
       <h2 class="rise" style="--d:.15s">Dos preguntas en paralelo. <em>Una regla decide.</em></h2>
-      <p class="lead rise" style="--d:.3s">Mientras el dinero espera, un agente de IA le pregunta a la clienta y otro revisa la cuenta que recibe. Con las dos respuestas decide una regla fija: la IA nunca mueve el dinero.</p>
+      <p class="lead rise" style="--d:.3s">Si un pago suma señales de riesgo, espera. Mientras tanto, un agente de IA le pregunta a la clienta y otro revisa la cuenta que recibe. Con las dos respuestas decide una regla fija: la IA nunca mueve el dinero.</p>
     </div>
     <div class="viz">
-      <svg id="viz-solucion" data-smil viewBox="0 0 1600 640" role="img" aria-label="El pago de Rosa queda retenido por reglas sin IA: cuenta nueva, monto 11 veces mayor y llamada en curso. Dos agentes de IA trabajan en paralelo. El Guardián le escribe por la app y pregunta si la están manipulando: responde que la guían por teléfono. El Detective revisa si la cuenta que recibe es una mula: 14 personas le envían y reenvía el 91 por ciento en 2 horas. Una regla fija combina las dos respuestas en una tabla: clienta manipulada y cuenta mula, escalar. Después, el Auditor arma el expediente con pruebas, un analista confirma y la Memoria marca la cuenta; cuando Jorge paga a la misma cuenta, se le frena al instante sin IA.">
+      <svg id="viz-solucion" data-smil viewBox="0 0 1600 640" role="img" aria-label="Por qué se retiene: un puntaje fijo, sin IA. Cuenta nueva suma 2, monto 11 veces su promedio suma 2 y llamada en curso suma 3: total 7, sobre un umbral de 5, así que el pago de Rosa espera antes de usar IA. Son señales de la operación, nunca de la persona, y retener no es bloquear. Dos agentes de IA trabajan en paralelo. El Guardián le escribe por la app y pregunta si la están manipulando: responde que la guían por teléfono. El Detective revisa si la cuenta que recibe es una mula: 14 personas le envían y reenvía el 91 por ciento en 2 horas. Una regla fija combina las dos respuestas en una tabla: clienta manipulada y cuenta mula, escalar. Después, el Auditor arma el expediente con pruebas, un analista confirma y la Memoria marca la cuenta; cuando Jorge paga a la misma cuenta, se le frena al instante sin IA.">
         <defs>
           <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#56657a"/></marker>
         </defs>
 
-        <!-- 1 · El pago espera -->
-        <circle cx="120" cy="260" r="54" fill="#2a1f0e" stroke="#e3b25a" stroke-width="2.5">
-          <animate attributeName="stroke-width" values="2.5;8;3" dur="0.6s" begin="0.3s" fill="freeze"/>
-        </circle>
-        <polygon points="142.2,250.8 129.2,237.8 110.8,237.8 97.8,250.8 97.8,269.2 110.8,282.2 129.2,282.2 142.2,269.2" fill="#e3b25a"/>
-        <text class="mx" x="120" y="346" text-anchor="middle" font-size="16" fill="#e3b25a">PAGO RETENIDO</text>
-        <text class="sx" x="120" y="372" text-anchor="middle" font-size="18" fill="#e8edf3">Rosa · S/4,800</text>
-        <text class="mx" x="120" y="402" text-anchor="middle" font-size="13" fill="#8a99ad">cuenta nueva · monto 11×</text>
-        <text class="mx" x="120" y="422" text-anchor="middle" font-size="13" fill="#8a99ad">llamada en curso</text>
-        <text class="mx" x="120" y="452" text-anchor="middle" font-size="12" fill="#56657a">reglas · sin IA</text>
+        <!-- 1 · Por qué se retiene: puntaje fijo, sin IA -->
+        <text class="sx" x="20" y="34" font-size="23" font-weight="600" fill="#e8edf3">Rosa envía S/4,800</text>
+        <text class="mx" x="20" y="66" font-size="14" fill="#e3b25a">¿POR QUÉ SE RETIENE?</text>
+        <g class="mx" font-size="17" fill="#e8edf3">
+          <text x="20" y="104"><tspan fill="#e3b25a">+2</tspan>  cuenta nueva para ella</text>
+          <text x="20" y="134"><tspan fill="#e3b25a">+2</tspan>  monto 11× su promedio</text>
+          <text x="20" y="164"><tspan fill="#e3b25a">+3</tspan>  llamada en curso al pagar</text>
+        </g>
+        <line x1="20" y1="180" x2="400" y2="180" stroke="#24324a" stroke-width="1.5"/>
+        <text class="mx" x="20" y="210" font-size="17" fill="#e8edf3"><tspan fill="#e3b25a">=7</tspan>  umbral de retención: 5</text>
+        <g opacity="0"><set attributeName="opacity" to="1" begin="0.5s"/>
+          <rect x="20" y="230" width="380" height="46" rx="8" fill="#2a1f0e" stroke="#e3b25a" stroke-width="2">
+            <animate attributeName="stroke-width" values="2;6;2" dur="0.6s" begin="0.5s" fill="freeze"/>
+          </rect>
+          <polygon points="52.4,246.8 47.2,241.6 39.8,241.6 34.6,246.8 34.6,254.2 39.8,259.4 47.2,259.4 52.4,254.2" transform="translate(0 2.5)" fill="#e3b25a"/>
+          <text class="mx" x="66" y="260" font-size="17" fill="#e3b25a">PAGO RETENIDO · sin IA</text>
+        </g>
+        <g class="sx" font-size="16" fill="#8a99ad">
+          <text x="20" y="314">Señales de la operación, nunca de la persona.</text>
+          <text x="20" y="338">Retener no es bloquear: el pago espera</text>
+          <text x="20" y="360">mientras se verifica.</text>
+          <text x="20" y="392" fill="#56657a">Con 2 puntos o menos, el pago pasa sin IA.</text>
+        </g>
 
         <!-- Se abren dos preguntas -->
         <g stroke="#56657a" stroke-width="3" fill="none" marker-end="url(#ah)" opacity="0">
           <set attributeName="opacity" to="1" begin="0.9s"/>
-          <path d="M176 248 C 260 200, 300 140, 384 132"/>
-          <path d="M176 272 C 260 320, 300 380, 384 388"/>
+          <path d="M404 244 C 450 200, 460 140, 508 132"/>
+          <path d="M404 262 C 450 310, 460 380, 508 388"/>
         </g>
 
         <!-- 2a · Guardián -->
-        <circle cx="440" cy="130" r="48" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
+        <circle cx="560" cy="130" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;4" dur="0.6s" begin="1.3s" fill="freeze"/>
         </circle>
-        <path d="M440 106 l20 7 v16 c0 13 -9 21 -20 26 c-11 -5 -20 -13 -20 -26 v-16 z" fill="#e8edf3"/>
-        <text class="mx" x="440" y="202" text-anchor="middle" font-size="13" fill="#7cc4e6">GUARDIÁN · IA</text>
-        <text class="sx" x="512" y="116" font-size="25" font-weight="600" fill="#e8edf3">¿A Rosa la están manipulando?</text>
-        <text class="sx" x="512" y="146" font-size="18" fill="#8a99ad">Le escribe por la app, un canal que el estafador no controla.</text>
-        <text class="mx" x="512" y="182" font-size="17" fill="#e5645e" opacity="0"><set attributeName="opacity" to="1" begin="2.1s"/>→ Sí: «me guían por teléfono»</text>
+        <path d="M560 106 l20 7 v16 c0 13 -9 21 -20 26 c-11 -5 -20 -13 -20 -26 v-16 z" fill="#e8edf3"/>
+        <text class="mx" x="560" y="198" text-anchor="middle" font-size="13" fill="#7cc4e6">GUARDIÁN · IA</text>
+        <text class="sx" x="628" y="116" font-size="23" font-weight="600" fill="#e8edf3">¿A Rosa la están manipulando?</text>
+        <text class="sx" x="628" y="144" font-size="17" fill="#8a99ad">Le escribe por la app, no por teléfono.</text>
+        <text class="mx" x="628" y="178" font-size="16" fill="#e5645e" opacity="0"><set attributeName="opacity" to="1" begin="2.1s"/>→ Sí: «me guían por teléfono»</text>
 
         <!-- 2b · Detective -->
-        <circle cx="440" cy="390" r="48" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
+        <circle cx="560" cy="390" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;4" dur="0.6s" begin="1.3s" fill="freeze"/>
         </circle>
-        <circle cx="433" cy="383" r="14" fill="none" stroke="#e8edf3" stroke-width="5"/>
-        <line x1="443" y1="393" x2="457" y2="407" stroke="#e8edf3" stroke-width="6" stroke-linecap="round"/>
-        <text class="mx" x="440" y="462" text-anchor="middle" font-size="13" fill="#7cc4e6">DETECTIVE · IA</text>
-        <text class="sx" x="512" y="376" font-size="25" font-weight="600" fill="#e8edf3">¿La cuenta que recibe es una mula?</text>
-        <text class="sx" x="512" y="406" font-size="18" fill="#8a99ad">Revisa quién le envía y a dónde manda el dinero.</text>
-        <text class="mx" x="512" y="442" font-size="17" fill="#e5645e" opacity="0"><set attributeName="opacity" to="1" begin="2.4s"/>→ Sí: 14 le envían · reenvía 91% en 2 h</text>
+        <circle cx="553" cy="383" r="14" fill="none" stroke="#e8edf3" stroke-width="5"/>
+        <line x1="563" y1="393" x2="577" y2="407" stroke="#e8edf3" stroke-width="6" stroke-linecap="round"/>
+        <text class="mx" x="560" y="458" text-anchor="middle" font-size="13" fill="#7cc4e6">DETECTIVE · IA</text>
+        <text class="sx" x="628" y="376" font-size="23" font-weight="600" fill="#e8edf3">¿La cuenta que recibe es mula?</text>
+        <text class="sx" x="628" y="404" font-size="17" fill="#8a99ad">Revisa quién le envía y a dónde lo manda.</text>
+        <text class="mx" x="628" y="438" font-size="16" fill="#e5645e" opacity="0"><set attributeName="opacity" to="1" begin="2.4s"/>→ Sí: 14 le envían, reenvía el 91%</text>
 
         <!-- Las dos respuestas van a la regla -->
         <g stroke="#56657a" stroke-width="3" fill="none" marker-end="url(#ah)" opacity="0">
           <set attributeName="opacity" to="1" begin="2.9s"/>
-          <path d="M930 176 C 980 176, 990 250, 1036 252"/>
-          <path d="M960 436 C 1000 436, 1000 268, 1036 266"/>
+          <path d="M960 172 C 1030 172, 1040 228, 1096 232"/>
+          <path d="M1006 432 C 1052 432, 1056 254, 1096 250"/>
         </g>
 
         <!-- 3 · La regla fija -->
-        <text class="mx" x="1210" y="62" text-anchor="middle" font-size="15" fill="#e3b25a">UNA REGLA FIJA DECIDE · SIN IA</text>
-        <text class="sx" x="1125" y="112" text-anchor="middle" font-size="16" fill="#8a99ad">cuenta normal</text>
-        <text class="sx" x="1295" y="112" text-anchor="middle" font-size="16" fill="#8a99ad">cuenta mula</text>
-        <text class="sx" x="1396" y="190" font-size="16" fill="#8a99ad">Rosa tranquila</text>
-        <text class="sx" x="1396" y="315" font-size="16" fill="#8a99ad">Rosa manipulada</text>
+        <text class="mx" x="1240" y="62" text-anchor="middle" font-size="15" fill="#e3b25a">UNA REGLA FIJA DECIDE · SIN IA</text>
+        <text class="sx" x="1170" y="112" text-anchor="middle" font-size="16" fill="#8a99ad">cuenta normal</text>
+        <text class="sx" x="1310" y="112" text-anchor="middle" font-size="16" fill="#8a99ad">cuenta mula</text>
+        <text class="sx" x="1392" y="190" font-size="16" fill="#8a99ad">Rosa tranquila</text>
+        <text class="sx" x="1392" y="306" font-size="16" fill="#8a99ad">Rosa manipulada</text>
         <g>
           <animate attributeName="opacity" values="1;0.35" dur="0.5s" begin="3.4s" fill="freeze"/>
-          <rect x="1040" y="128" width="170" height="118" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
-          <text class="mx" x="1125" y="194" text-anchor="middle" font-size="17" fill="#5cc8a8">PERMITIR</text>
-          <rect x="1210" y="128" width="170" height="118" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
-          <text class="mx" x="1295" y="194" text-anchor="middle" font-size="17" fill="#e5645e">ESCALAR</text>
-          <rect x="1040" y="246" width="170" height="118" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
-          <text class="mx" x="1125" y="312" text-anchor="middle" font-size="17" fill="#e3b25a">VERIFICAR</text>
+          <rect x="1100" y="128" width="140" height="112" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
+          <text class="mx" x="1170" y="190" text-anchor="middle" font-size="16" fill="#5cc8a8">PERMITIR</text>
+          <rect x="1240" y="128" width="140" height="112" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
+          <text class="mx" x="1310" y="190" text-anchor="middle" font-size="16" fill="#e5645e">ESCALAR</text>
+          <rect x="1100" y="240" width="140" height="112" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
+          <text class="mx" x="1170" y="302" text-anchor="middle" font-size="16" fill="#e3b25a">VERIFICAR</text>
         </g>
-        <rect x="1210" y="246" width="170" height="118" fill="#111a2b" stroke="#24324a" stroke-width="2">
+        <rect x="1240" y="240" width="140" height="112" fill="#111a2b" stroke="#24324a" stroke-width="2">
           <set attributeName="fill" to="#2a0f14" begin="3.4s"/>
           <set attributeName="stroke" to="#e5645e" begin="3.4s"/>
           <animate attributeName="stroke-width" values="2;9;4" dur="0.6s" begin="3.4s" fill="freeze"/>
         </rect>
-        <text class="mx" x="1295" y="312" text-anchor="middle" font-size="19" fill="#e5645e">ESCALAR</text>
-        <text class="sx" x="1210" y="402" text-anchor="middle" font-size="16" fill="#8a99ad" opacity="0"><set attributeName="opacity" to="1" begin="3.6s"/>el dinero sigue retenido</text>
+        <text class="mx" x="1310" y="302" text-anchor="middle" font-size="18" fill="#e5645e">ESCALAR</text>
+        <text class="sx" x="1240" y="390" text-anchor="middle" font-size="16" fill="#8a99ad" opacity="0"><set attributeName="opacity" to="1" begin="3.6s"/>el dinero sigue retenido</text>
 
         <!-- 4 · Después -->
         <line x1="40" y1="500" x2="1560" y2="500" stroke="#24324a" stroke-width="1.5"/>
