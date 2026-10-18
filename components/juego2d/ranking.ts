@@ -22,32 +22,74 @@ export type DatosResultado = {
   puntaje: number;
   lineas: Array<{ texto: string; color?: string }>;
   posicion?: number | null;
+  /** 0..3 estrellas; `null` = el modo no tiene estrellas. */
+  estrellas?: number | null;
+  record?: boolean;
+  /** Rango después de sumar la partida. */
+  rango?: { nombre: string; total: number; k: number; siguiente: string | null };
 };
+
+const ESTRELLA = ["....X....", "...XXX...", "XXXXXXXXX", ".XXXXXXX.", "..XXXXX..", ".XXX.XXX.", ".XX...XX."];
+
+/** Cuadro (desde `inicio`) en que aparece la estrella `i`. */
+export const cuadroEstrella = (i: number) => 70 + i * 22;
 
 export function escenaResultado(inicio: number, d: DatosResultado): Escena {
   return (p, t) => {
     const f = t - inicio;
     fondoArcade(p, t);
     const k = facil.salida(Math.min(1, f / 18));
-    p.escalado(W / 2, 40, 1 + (1 - k) * 1.2, () => p.centrado(d.titulo, 32, d.color, 16, PAL.tinta));
+    p.escalado(W / 2, 34, 1 + (1 - k) * 1.2, () => p.centrado(d.titulo, 26, d.color, d.titulo.length <= 12 ? 16 : 8, PAL.tinta));
     const cuenta = Math.round(d.puntaje * Math.min(1, Math.max(0, (f - 15) / 50)));
-    p.centrado("PUNTOS", 64, PAL.grisClaro);
-    p.centrado(String(cuenta), 78, PAL.ambar, 16, PAL.tinta);
+    p.centrado("PUNTOS", 50, PAL.grisClaro);
+    p.centrado(String(cuenta), 62, PAL.ambar, 16, PAL.tinta);
+    let y = 84;
+    if (d.record && f > 66) {
+      const pulso = Math.floor(f / 10) % 2 === 0;
+      p.centrado("¡NUEVO RÉCORD!", y, pulso ? PAL.verde : PAL.crema, 8, PAL.tinta);
+    }
+    y += 14;
+    if (d.estrellas !== undefined && d.estrellas !== null) {
+      for (let i = 0; i < 3; i++) {
+        const fi = f - cuadroEstrella(i);
+        const gano = i < d.estrellas;
+        const x = W / 2 - 46 + i * 32;
+        if (fi < 0 || !gano) {
+          p.sprite(ESTRELLA, { X: "#3a3560" }, x, y, 3);
+          continue;
+        }
+        const kk = facil.rebote(Math.min(1, fi / 14));
+        p.escalado(x + 13, y + 10, 0.4 + kk * 0.6 + Math.max(0, 1 - fi / 6) * 0.6, () => p.sprite(ESTRELLA, { X: PAL.ambar }, x, y, 3));
+      }
+      y += 30;
+    }
     d.lineas.forEach((l, i) => {
       const kk = Math.min(1, Math.max(0, (f - 60 - i * 10) / 10));
-      p.alfa(kk, () => p.centrado(l.texto, 108 + i * 14, l.color ?? PAL.crema, 8, PAL.tinta));
+      p.alfa(kk, () => p.centrado(l.texto, y + i * 13, l.color ?? PAL.crema, 8, PAL.tinta));
     });
+    y += d.lineas.length * 13 + 4;
     if (d.posicion) {
-      const kk = Math.min(1, Math.max(0, (f - 100) / 12));
-      const y = 116 + d.lineas.length * 14;
+      const kk = Math.min(1, Math.max(0, (f - 130) / 12));
       p.alfa(kk, () => {
-        p.escalado(W / 2, y + 12, 1 + (1 - facil.rebote(kk)) * 0.6, () => {
-          const texto = `PUESTO #${d.posicion}`;
-          const ancho = p.ancho(texto) + 16;
-          p.rect(PAL.tinta, (W - ancho) / 2 - 1, y - 1, ancho + 2, 22);
-          p.rect(d.posicion! <= 3 ? PAL.ambar : PAL.azul, (W - ancho) / 2, y, ancho, 20);
-          p.centrado(texto, y + 6, d.posicion! <= 3 ? PAL.tinta : PAL.blanco);
+        p.escalado(W / 2, y + 10, 1 + (1 - facil.rebote(kk)) * 0.6, () => {
+          const texto = `PUESTO #${d.posicion} DEL EVENTO`;
+          const ancho = Math.min(W - 8, p.ancho(texto) + 12);
+          p.rect(PAL.tinta, (W - ancho) / 2 - 1, y - 1, ancho + 2, 20);
+          p.rect(d.posicion! <= 3 ? PAL.ambar : PAL.azul, (W - ancho) / 2, y, ancho, 18);
+          p.centrado(texto, y + 5, d.posicion! <= 3 ? PAL.tinta : PAL.blanco);
         });
+      });
+      y += 24;
+    }
+    // El menú de 3 opciones ocupa los últimos ~86 px: el rango solo si cabe.
+    if (d.rango && y + 30 < p.h - 86) {
+      const kk = Math.min(1, Math.max(0, (f - 150) / 14));
+      p.alfa(kk, () => {
+        p.texto(d.rango!.nombre, 10, y, PAL.verde);
+        const tot = `${d.rango!.total} pts`;
+        p.texto(tot, W - 10 - p.ancho(tot), y, PAL.grisClaro);
+        p.barra(10, y + 11, W - 20, d.rango!.k * Math.min(1, kk * 1.2), PAL.verde);
+        if (d.rango!.siguiente) p.texto(`> ${d.rango!.siguiente}`, 10, y + 20, PAL.gris);
       });
     }
   };

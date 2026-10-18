@@ -59,7 +59,7 @@ export function registrarPartida(partida: PartidaVictima | PartidaAtacante) {
 
 export type JugadaArcade =
   | {
-      modo: "real_o_estafa";
+      modo: "real_o_estafa" | "pausa_o_pasa";
       alias: string;
       pais: string;
       puntaje: number;
@@ -76,6 +76,16 @@ export type JugadaArcade =
       mulas: number;
       segundos: number;
       encuesta?: Record<string, string>;
+    }
+  | {
+      modo: "atrapa_la_mula";
+      alias: string;
+      pais: string;
+      puntaje: number;
+      aciertos: number;
+      errores: number;
+      escapados: number;
+      encuesta?: Record<string, string>;
     };
 
 export type FilaRanking = { alias: string; pais: string; puntaje: number };
@@ -83,7 +93,8 @@ export type FilaRanking = { alias: string; pais: string; puntaje: number };
 export type ResumenArcade = {
   jugadas: number;
   jugadores: number;
-  ranking: Record<"real_o_estafa" | "sigue_el_dinero", FilaRanking[]>;
+  ranking: Record<"real_o_estafa" | "sigue_el_dinero" | "atrapa_la_mula" | "pausa_o_pasa", FilaRanking[]>;
+  general: FilaRanking[];
   caidas: Array<{ categoria: string; vistas: number; cayeron: number; pct: number }>;
 };
 

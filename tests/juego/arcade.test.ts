@@ -76,6 +76,32 @@ describe('/api/juego/arcade', () => {
     expect(s.por_pais).toEqual({ mx: 1 });
   });
 
+  it('registra ATRAPA LA MULA y ¿PAUSA O PASA?, y arma el ranking general', async () => {
+    await registrar(json('POST', realOEstafa('Ana', 1000)));
+    await registrar(json('POST', { modo: 'atrapa_la_mula', alias: 'Ana', pais: 'pe', puntaje: 2000, aciertos: 18, errores: 1, escapados: 3 }));
+    await registrar(
+      json('POST', {
+        modo: 'pausa_o_pasa',
+        alias: 'Beto',
+        pais: 'co',
+        puntaje: 2500,
+        respuestas: [
+          { carta: 'llamada_todo', categoria: 'guardian', estafa: true, dijo_estafa: false, ms: 3000 },
+          { carta: 'bodega', categoria: 'normal', estafa: false, dijo_estafa: false, ms: 900 },
+          { carta: 'llamada_mama', categoria: 'normal', estafa: false, dijo_estafa: true, ms: 1200 },
+        ],
+      }),
+    );
+    const r = await (await resumen(json('GET'))).json();
+    expect(r.ranking.atrapa_la_mula[0].puntaje).toBe(2000);
+    expect(r.ranking.pausa_o_pasa[0].alias).toBe('Beto');
+    expect(r.general.map((f: { alias: string; puntaje: number }) => [f.alias, f.puntaje])).toEqual([
+      ['Ana', 3000],
+      ['Beto', 2500],
+    ]);
+    expect(r.pausa_o_pasa).toEqual({ riesgosas_pasadas_pct: 100, legitimas_pausadas_pct: 50 });
+  });
+
   it('rechaza alias de contacto, respuestas de encuesta inventadas y texto libre', async () => {
     expect((await registrar(json('POST', realOEstafa('ana@correo.com', 1)))).status).toBe(400);
     expect((await registrar(json('POST', realOEstafa('Ana', 1, { encuesta: { vivido: 'quizas' } })))).status).toBe(400);
