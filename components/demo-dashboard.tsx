@@ -9,6 +9,7 @@ type Health = {
   ok: boolean;
   agentes: "claude" | "simulado";
   datos: { nota: string };
+  modos?: { token_operador: boolean };
 };
 
 type Stats = {
@@ -219,7 +220,12 @@ function ClientPanel({
   onReply: (text: string) => Promise<void>;
 }) {
   const [reply, setReply] = useState("");
-  const protectedFunds = hasEvent(caso, "pausa_preventiva");
+  // Retenida por la pausa preventiva o por la decisión final (p. ej. P1, la
+  // Memoria: ahí no hay pausa preventiva porque se resuelve al instante).
+  const protectedFunds =
+    hasEvent(caso, "pausa_preventiva") ||
+    (Boolean(caso?.decision) && caso?.decision?.accion !== "PERMITIR");
+  const porMemoria = caso?.decision?.regla === "P1";
   const questions =
     caso?.timeline
       .filter((event) => event.evento === "pregunta")
@@ -320,11 +326,14 @@ function ClientPanel({
                 <div className="protection-card" role="status">
                   <ShieldMark paused />
                   <div>
-                    <p className="protection-kicker">Pausa preventiva</p>
+                    <p className="protection-kicker">
+                      {porMemoria ? "Cuenta reconocida" : "Pausa preventiva"}
+                    </p>
                     <h3>Tu dinero está protegido</h3>
                     <p>
-                      Detuvimos la transferencia mientras verificamos que estés
-                      a salvo.
+                      {porMemoria
+                        ? "Esa cuenta ya fue confirmada como mula. Tu transferencia no salió."
+                        : "Detuvimos la transferencia mientras verificamos que estés a salvo."}
                     </p>
                   </div>
                 </div>
@@ -442,6 +451,15 @@ function DecisionCard({ caso }: { caso: Caso | null }) {
           </span>
           {accion}
         </h3>
+        {accion !== "PERMITIR" && (
+          <p className="decision-note">
+            {regla === "P1"
+              ? "Dinero retenido al instante por la Memoria · 0 llamadas de IA"
+              : accion === "ESCALAR"
+                ? "Dinero retenido · el caso pasa al analista"
+                : "Dinero retenido mientras se verifica"}
+          </p>
+        )}
       </div>
       <div className="rule-block">
         <span>Regla aplicada</span>
@@ -523,11 +541,13 @@ function Dossier({
   busy,
   verdict,
   onVerdict,
+  soloPresentador,
 }: {
   caso: Caso | null;
   busy: string | null;
   verdict: string | null;
   onVerdict: (value: "mula_confirmada" | "descartada") => Promise<void>;
+  soloPresentador: boolean;
 }) {
   const dossier = caso?.salidas.auditor;
   return (
@@ -545,6 +565,12 @@ function Dossier({
       </div>
       {!caso ? (
         <p className="empty-copy">El expediente aparecerá al abrir un caso.</p>
+      ) : !dossier && caso.decision?.regla === "P1" ? (
+        <p className="empty-copy">
+          Resuelto por la Memoria: la cuenta ya tenía un veredicto humano, así que no hizo falta un expediente nuevo (0 llamadas de IA).
+        </p>
+      ) : !dossier && caso.decision ? (
+        <p className="empty-copy">Este caso no necesitó expediente.</p>
       ) : !dossier ? (
         <div className="loading-copy" role="status">
           <Spinner /> El Auditor aún no emitió un expediente.
@@ -580,7 +606,7 @@ function Dossier({
                 className="button-confirm"
                 type="button"
                 onClick={() => onVerdict("mula_confirmada")}
-                disabled={Boolean(busy)}
+                disabled={Boolean(busy) || soloPresentador}
               >
                 {busy === "verdict-confirm" && <Spinner />}
                 Confirmar mula
@@ -589,12 +615,18 @@ function Dossier({
                 className="button-discard"
                 type="button"
                 onClick={() => onVerdict("descartada")}
-                disabled={Boolean(busy)}
+                disabled={Boolean(busy) || soloPresentador}
               >
                 {busy === "verdict-discard" && <Spinner />}
                 Descartar
               </button>
             </div>
+            {soloPresentador && (
+              <p className="operator-note">
+                El veredicto lo da el presentador del demo. En el juego puedes hacerlo tú:{" "}
+                <a href="/play">juega SIGUE EL DINERO</a>.
+              </p>
+            )}
             {verdict && <p className="verdict-result" role="status">{verdict}</p>}
           </div>
         </>
@@ -689,6 +721,7 @@ function AnalystConsole({
   busy,
   verdict,
   onVerdict,
+  soloPresentador,
 }: {
   caso: Caso | null;
   stats: Stats | null;
@@ -696,6 +729,7 @@ function AnalystConsole({
   busy: string | null;
   verdict: string | null;
   onVerdict: (value: "mula_confirmada" | "descartada") => Promise<void>;
+  soloPresentador: boolean;
 }) {
   return (
     <section className="analyst-column" aria-labelledby="analyst-title">
@@ -718,6 +752,7 @@ function AnalystConsole({
           busy={busy}
           verdict={verdict}
           onVerdict={onVerdict}
+          soloPresentador={soloPresentador}
         />
       </div>
     </section>
@@ -733,6 +768,12 @@ export default function DemoDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [verdict, setVerdict] = useState<string | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+
+  // Si el servidor exige token y esta pestaña no lo tiene, es un visitante:
+  // las acciones del operador se muestran deshabilitadas en vez de fallar.
+  const [conToken, setConToken] = useState(false);
+  useEffect(() => setConToken(Boolean(tokenOperador())), []);
+  const soloPresentador = Boolean(health?.modos?.token_operador) && !conToken;
 
   const selectedScenario = useMemo(
     () => scenarios.find((item) => item.id === scenario) ?? scenarios[0],
@@ -934,15 +975,21 @@ export default function DemoDashboard() {
   return (
     <main className="app-shell">
       <header className="site-header">
-        <a className="brand" href="#main-demo" aria-label="Adaptive Financial Security, inicio">
+        <a className="brand" href="#main-demo" aria-label="Te están robando, inicio">
           <span className="brand-mark" aria-hidden="true">
             AF
           </span>
           <span>
-            <strong>Adaptive Financial Security</strong>
-            <small>Seguridad que aprende, decisiones que se explican</small>
+            <strong>Te están robando</strong>
+            <small>Adaptive Financial Security · seguridad que aprende</small>
           </span>
         </a>
+        <nav className="site-nav" aria-label="Pantallas del demo">
+          <a href="/play" className="nav-play">
+            Jugar
+          </a>
+          <a href="/monitor">Monitor</a>
+        </nav>
         <div className="synthetic-notice" role="note">
           <span aria-hidden="true">SYN</span>
           <p>
@@ -989,7 +1036,8 @@ export default function DemoDashboard() {
               className="button-secondary"
               type="button"
               onClick={resetDemo}
-              disabled={Boolean(busy)}
+              disabled={Boolean(busy) || soloPresentador}
+              title={soloPresentador ? "Solo el presentador reinicia el demo" : undefined}
             >
               {busy === "reset" ? <Spinner /> : null}
               Reiniciar demo
@@ -999,6 +1047,11 @@ export default function DemoDashboard() {
             <strong>{selectedScenario.act}:</strong>{" "}
             {selectedScenario.description}
           </p>
+          {soloPresentador && (
+            <p className="operator-note">
+              Modo público: puedes ejecutar los actos; reiniciar y confirmar mulas es del presentador.
+            </p>
+          )}
         </div>
       </section>
 
@@ -1031,12 +1084,15 @@ export default function DemoDashboard() {
           busy={busy}
           verdict={verdict}
           onVerdict={submitVerdict}
+          soloPresentador={soloPresentador}
         />
       </div>
 
       <footer className="site-footer">
         <p>{health?.datos.nota ?? "DATOS 100% SINTÉTICOS"}</p>
-        <p>Demo sin autenticación · Estado temporal en memoria</p>
+        <p>
+          <a href="/play">Jugar</a> · <a href="/monitor">Monitor</a> · Casos en memoria temporal
+        </p>
       </footer>
     </main>
   );

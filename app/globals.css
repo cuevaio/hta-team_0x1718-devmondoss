@@ -1345,3 +1345,57 @@ input {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Navegación entre las pantallas del demo y notas del modo público */
+.site-nav {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.site-nav a {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgb(7 94 84 / 22%);
+  border-radius: 999px;
+  color: var(--brand);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-nav a.nav-play {
+  background: var(--brand);
+  color: #fff;
+}
+
+.decision-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.operator-note {
+  margin: 0.5rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+.operator-note a,
+.site-footer a {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    flex-wrap: wrap;
+  }
+
+  .site-nav {
+    order: 3;
+    width: 100%;
+    margin: 0 0 0.75rem;
+  }
+}

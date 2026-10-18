@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Adaptive Financial Security | Demo de protección",
+  title: "Te están robando | Demo guiado",
   description:
     "Demo de seguridad financiera adaptativa: pausa preventiva, investigación explicable y memoria de riesgo.",
 };
