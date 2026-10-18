@@ -30,7 +30,7 @@ Un solo botón: **▶ correr suite**. Son 11 pruebas (`lib/demo/suite.ts`, las m
 - la **terminal del backend**: el request, cada paso del pipeline con su tiempo real y las tools que corrió cada agente;
 - el **narrador**: en los momentos clave el flujo se detiene con un diálogo hecho de los datos reales del caso. Muestra los documentos que juntó el Detective, el chat del Guardián con la respuesta del cliente, el expediente con sus citas y la decisión. Son 8 en toda la suite, cortos. Se cierra solo; **Mantener** lo deja abierto para explicar y **Continuar** (o Enter) sigue.
 
-Duración de la suite (medida el 18/10/2026): ~1,3 min a 1× con «explicar», ~40 s a 2×.
+Duración: **1:30 exacto** en el modo «90 s» (por defecto). A cada prueba le toca su parte del tiempo y la reproducción se acelera o se frena para caber; medido el 18/10/2026: 90,2 s en 1280×720 y en 1920×1080. La cabecera muestra el reloj, las pruebas que pasaron y el dinero protegido. Todo ocupa exactamente la pantalla, sin scroll.
 
 | # | Prueba | Qué decir |
 |---|---|---|
