@@ -1,148 +1,106 @@
-import { Explorador, type ConfigMundo } from "./mundo";
-import { CARACTER, ESCALA, H, PAL, Pincel, W, envolver, limpiar } from "./pincel";
+import { Audio } from "./audio";
+import { Explorador, TILE, type ConfigMundo } from "./mundo";
+import { CARACTER, PAL, Pincel, W, envolver, facil, limpiar, type Caja } from "./pincel";
 import { cara } from "./sprites";
 import type { Direccion } from "./sprites";
 
 /**
- * Motor del juego 2D: bucle a 60 fps, entrada, diálogos, menús, teclado de
- * nombre y exploración del barrio. Los guiones (guion.ts) son funciones
- * `async` que esperan al jugador: `await m.decir(...)`, `await m.menu(...)`.
+ * Motor del juego 2D para celular: pantalla completa en vertical, todo se
+ * maneja tocando (el teclado queda como respaldo en escritorio).
  *
- * El motor solo presenta: toda decisión financiera la toma la API.
+ * Los guiones (guion.ts) son funciones `async` que esperan al jugador:
+ * `await m.decir(...)`, `await m.menu(...)`. El motor solo presenta: toda
+ * decisión financiera la toma la API.
  */
 
-export type Boton = "arriba" | "abajo" | "izq" | "der" | "a" | "b" | "start";
+export type Boton = "arriba" | "abajo" | "izq" | "der" | "a" | "b";
 export type Dibujo = (p: Pincel, t: number) => void;
-export type Opcion = { texto: string; info?: string };
-type Caja = { x: number; y: number; w: number; h: number };
+export type Opcion = { texto: string; info?: string; color?: string };
+type EstiloMenu = "lista" | "combate" | "caras";
 
-const CAJA_DIALOGO: Caja = { x: 2, y: 108, w: 236, h: 50 };
-const COLUMNAS_TEXTO = 27;
-const LINEAS_POR_PAGINA = 3;
+const COLUMNAS = 20;
+const LINEAS = 5;
+const ALTO_DIALOGO = 82;
+const LETRAS = ["ABCDEFG", "HIJKLMN", "ÑOPQRST", "UVWXYZ-"];
+const MAX_NOMBRE = 10;
+const BOTON_SONIDO: Caja = { x: W - 20, y: 2, w: 18, h: 16 };
 
 type Dialogo = {
   paginas: string[][];
   pagina: number;
   mostrados: number;
   quien?: string;
-  /** false = la última página no espera A (la usa una pregunta). */
   esperarFinal: boolean;
+  entrada: number;
   resolver: () => void;
 };
 
 type Menu = {
   opciones: Opcion[];
   idx: number;
-  cols: number;
-  caja: Caja;
+  estilo: EstiloMenu;
   titulo?: string;
-  estilo: "lista" | "caras";
   cancelable: boolean;
   limite?: number;
+  elegido: { idx: number; cuadros: number } | null;
+  entrada: number;
   resolver: (i: number) => void;
 };
 
-type Teclado = {
-  nombre: string;
-  fila: number;
-  col: number;
-  error: string | null;
-  validar: (s: string) => string | null;
-  resolver: (s: string) => void;
-};
+type Teclado = { nombre: string; idx: number; error: string | null; validar: (s: string) => string | null; resolver: (s: string) => void };
 
-const FILAS_TECLADO = [
-  "ABCDEFGHI",
-  "JKLMNÑOPQ",
-  "RSTUVWXYZ",
-  "012345678",
-  "9-_.     ",
-];
-const MAX_NOMBRE = 10;
-
-class Sonido {
-  private ctx: AudioContext | null = null;
-  silencio = false;
-
-  desbloquear() {
-    if (this.ctx || typeof window === "undefined") return;
-    try {
-      const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AC();
-    } catch {
-      this.ctx = null;
-    }
-  }
-
-  tono(freq: number, dur: number, vol = 0.04, cuando = 0, tipo: OscillatorType = "square") {
-    if (this.silencio || !this.ctx) return;
-    const c = this.ctx;
-    const o = c.createOscillator();
-    const g = c.createGain();
-    o.type = tipo;
-    o.frequency.value = freq;
-    g.gain.setValueAtTime(vol, c.currentTime + cuando);
-    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + cuando + dur);
-    o.connect(g).connect(c.destination);
-    o.start(c.currentTime + cuando);
-    o.stop(c.currentTime + cuando + dur + 0.02);
-  }
-
-  blip() {
-    this.tono(880, 0.03, 0.015);
-  }
-  mover() {
-    this.tono(660, 0.04, 0.03);
-  }
-  confirmar() {
-    this.tono(990, 0.05, 0.035);
-    this.tono(1320, 0.06, 0.035, 0.05);
-  }
-  ring() {
-    for (let i = 0; i < 6; i++) this.tono(i % 2 ? 1400 : 1100, 0.06, 0.04, i * 0.07);
-  }
-  exito() {
-    [523, 659, 784, 1046].forEach((f, i) => this.tono(f, 0.12, 0.04, i * 0.1));
-  }
-  fallo() {
-    [392, 330, 262].forEach((f, i) => this.tono(f, 0.18, 0.04, i * 0.16, "triangle"));
-  }
-  golpe() {
-    this.tono(120, 0.12, 0.06, 0, "sawtooth");
-  }
-}
+type Particula = { x: number; y: number; vx: number; vy: number; vida: number; max: number; color: string; tam: number; g: number };
+type Flotante = { texto: string; x: number; y: number; vida: number; color: string };
+type Sello = { texto: string; sub?: string; color: string; cuadro: number };
+type Cortina = { tipo: "barras" | "iris"; k: number; cx: number; cy: number };
 
 export class Motor {
   t = 0;
   escena: Dibujo = () => {};
-  /** Sacudida de pantalla (frames). */
   sacudida = 0;
-  /** 0 = visible, 1 = negro. */
   fundido = 0;
-  readonly sonido = new Sonido();
+  destello = 0;
+  readonly audio = new Audio();
+  /** Barra superior: progreso u objetivo. */
+  barraSuperior: { texto: string; color?: string } | null = null;
 
   private dialogo: Dialogo | null = null;
   private menuActivo: Menu | null = null;
   private teclado: Teclado | null = null;
   private explorador: Explorador | null = null;
   private resolverExplorar: ((id: string) => void) | null = null;
-  private resolverBoton: (() => void) | null = null;
+  private resolverToque: (() => void) | null = null;
   private hablandoEnMundo = false;
+  private particulas: Particula[] = [];
+  private flotantes: Flotante[] = [];
+  private sello: Sello | null = null;
+  private cortina: Cortina | null = null;
   private cola: Boton[] = [];
   private sostenidos = new Set<Boton>();
   private raf = 0;
+  private escala = 4;
   private readonly pincel: Pincel;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
     fuente: string,
   ) {
-    canvas.width = W * ESCALA;
-    canvas.height = H * ESCALA;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("canvas 2d no disponible");
-    ctx.imageSmoothingEnabled = false;
     this.pincel = new Pincel(ctx, fuente);
+  }
+
+  get h() {
+    return this.pincel.h;
+  }
+
+  /** Ajusta la resolución lógica al tamaño de la pantalla (vertical). */
+  ajustar(anchoCss: number, altoCss: number, dpr: number) {
+    const h = Math.round(Math.max(300, Math.min(420, (W * altoCss) / Math.max(1, anchoCss))));
+    this.pincel.h = h;
+    this.escala = Math.max(2, Math.min(8, Math.ceil((anchoCss * dpr) / W)));
+    this.canvas.width = W * this.escala;
+    this.canvas.height = h * this.escala;
   }
 
   iniciar() {
@@ -157,122 +115,163 @@ export class Motor {
 
   detener() {
     cancelAnimationFrame(this.raf);
+    this.audio.detener();
+  }
+
+  // ── Audio y vibración ────────────────────────────────────
+
+  musica(nombre: Parameters<Audio["musica"]>[0]) {
+    this.audio.musica(nombre);
+  }
+
+  vibrar(patron: number | number[]) {
+    if (this.audio.silencio) return;
+    try {
+      navigator.vibrate?.(patron);
+    } catch {
+      // sin vibración
+    }
   }
 
   // ── Entrada ──────────────────────────────────────────────
 
+  /** Toque en la pantalla, en coordenadas lógicas. */
+  tocar(x: number, y: number) {
+    this.audio.desbloquear();
+    const b = BOTON_SONIDO;
+    if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h + 4) {
+      this.audio.silencio = !this.audio.silencio;
+      return;
+    }
+    if (this.cortina) return;
+    const m = this.menuActivo;
+    if (m) {
+      if (m.elegido) return;
+      for (let i = 0; i < m.opciones.length; i++) {
+        const r = this.rectOpcion(m, i);
+        if (x >= r.x - 2 && x < r.x + r.w + 2 && y >= r.y - 2 && y < r.y + r.h + 2) {
+          m.idx = i;
+          this.elegir(m);
+          return;
+        }
+      }
+      return;
+    }
+    if (this.teclado) return this.toqueTeclado(x, y);
+    if (this.dialogo) return this.avanzarDialogo();
+    if (this.resolverToque) return this.cumplirToque();
+    if (this.explorador && !this.hablandoEnMundo) {
+      this.explorador.irA(Math.floor(x / TILE), Math.floor((y + this.explorador.camY) / TILE));
+    }
+  }
+
+  /** Teclado físico (escritorio). */
   pulsar(b: Boton) {
-    this.sonido.desbloquear();
+    this.audio.desbloquear();
     this.cola.push(b);
   }
 
   sostener(b: Boton, activo: boolean) {
     if (activo) this.sostenidos.add(b);
-    else {
-      this.sostenidos.delete(b);
-      this.explorador?.soltar();
-    }
+    else this.sostenidos.delete(b);
   }
 
-  /** Toque en la pantalla (coordenadas lógicas): elige la opción tocada o equivale a A. */
-  tocar(x: number, y: number) {
-    this.sonido.desbloquear();
-    const m = this.menuActivo;
-    if (m) {
-      const i = this.opcionEn(m, x, y);
-      if (i !== null) {
-        m.idx = i;
-        this.cola.push("a");
-      }
-      return;
-    }
-    if (this.teclado) {
-      const celda = this.celdaTeclado(x, y);
-      if (celda) {
-        this.teclado.fila = celda.fila;
-        this.teclado.col = celda.col;
-        this.cola.push("a");
-      }
-      return;
-    }
-    if (this.dialogo || this.resolverBoton) this.cola.push("a");
+  /** Letra escrita con el teclado físico mientras se pide el nombre. */
+  letra(ch: string) {
+    const k = this.teclado;
+    if (!k) return;
+    if (ch === "Backspace") k.nombre = k.nombre.slice(0, -1);
+    else if (ch === "Enter") this.confirmarNombre();
+    else if (/^[a-zñA-ZÑ-]$/.test(ch) && k.nombre.length < MAX_NOMBRE) k.nombre += ch.toUpperCase();
+  }
+
+  get pidiendoNombre() {
+    return this.teclado !== null;
   }
 
   private procesar() {
     const b = this.cola.shift();
-    if (this.teclado) {
-      if (b) this.entradaTeclado(b);
-      return;
-    }
     if (this.menuActivo) {
-      if (this.menuActivo.limite !== undefined && this.t >= this.menuActivo.limite) {
-        const m = this.menuActivo;
+      const m = this.menuActivo;
+      if (m.elegido) {
+        if (--m.elegido.cuadros <= 0) {
+          this.menuActivo = null;
+          this.dialogo = null;
+          m.resolver(m.elegido.idx);
+        }
+        return;
+      }
+      if (m.limite !== undefined && this.t >= m.limite) {
         this.menuActivo = null;
+        this.dialogo = null;
         m.resolver(-2);
         return;
       }
-      if (b) this.entradaMenu(b);
+      if (b) this.teclaMenu(m, b);
       return;
     }
     if (this.dialogo) {
-      this.avanzarTexto();
-      if (b === "a" || b === "b") this.entradaDialogo();
+      this.escribirLetras();
+      if (b === "a" || b === "b") this.avanzarDialogo();
       return;
     }
-    if (this.resolverBoton) {
-      if (b === "a" || b === "start") {
-        const r = this.resolverBoton;
-        this.resolverBoton = null;
-        this.sonido.confirmar();
-        r();
-      }
+    if (this.teclado) return;
+    if (this.resolverToque) {
+      if (b === "a") this.cumplirToque();
       return;
     }
     if (this.explorador && !this.hablandoEnMundo) {
-      this.explorador.actualizar();
-      if (b === "a") this.manejarEvento(this.explorador.interactuar());
-      const dir = (["arriba", "abajo", "izq", "der"] as Direccion[]).find((d) => this.sostenidos.has(d));
-      const pulsado = b && (["arriba", "abajo", "izq", "der"] as string[]).includes(b) ? (b as Direccion) : null;
-      const intento = dir ?? pulsado;
-      if (intento) this.manejarEvento(this.explorador.mover(intento));
+      const e = this.explorador;
+      const evento = e.actualizar();
+      if (e.pisada) {
+        this.audio.pisada();
+        const pie = e.pies();
+        this.particulas_(pie.x, pie.y, 3, { colores: ["#d8c79a", "#efe2bd"], vel: 0.4, g: -0.01, vida: 14, tam: 1 });
+      }
+      if (evento) this.manejarEvento(evento);
+      else if (b === "a") this.manejarEvento(e.interactuar());
+      else {
+        const dir = (["arriba", "abajo", "izq", "der"] as Direccion[]).find((d) => this.sostenidos.has(d) || b === d);
+        if (dir && e.quieto) this.manejarEvento(e.mover(dir));
+      }
     }
   }
 
   // ── Diálogos ─────────────────────────────────────────────
 
-  /** Muestra un texto (con páginas de 3 líneas) y espera A al final. */
   decir(texto: string, quien?: string): Promise<void> {
     return this.escribir(texto, quien, true);
   }
 
   private escribir(texto: string, quien: string | undefined, esperarFinal: boolean): Promise<void> {
-    const lineas = envolver(texto, COLUMNAS_TEXTO);
+    const lineas = envolver(texto, COLUMNAS);
     const paginas: string[][] = [];
-    for (let i = 0; i < lineas.length; i += LINEAS_POR_PAGINA) paginas.push(lineas.slice(i, i + LINEAS_POR_PAGINA));
+    for (let i = 0; i < lineas.length; i += LINEAS) paginas.push(lineas.slice(i, i + LINEAS));
+    const entrada = this.dialogo ? this.t - 20 : this.t;
     return new Promise((resolver) => {
-      this.dialogo = { paginas, pagina: 0, mostrados: 0, quien: quien ? limpiar(quien) : undefined, esperarFinal, resolver };
+      this.dialogo = { paginas, pagina: 0, mostrados: 0, quien: quien ? limpiar(quien) : undefined, esperarFinal, entrada, resolver };
     });
   }
 
-  private totalPagina(d: Dialogo) {
+  private total(d: Dialogo) {
     return d.paginas[d.pagina].join("").length;
   }
 
-  private avanzarTexto() {
+  private escribirLetras() {
     const d = this.dialogo!;
-    const total = this.totalPagina(d);
+    if (this.t - d.entrada < 6) return;
+    const total = this.total(d);
     if (d.mostrados < total) {
       d.mostrados = Math.min(total, d.mostrados + 1);
-      if (d.mostrados % 3 === 0) this.sonido.blip();
+      if (d.mostrados % 3 === 0) this.audio.blip();
     } else if (!d.esperarFinal && d.pagina === d.paginas.length - 1) {
-      const r = d.resolver;
-      r();
+      d.resolver();
     }
   }
 
-  private entradaDialogo() {
+  private avanzarDialogo() {
     const d = this.dialogo!;
-    const total = this.totalPagina(d);
+    const total = this.total(d);
     if (d.mostrados < total) {
       d.mostrados = total;
       return;
@@ -280,73 +279,46 @@ export class Motor {
     if (d.pagina < d.paginas.length - 1) {
       d.pagina++;
       d.mostrados = 0;
-      this.sonido.mover();
+      this.audio.mover();
       return;
     }
     if (d.esperarFinal) {
       this.dialogo = null;
-      this.sonido.mover();
+      this.audio.mover();
       d.resolver();
     }
   }
 
   // ── Menús ────────────────────────────────────────────────
 
-  /**
-   * Menú con cursor. Devuelve el índice elegido, -1 si se canceló con B y -2
-   * si se acabó el tiempo (`limiteFrames`).
-   */
+  /** Devuelve el índice elegido, -1 si se canceló y -2 si se acabó el tiempo. */
   menu(
     opciones: Opcion[],
-    o: { cols?: number; caja?: Caja; titulo?: string; estilo?: "lista" | "caras"; cancelable?: boolean; limiteFrames?: number; inicial?: number } = {},
+    o: { estilo?: EstiloMenu; titulo?: string; cancelable?: boolean; limiteCuadros?: number; inicial?: number } = {},
   ): Promise<number> {
-    const cols = o.cols ?? 1;
-    const estilo = o.estilo ?? "lista";
-    let caja = o.caja;
-    if (!caja) {
-      if (estilo === "caras") caja = { x: 60, y: 60, w: 120, h: 30 };
-      else {
-        const ancho = Math.max(...opciones.map((op) => limpiar(op.texto).length)) * CARACTER + 24;
-        const filas = Math.ceil(opciones.length / cols);
-        const h = filas * 14 + 12 + (o.titulo ? 12 : 0);
-        if (opciones.some((op) => op.info)) {
-          // Con descripción: la info va arriba y el menú abajo, a todo lo ancho.
-          caja = { x: 2, y: H - h - 2, w: 236, h };
-        } else {
-          const w = Math.min(236, Math.max(ancho * cols, o.titulo ? limpiar(o.titulo).length * CARACTER + 16 : 0));
-          caja = { x: W - w - 2, y: CAJA_DIALOGO.y - h - 2, w, h };
-        }
-      }
-    }
     return new Promise((resolver) => {
       this.menuActivo = {
         opciones,
         idx: o.inicial ?? 0,
-        cols,
-        caja: caja!,
+        estilo: o.estilo ?? "lista",
         titulo: o.titulo,
-        estilo,
         cancelable: o.cancelable ?? false,
-        limite: o.limiteFrames !== undefined ? this.t + o.limiteFrames : undefined,
-        resolver: (i) => {
-          this.dialogo = null;
-          resolver(i);
-        },
+        limite: o.limiteCuadros !== undefined ? this.t + o.limiteCuadros : undefined,
+        elegido: null,
+        entrada: this.t,
+        resolver,
       };
     });
   }
 
-  /**
-   * Texto + menú, como «¿Seguro? SÍ / NO». Si la pregunta no cabe en una
-   * página, se lee completa primero y el menú aparece con `corta`.
-   */
+  /** Texto + opciones. Si la pregunta no cabe en una página, se lee primero completa. */
   async pregunta(
     texto: string,
     opciones: Opcion[],
     quien?: string,
     o: Parameters<Motor["menu"]>[1] & { corta?: string } = {},
   ): Promise<number> {
-    if (envolver(texto, COLUMNAS_TEXTO).length > LINEAS_POR_PAGINA) {
+    if (envolver(texto, COLUMNAS).length > LINEAS) {
       await this.escribir(texto, quien, true);
       await this.escribir(o.corta ?? "¿Qué respondes?", quien, false);
     } else {
@@ -355,143 +327,132 @@ export class Motor {
     return this.menu(opciones, o);
   }
 
-  get framesRestantesMenu(): number | null {
+  get cuadrosRestantesMenu(): number | null {
     const m = this.menuActivo;
     return m?.limite !== undefined ? Math.max(0, m.limite - this.t) : null;
   }
 
-  private entradaMenu(b: Boton) {
-    const m = this.menuActivo!;
+  private elegir(m: Menu) {
+    m.elegido = { idx: m.idx, cuadros: 7 };
+    this.audio.confirmar();
+    this.vibrar(12);
+  }
+
+  private teclaMenu(m: Menu, b: Boton) {
     const n = m.opciones.length;
-    const mover = (nuevo: number) => {
-      if (nuevo >= 0 && nuevo < n && nuevo !== m.idx) {
-        m.idx = nuevo;
-        this.sonido.mover();
+    const cols = m.estilo === "combate" ? 2 : m.estilo === "caras" ? n : 1;
+    const mover = (i: number) => {
+      if (i >= 0 && i < n && i !== m.idx) {
+        m.idx = i;
+        this.audio.mover();
       }
     };
-    if (m.estilo === "caras") {
-      if (b === "izq") mover(m.idx - 1);
-      if (b === "der") mover(m.idx + 1);
-    } else {
-      if (b === "arriba") mover(m.idx - m.cols);
-      if (b === "abajo") mover(m.idx + m.cols);
-      if (b === "izq" && m.cols > 1 && m.idx % m.cols > 0) mover(m.idx - 1);
-      if (b === "der" && m.cols > 1 && m.idx % m.cols < m.cols - 1) mover(m.idx + 1);
-    }
-    if (b === "a" || b === "start") {
-      this.menuActivo = null;
-      this.sonido.confirmar();
-      m.resolver(m.idx);
-    }
+    if (b === "arriba") mover(m.idx - cols);
+    if (b === "abajo") mover(m.idx + cols);
+    if (b === "izq" && cols > 1) mover(m.idx - 1);
+    if (b === "der" && cols > 1) mover(m.idx + 1);
+    if (b === "a") this.elegir(m);
     if (b === "b" && m.cancelable) {
       this.menuActivo = null;
-      this.sonido.mover();
+      this.dialogo = null;
       m.resolver(-1);
     }
   }
 
-  private rectOpcion(m: Menu, i: number): Caja {
-    const { x, y, w } = m.caja;
-    if (m.estilo === "caras") return { x: x + 8 + i * 22, y: y + 6, w: 18, h: 18 };
-    const dy = m.titulo ? 12 : 0;
-    const anchoCelda = (w - 12) / m.cols;
-    const col = i % m.cols;
-    const fila = Math.floor(i / m.cols);
-    return { x: x + 6 + col * anchoCelda, y: y + 6 + dy + fila * 14, w: anchoCelda, h: 14 };
+  private cajaDialogo(): Caja {
+    return { x: 4, y: this.h - ALTO_DIALOGO - 4, w: W - 8, h: ALTO_DIALOGO };
   }
 
-  private opcionEn(m: Menu, x: number, y: number): number | null {
-    for (let i = 0; i < m.opciones.length; i++) {
-      const r = this.rectOpcion(m, i);
-      if (x >= r.x && x < r.x + r.w && y >= r.y - 2 && y < r.y + r.h) return i;
+  private rectOpcion(m: Menu, i: number): Caja {
+    const d = this.cajaDialogo();
+    if (m.estilo === "combate") {
+      const col = i % 2;
+      const fila = Math.floor(i / 2);
+      return { x: d.x + 6 + col * 89, y: d.y + 22 + fila * 29, w: 84, h: 25 };
     }
-    return null;
+    if (m.estilo === "caras") {
+      return { x: 14 + i * 34, y: d.y - 46, w: 30, h: 30 };
+    }
+    const n = m.opciones.length;
+    const alto = 22;
+    const sep = 5;
+    const base = this.dialogo ? d.y - 8 : this.h - 10;
+    const arriba = base - n * alto - (n - 1) * sep;
+    return { x: 10, y: arriba + i * (alto + sep), w: W - 20, h: alto };
   }
 
   // ── Teclado de nombre ────────────────────────────────────
 
   nombre(validar: (s: string) => string | null): Promise<string> {
     return new Promise((resolver) => {
-      this.teclado = { nombre: "", fila: 0, col: 0, error: null, validar, resolver };
+      this.teclado = { nombre: "", idx: 0, error: null, validar, resolver };
     });
   }
 
-  private celdaTeclado(x: number, y: number): { fila: number; col: number } | null {
-    for (let fila = 0; fila < FILAS_TECLADO.length + 1; fila++) {
-      for (let col = 0; col < 9; col++) {
-        const r = this.rectTecla(fila, col);
-        if (r && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return { fila, col };
-      }
-    }
-    return null;
+  /** Teclado anclado abajo, en la zona del pulgar. */
+  private rectTecla(fila: number, col: number): Caja {
+    return { x: 6 + col * 26, y: this.h - 168 + fila * 28, w: 24, h: 25 };
   }
 
-  /** La última fila son «BORRAR» (cols 0–3) y «LISTO» (cols 5–8). */
-  private rectTecla(fila: number, col: number): Caja | null {
-    if (fila === FILAS_TECLADO.length) {
-      if (col <= 3) return { x: 24, y: 136, w: 88, h: 14 };
-      if (col >= 5) return { x: 128, y: 136, w: 88, h: 14 };
-      return null;
-    }
-    return { x: 28 + col * 21, y: 56 + fila * 15, w: 18, h: 14 };
+  private rectBorrar(): Caja {
+    return { x: 8, y: this.h - 46, w: 84, h: 30 };
   }
 
-  private entradaTeclado(b: Boton) {
+  private rectListo(): Caja {
+    return { x: 100, y: this.h - 46, w: 84, h: 30 };
+  }
+
+  private dentro(c: Caja, x: number, y: number) {
+    return x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h;
+  }
+
+  private toqueTeclado(x: number, y: number) {
     const k = this.teclado!;
-    const filas = FILAS_TECLADO.length + 1;
-    const ultima = FILAS_TECLADO.length;
-    if (b === "arriba") k.fila = (k.fila + filas - 1) % filas;
-    if (b === "abajo") k.fila = (k.fila + 1) % filas;
-    if (b === "izq" || b === "der") {
-      // En la fila BORRAR / LISTO, izquierda y derecha alternan los dos botones.
-      if (k.fila === ultima) k.col = k.col <= 4 ? 5 : 0;
-      else k.col = (k.col + (b === "izq" ? 8 : 1)) % 9;
-    }
-    if (["arriba", "abajo", "izq", "der"].includes(b)) {
-      if (k.fila === ultima) k.col = k.col <= 4 ? 0 : 5;
-      this.sonido.mover();
-      return;
-    }
-    if (b === "b") {
+    if (this.dentro(this.rectBorrar(), x, y)) {
       k.nombre = k.nombre.slice(0, -1);
       k.error = null;
+      this.audio.mover();
       return;
     }
-    const listo = () => {
-      const error = k.nombre.trim() ? k.validar(k.nombre.trim()) : "Escribe un apodo.";
-      if (error) {
-        k.error = error;
-        this.sonido.fallo();
-        return;
-      }
-      this.teclado = null;
-      this.sonido.confirmar();
-      k.resolver(k.nombre.trim());
-    };
-    if (b === "start") return listo();
-    if (b !== "a") return;
-    if (k.fila === FILAS_TECLADO.length) {
-      if (k.col <= 3) k.nombre = k.nombre.slice(0, -1);
-      else listo();
+    if (this.dentro(this.rectListo(), x, y)) return this.confirmarNombre();
+    LETRAS.forEach((fila, fi) => {
+      [...fila].forEach((ch, ci) => {
+        if (this.dentro(this.rectTecla(fi, ci), x, y) && k.nombre.length < MAX_NOMBRE) {
+          k.nombre += ch;
+          k.error = null;
+          k.idx = fi * 7 + ci;
+          this.audio.blip();
+          this.vibrar(8);
+        }
+      });
+    });
+  }
+
+  private confirmarNombre() {
+    const k = this.teclado!;
+    const error = k.nombre.trim() ? k.validar(k.nombre.trim()) : "Escribe un apodo.";
+    if (error) {
+      k.error = error;
+      this.audio.fallo();
       return;
     }
-    const ch = FILAS_TECLADO[k.fila][k.col];
-    if (ch && ch !== " " && k.nombre.length < MAX_NOMBRE) {
-      k.nombre += ch;
-      k.error = null;
-      this.sonido.blip();
-    }
+    this.teclado = null;
+    this.audio.confirmar();
+    k.resolver(k.nombre.trim());
   }
 
   // ── Exploración ──────────────────────────────────────────
 
-  /** Deja caminar al jugador por el barrio hasta que alcance el objetivo. */
+  /** Cámara del último barrio explorado (para cerrar el iris sobre una puerta). */
+  camaraMundo = 0;
+
   explorar(cfg: ConfigMundo): Promise<string> {
     this.explorador = new Explorador(cfg);
     const exp = this.explorador;
     this.escena = (p, t) => exp.dibujar(p, t);
     return new Promise((resolver) => {
       this.resolverExplorar = (id) => {
+        this.camaraMundo = exp.camY;
         this.explorador = null;
         this.resolverExplorar = null;
         resolver(id);
@@ -502,7 +463,7 @@ export class Motor {
   private manejarEvento(e: ReturnType<Explorador["interactuar"]>) {
     if (!e) return;
     if (e.tipo === "objetivo") {
-      this.sonido.confirmar();
+      this.audio.confirmar();
       this.resolverExplorar?.(e.id);
       return;
     }
@@ -513,38 +474,129 @@ export class Motor {
     })();
   }
 
+  // ── Efectos ──────────────────────────────────────────────
+
+  particulas_(
+    x: number,
+    y: number,
+    n: number,
+    o: { colores: string[]; vel?: number; g?: number; vida?: number; tam?: number; haciaX?: number; haciaY?: number },
+  ) {
+    for (let i = 0; i < n; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const v = (o.vel ?? 1.5) * (0.4 + Math.random() * 0.8);
+      let vx = Math.cos(ang) * v;
+      let vy = Math.sin(ang) * v;
+      const vida = (o.vida ?? 40) * (0.7 + Math.random() * 0.6);
+      if (o.haciaX !== undefined && o.haciaY !== undefined) {
+        vx = (o.haciaX - x) / vida + (Math.random() - 0.5) * 0.8;
+        vy = (o.haciaY - y) / vida - 1.2 + Math.random() * 0.6;
+      }
+      this.particulas.push({ x, y, vx, vy, vida, max: vida, color: o.colores[i % o.colores.length], tam: o.tam ?? 2, g: o.g ?? 0.06 });
+    }
+  }
+
+  confeti() {
+    for (let i = 0; i < 70; i++) {
+      this.particulas.push({
+        x: Math.random() * W,
+        y: -10 - Math.random() * 60,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: 0.6 + Math.random() * 1.2,
+        vida: 160,
+        max: 160,
+        color: [PAL.ambar, PAL.verde, PAL.celeste, PAL.rojo, PAL.blanco][i % 5],
+        tam: 2,
+        g: 0.01,
+      });
+    }
+  }
+
+  flotante(texto: string, x: number, y: number, color: string = PAL.rojo) {
+    this.flotantes.push({ texto, x, y, vida: 50, color });
+  }
+
+  async sellar(texto: string, color: string, sub?: string, ms = 1400) {
+    this.sello = { texto, sub, color, cuadro: 0 };
+    this.audio.sello();
+    this.vibrar([30, 40, 30]);
+    this.sacudir(8);
+    await this.esperar(ms);
+    this.sello = null;
+  }
+
+  sacudir(cuadros = 16) {
+    this.sacudida = cuadros;
+  }
+
+  // ── Transiciones ─────────────────────────────────────────
+
+  /** Barras horizontales que cubren la pantalla (entrada al combate). */
+  async barras(cubrir: boolean) {
+    this.cortina = { tipo: "barras", k: cubrir ? 0 : 1, cx: 0, cy: 0 };
+    await this.animar(22, (k) => {
+      this.cortina!.k = cubrir ? k : 1 - k;
+    });
+    if (!cubrir) this.cortina = null;
+  }
+
+  /** Círculo que se cierra sobre (cx, cy) o se abre desde ahí. */
+  async iris(cerrar: boolean, cx = W / 2, cy?: number) {
+    const y = cy ?? this.h / 2;
+    this.cortina = { tipo: "iris", k: cerrar ? 0 : 1, cx, cy: y };
+    await this.animar(24, (k) => {
+      this.cortina!.k = cerrar ? facil.salida(k) : 1 - facil.salida(k);
+    });
+    if (!cerrar) this.cortina = null;
+  }
+
+  async fundirA(negro: boolean, cuadros = 16) {
+    const desde = this.fundido;
+    const hasta = negro ? 1 : 0;
+    await this.animar(cuadros, (k) => {
+      this.fundido = desde + (hasta - desde) * k;
+    });
+    this.fundido = hasta;
+  }
+
+  /** Quita cualquier cortina y fundido de golpe (al cambiar de escena tapada). */
+  descubrirYa() {
+    this.cortina = null;
+  }
+
   // ── Utilidades para guiones ──────────────────────────────
 
-  /** Espera A o START (pantalla de título). */
-  esperarA(): Promise<void> {
+  /** Espera un toque; con `ms`, sigue sola pasado ese tiempo. */
+  esperarToque(ms?: number): Promise<void> {
     return new Promise((r) => {
-      this.resolverBoton = r;
+      this.resolverToque = r;
+      if (ms) {
+        window.setTimeout(() => {
+          if (this.resolverToque === r) {
+            this.resolverToque = null;
+            r();
+          }
+        }, ms);
+      }
     });
   }
 
-  /** Corre `paso(i)` durante `frames` cuadros (animaciones de guion). */
-  async animar(frames: number, paso: (i: number) => void) {
-    for (let i = 1; i <= frames; i++) {
-      paso(i / frames);
-      await new Promise((r) => requestAnimationFrame(r));
-    }
+  private cumplirToque() {
+    const r = this.resolverToque!;
+    this.resolverToque = null;
+    this.audio.confirmar();
+    r();
   }
 
   esperar(ms: number) {
     return new Promise<void>((r) => window.setTimeout(r, ms));
   }
 
-  async fundirA(negro: boolean, frames = 18) {
-    const desde = this.fundido;
-    const hasta = negro ? 1 : 0;
-    for (let i = 1; i <= frames; i++) {
-      this.fundido = desde + ((hasta - desde) * i) / frames;
+  async animar(cuadros: number, paso: (k: number) => void) {
+    for (let i = 1; i <= cuadros; i++) {
+      paso(i / cuadros);
       await new Promise((r) => requestAnimationFrame(r));
     }
-  }
-
-  sacudir(frames = 16) {
-    this.sacudida = frames;
   }
 
   // ── Dibujo ───────────────────────────────────────────────
@@ -552,9 +604,9 @@ export class Motor {
   private dibujar() {
     const p = this.pincel;
     const c = p.ctx;
-    c.setTransform(ESCALA, 0, 0, ESCALA, 0, 0);
+    c.setTransform(this.escala, 0, 0, this.escala, 0, 0);
     c.imageSmoothingEnabled = false;
-    p.rect(PAL.negro, 0, 0, W, H);
+    p.rect(PAL.negro, 0, 0, W, this.h);
 
     c.save();
     if (this.sacudida > 0) {
@@ -563,88 +615,191 @@ export class Motor {
     }
     if (this.teclado) this.dibujarTeclado(p);
     else this.escena(p, this.t);
+    this.dibujarParticulas(p);
     c.restore();
 
+    if (this.destello > 0) {
+      this.destello--;
+      if (this.destello % 4 < 2) p.alfa(0.7, () => p.rect(PAL.blanco, 0, 0, W, this.h));
+    }
+    if (this.sello) this.dibujarSello(p, this.sello);
+    if (this.barraSuperior && !this.teclado) this.dibujarBarraSuperior(p);
     if (this.dialogo) this.dibujarDialogo(p, this.dialogo);
     if (this.menuActivo) this.dibujarMenu(p, this.menuActivo);
-    if (this.fundido > 0) p.alfa(this.fundido, () => p.rect(PAL.negro, 0, 0, W, H));
+    if (this.cortina) this.dibujarCortina(p, this.cortina);
+    if (this.fundido > 0) p.alfa(this.fundido, () => p.rect(PAL.negro, 0, 0, W, this.h));
+    this.dibujarBotonSonido(p);
+  }
+
+  private dibujarParticulas(p: Pincel) {
+    this.particulas = this.particulas.filter((q) => q.vida > 0);
+    for (const q of this.particulas) {
+      q.vida--;
+      q.x += q.vx;
+      q.y += q.vy;
+      q.vy += q.g;
+      p.alfa(Math.min(1, (q.vida / q.max) * 2), () => p.rect(q.color, q.x, q.y, q.tam, q.tam));
+    }
+    this.flotantes = this.flotantes.filter((f) => f.vida > 0);
+    for (const f of this.flotantes) {
+      f.vida--;
+      f.y -= 0.5;
+      p.alfa(Math.min(1, f.vida / 15), () => p.textoSombra(f.texto, f.x, f.y, f.color, PAL.tinta));
+    }
+  }
+
+  private dibujarSello(p: Pincel, s: Sello) {
+    s.cuadro++;
+    const k = Math.min(1, s.cuadro / 10);
+    const escala = 1 + (1 - facil.salida(k)) * 1.5;
+    const cy = Math.round(this.h * 0.32);
+    p.alfa(k, () =>
+      p.escalado(W / 2, cy, escala, () => {
+        const ancho = Math.max(p.ancho(s.texto, 16), s.sub ? p.ancho(s.sub) : 0) + 20;
+        const x = (W - ancho) / 2;
+        const alto = s.sub ? 40 : 30;
+        p.rect(PAL.tinta, x - 2, cy - alto / 2 - 2, ancho + 4, alto + 4);
+        p.rect(s.color, x, cy - alto / 2, ancho, alto);
+        p.rect("rgba(255,255,255,0.35)", x + 2, cy - alto / 2 + 2, ancho - 4, 2);
+        p.centrado(s.texto, cy - alto / 2 + 7, PAL.blanco, 16, PAL.tinta);
+        if (s.sub) p.centrado(s.sub, cy + 8, PAL.tinta);
+      }),
+    );
+  }
+
+  private dibujarBarraSuperior(p: Pincel) {
+    const b = this.barraSuperior!;
+    const texto = limpiar(b.texto).slice(0, 19);
+    const ancho = texto.length * CARACTER + 14;
+    p.alfa(0.35, () => p.rect(PAL.negro, 4, 5, ancho, 14));
+    p.rect(PAL.tinta, 3, 2, ancho, 14);
+    p.rect(b.color ?? PAL.navy, 4, 3, ancho - 2, 12);
+    p.texto(texto, 10, 5, PAL.crema);
+  }
+
+  private dibujarBotonSonido(p: Pincel) {
+    const b = BOTON_SONIDO;
+    p.rect(PAL.tinta, b.x, b.y, b.w, b.h);
+    p.rect(PAL.navy, b.x + 1, b.y + 1, b.w - 2, b.h - 2);
+    // parlante
+    p.rect(PAL.crema, b.x + 4, b.y + 6, 3, 4);
+    p.rect(PAL.crema, b.x + 7, b.y + 4, 2, 8);
+    if (this.audio.silencio) {
+      for (let i = 0; i < 5; i++) {
+        p.rect(PAL.rojo, b.x + 10 + i, b.y + 5 + i, 1, 1);
+        p.rect(PAL.rojo, b.x + 14 - i, b.y + 5 + i, 1, 1);
+      }
+    } else {
+      p.rect(PAL.crema, b.x + 11, b.y + 6, 1, 4);
+      p.rect(PAL.crema, b.x + 13, b.y + 4, 1, 8);
+    }
   }
 
   private dibujarDialogo(p: Pincel, d: Dialogo) {
-    const { x, y, w, h } = CAJA_DIALOGO;
+    const c = this.cajaDialogo();
+    const k = Math.min(1, (this.t - d.entrada) / 6);
+    const y = c.y + Math.round((1 - facil.salida(k)) * 30);
     if (d.quien) {
       const ancho = d.quien.length * CARACTER + 12;
-      p.caja(x, y - 14, ancho, 17, PAL.navy, PAL.tinta, PAL.ambar);
-      p.texto(d.quien, x + 6, y - 9, PAL.crema);
+      p.caja(c.x + 4, y - 14, ancho, 17, PAL.navy, PAL.tinta, PAL.ambar);
+      p.texto(d.quien, c.x + 10, y - 9, PAL.crema);
     }
-    p.caja(x, y, w, h);
+    p.caja(c.x, y, c.w, c.h);
     let resto = d.mostrados;
     d.paginas[d.pagina].forEach((linea, i) => {
-      const visible = linea.slice(0, Math.max(0, resto));
+      p.texto(linea.slice(0, Math.max(0, resto)), c.x + 9, y + 9 + i * 13, PAL.tinta);
       resto -= linea.length;
-      p.texto(visible, x + 9, y + 8 + i * 13, PAL.tinta);
     });
-    const completa = d.mostrados >= this.totalPagina(d);
+    const completa = d.mostrados >= this.total(d);
     const ultima = d.pagina === d.paginas.length - 1;
-    if (completa && (d.esperarFinal || !ultima) && Math.floor(this.t / 20) % 2 === 0) {
-      p.flechaAbajo(x + w - 16, y + h - 11);
+    if (completa && (d.esperarFinal || !ultima)) {
+      const rebote = Math.floor(this.t / 10) % 2;
+      p.flechaAbajo(c.x + c.w - 15, y + c.h - 12 + rebote);
     }
   }
 
   private dibujarMenu(p: Pincel, m: Menu) {
-    const { x, y, w, h } = m.caja;
-    p.caja(x, y, w, h);
-    if (m.titulo) p.texto(m.titulo, x + 8, y + 6, PAL.azul);
+    const k = Math.min(1, (this.t - m.entrada) / 8);
+    const c = this.cajaDialogo();
+    if (m.estilo === "combate") {
+      p.caja(c.x, c.y, c.w, c.h);
+      if (m.titulo) p.texto(m.titulo, c.x + 9, c.y + 8, PAL.azul);
+    }
+    if (m.estilo === "caras") {
+      const r0 = this.rectOpcion(m, 0);
+      p.caja(6, r0.y - 8, W - 12, 46);
+    }
+    if (m.titulo && m.estilo === "lista") {
+      const r0 = this.rectOpcion(m, 0);
+      const ancho = p.ancho(m.titulo) + 12;
+      p.caja(10, r0.y - 20, ancho, 17, PAL.navy, PAL.tinta, PAL.ambar);
+      p.texto(m.titulo, 16, r0.y - 15, PAL.crema);
+    }
     m.opciones.forEach((op, i) => {
       const r = this.rectOpcion(m, i);
+      const desfase = Math.round((1 - facil.salida(Math.max(0, Math.min(1, k * 1.4 - i * 0.12 + 0.12)))) * 24);
+      const presionado = m.elegido?.idx === i;
+      const activo = i === m.idx;
       if (m.estilo === "caras") {
-        if (i === m.idx) p.rect(PAL.ambar, r.x - 2, r.y - 2, 18, 18);
-        cara(p, r.x, r.y, i);
+        if (activo) p.rect(PAL.ambar, r.x - 1, r.y - 1, r.w + 2, r.h + 2);
+        p.escalado(r.x + 15, r.y + 15, presionado ? 1.8 : 2, () => cara(p, r.x + 8, r.y + 8, i));
         return;
       }
-      p.texto(op.texto, r.x + 10, r.y + 2, PAL.tinta);
-      if (i === m.idx && Math.floor(this.t / 16) % 4 !== 3) p.cursor(r.x + 1, r.y + 2);
+      const caja = { ...r, x: r.x + (m.estilo === "lista" ? desfase : 0) };
+      p.boton(caja, op.texto, { activo, presionado, color: op.color });
     });
     const info = m.opciones[m.idx]?.info;
     if (info) {
-      const lineas = envolver(info, 27).slice(0, 4);
-      const alto = lineas.length * 12 + 12;
-      p.caja(2, 2, 236, alto, PAL.crema, PAL.tinta, PAL.ambar);
-      lineas.forEach((l, i) => p.texto(l, 10, 8 + i * 12, PAL.tinta));
+      const lineas = envolver(info, 21).slice(0, 7);
+      const alto = lineas.length * 12 + 14;
+      p.caja(4, 22, W - 8, alto, PAL.crema, PAL.tinta, PAL.ambar);
+      lineas.forEach((l, i) => p.texto(l, 11, 29 + i * 12, PAL.tinta));
     }
   }
 
   private dibujarTeclado(p: Pincel) {
     const k = this.teclado!;
-    p.rect(PAL.crema, 0, 0, W, H);
-    for (let i = 0; i < W; i += 16) p.rect("#efe0c4", i, 0, 8, H);
-    p.caja(4, 4, 232, 42);
-    p.texto("¿Cómo te llamas?", 14, 12, PAL.azul);
-    const relleno = k.nombre.padEnd(MAX_NOMBRE, "_");
-    p.texto(relleno, 14, 24, PAL.tinta);
-    if (k.error) p.texto(limpiar(k.error).slice(0, 27), 14, 34, PAL.rojo);
-    else p.texto("A: letra  B: borrar", 14, 34, PAL.gris);
-    p.caja(18, 50, 204, 104);
-    FILAS_TECLADO.forEach((fila, fi) => {
-      for (let col = 0; col < 9; col++) {
-        const ch = fila[col];
-        if (!ch || ch === " ") continue;
-        const r = this.rectTecla(fi, col)!;
-        if (k.fila === fi && k.col === col) p.rect(PAL.ambar, r.x - 1, r.y - 1, r.w, r.h);
-        p.texto(ch, r.x + 4, r.y + 3, PAL.tinta);
-      }
+    p.rect(PAL.crema, 0, 0, W, this.h);
+    for (let i = 0; i < W; i += 16) p.rect("#efe0c4", i, 0, 8, this.h);
+    p.caja(6, 24, W - 12, 46);
+    p.texto("¿Cómo te llamas?", 14, 33, PAL.azul);
+    if (k.error) envolver(k.error, 20).slice(0, 1).forEach((l) => p.texto(l, 14, 51, PAL.rojo));
+    else p.texto("Usa un apodo", 14, 51, PAL.gris);
+    // El apodo, grande, en el centro
+    const medio = Math.round((70 + this.h - 168) / 2) - 8;
+    const visible = k.nombre + (this.t % 40 < 20 ? "_" : " ");
+    p.centrado(visible.padEnd(MAX_NOMBRE + 1, " ").slice(0, MAX_NOMBRE + 1).trimEnd() || "_", medio, PAL.tinta, 16, PAL.ambar);
+    LETRAS.forEach((fila, fi) => {
+      [...fila].forEach((ch, ci) => {
+        const r = this.rectTecla(fi, ci);
+        p.boton(r, ch, { activo: fi * 7 + ci === k.idx && this.t % 60 < 40 && k.nombre.length > 0 });
+      });
     });
-    const borrar = this.rectTecla(FILAS_TECLADO.length, 0)!;
-    const listo = this.rectTecla(FILAS_TECLADO.length, 5)!;
-    const fUlt = k.fila === FILAS_TECLADO.length;
-    if (fUlt && k.col <= 3) p.rect(PAL.ambar, borrar.x, borrar.y, borrar.w, borrar.h);
-    if (fUlt && k.col >= 5) p.rect(PAL.ambar, listo.x, listo.y, listo.w, listo.h);
-    p.texto("BORRAR", borrar.x + 20, borrar.y + 3, PAL.rojoOscuro);
-    p.texto("LISTO", listo.x + 24, listo.y + 3, PAL.verdeOscuro);
+    p.boton(this.rectBorrar(), "BORRAR", { color: "#f4c7c3" });
+    p.boton(this.rectListo(), "LISTO", { color: "#bfe8c9" });
   }
 
-  get lienzo() {
-    return this.canvas;
+  private dibujarCortina(p: Pincel, c: Cortina) {
+    if (c.tipo === "barras") {
+      const n = 12;
+      const alto = Math.ceil(this.h / n);
+      for (let i = 0; i < n; i++) {
+        const w = Math.round(W * Math.min(1, c.k * 1.3 - (i % 3) * 0.1));
+        if (w <= 0) continue;
+        p.rect(PAL.negro, i % 2 ? W - w : 0, i * alto, w, alto);
+      }
+      return;
+    }
+    // iris
+    const r = Math.max(0, (1 - c.k) * Math.hypot(W, this.h));
+    const ctx = p.ctx;
+    ctx.save();
+    ctx.fillStyle = PAL.negro;
+    ctx.beginPath();
+    ctx.rect(0, 0, W, this.h);
+    ctx.arc(c.cx, c.cy, r, 0, Math.PI * 2, true);
+    ctx.fill("evenodd");
+    ctx.restore();
   }
 
   /** Foto del estado, para pruebas end-to-end (`/play?depurar`). */
@@ -653,12 +808,14 @@ export class Motor {
     const m = this.menuActivo;
     return {
       t: this.t,
+      h: this.h,
       dialogo: d ? d.paginas[d.pagina].join(" ") : null,
       quien: d?.quien ?? null,
       menu: m ? { opciones: m.opciones.map((o) => o.texto), rects: m.opciones.map((_, i) => this.rectOpcion(m, i)) } : null,
       teclado: this.teclado ? { nombre: this.teclado.nombre } : null,
-      explorando: this.explorador ? { x: this.explorador.x, y: this.explorador.y, quieto: this.explorador.quieto } : null,
-      esperandoA: this.resolverBoton !== null,
+      explorando: this.explorador ? { x: this.explorador.x, y: this.explorador.y, quieto: this.explorador.quieto, camY: this.explorador.camY } : null,
+      esperandoToque: this.resolverToque !== null,
+      cortina: this.cortina !== null,
     };
   }
 }
