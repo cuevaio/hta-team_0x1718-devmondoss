@@ -2,6 +2,8 @@
 .pagina {
   position: fixed;
   inset: 0;
+  /* Que el notch y la barra de inicio no tapen botones. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -32,4 +34,37 @@
       0 0 0 12px #2b2740,
       0 30px 80px rgb(0 0 0 / 60%);
   }
+}
+
+/* Celular acostado: el juego es vertical, se pide girarlo. */
+.girar {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .girar {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    gap: 12px;
+    background: #05070d;
+    color: #f6ebd7;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .girar span {
+    font-size: 48px;
+    animation: girar 1.6s ease-in-out infinite;
+  }
+
+  .girar p {
+    margin: 0;
+  }
+}
+
+@keyframes girar {
+  0%, 30% { transform: rotate(-90deg); }
+  60%, 100% { transform: rotate(0deg); }
 }

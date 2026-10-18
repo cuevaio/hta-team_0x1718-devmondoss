@@ -46,7 +46,7 @@ import {
   type EstadoBatalla,
   type EstadoBodega,
 } from "./escenas";
-import type { Motor, Opcion } from "./motor";
+import { SalidaDelJugador, type Motor, type Opcion } from "./motor";
 import { TILE, posicionObjetivo, type ConfigMundo, type Npc } from "./mundo";
 import { PAISES, dinero, type Pais, type PaisId } from "./paises";
 import { PAL, W, facil } from "./pincel";
@@ -160,11 +160,21 @@ export async function jugar(m: Motor) {
       else if (eleccion === "mas") {
         const extra = await menuMas(m, s);
         if (extra === "datos") {
-          await epilogo(m, s.pais);
+          await protegido(m, () => epilogo(m, s.pais));
           s.vioDatos = true;
-        } else if (extra === "pais") s.pais = await elegirPais(m);
-        else if (extra === "intro") await videoIntro(m);
-        else if (extra === "titulo") break;
+        } else if (extra === "pais") {
+          await protegido(m, async () => {
+            const nuevo = await elegirPais(m, true);
+            if (nuevo) s.pais = nuevo;
+          });
+        } else if (extra === "intro") await protegido(m, () => videoIntro(m));
+        else if (extra === "titulo") {
+          m.escena = laboratorio;
+          await m.fundirA(false, 8);
+          const seguro = await m.confirmar("¿Volver a la pantalla de inicio? Tu progreso queda guardado.", "SÍ, AL INICIO", "NO", VEGA);
+          await m.fundirA(true, 8);
+          if (seguro) break;
+        }
       }
     }
   }
@@ -172,7 +182,7 @@ export async function jugar(m: Motor) {
 
 async function jugarRuta(m: Motor, s: Sesion, id: RutaId) {
   if (id === "banda") {
-    await comoSeJuega(m, {
+    const jugar = await comoSeJuega(m, {
       titulo: "LA BANDA",
       color: PAL.rojoOscuro,
       pasos: [
@@ -182,6 +192,7 @@ async function jugarRuta(m: Motor, s: Sesion, id: RutaId) {
       ],
       meta: "Hasta 5 golpes. Datos ficticios.",
     });
+    if (!jugar) return;
   }
   const marca = await correrRuta(m, id, s.pais, s.alias);
   if (marca) s.resultados[id] = marca;
@@ -204,17 +215,26 @@ async function jugarRuta(m: Motor, s: Sesion, id: RutaId) {
 
 /** Si se cae la conexión a mitad de un modo, vuelve al menú sin romper el juego. */
 async function protegido(m: Motor, fn: () => Promise<unknown>) {
+  m.salidaPermitida = true;
   try {
     await fn();
-  } catch {
+  } catch (e) {
+    if (e instanceof SalidaDelJugador) {
+      // El jugador eligió «VOLVER AL MENÚ» en la pausa.
+      m.reanudar();
+      return;
+    }
     m.minijuego(null);
     m.barraSuperior = null;
     m.descubrirYa();
     m.escena = laboratorio;
     m.musica("triste");
     await m.fundirA(false);
-    await m.decir("Se perdió la conexión con el sistema. Volvamos al menú.", VEGA);
-    await m.fundirA(true);
+    await m.decir("Se perdió la conexión con el sistema. Volvamos al menú.", VEGA).catch(() => undefined);
+    await m.fundirA(true).catch(() => undefined);
+  } finally {
+    m.salidaPermitida = false;
+    m.minijuego(null);
   }
 }
 
@@ -250,7 +270,9 @@ async function intro(m: Motor): Promise<string> {
   return nombre;
 }
 
-async function elegirPais(m: Motor): Promise<Pais> {
+async function elegirPais(m: Motor, conVolver: true): Promise<Pais | null>;
+async function elegirPais(m: Motor, conVolver?: false): Promise<Pais>;
+async function elegirPais(m: Motor, conVolver = false): Promise<Pais | null> {
   m.barraSuperior = null;
   m.escena = laboratorio;
   m.musica("barrio");
@@ -260,9 +282,15 @@ async function elegirPais(m: Motor): Promise<Pais> {
   const eligiendo = menuPaises(
     m,
     ids.map((id) => ({ id, nombre: PAISES[id].nombre, bandera: PAISES[id].bandera })),
+    conVolver,
   );
   await m.fundirA(false, 8);
-  const pais = PAISES[(await eligiendo) as PaisId];
+  const elegido = await m.atar(eligiendo);
+  if (elegido === "volver") {
+    await m.fundirA(true, 8);
+    return null;
+  }
+  const pais = PAISES[elegido as PaisId];
   await m.fundirA(true, 8);
   m.escena = laboratorio;
   await m.fundirA(false, 8);
@@ -581,23 +609,27 @@ function anunciarCosecha(m: Motor, c: Cosecha) {
 }
 
 async function modoArcade(m: Motor, s: Sesion, def: DefArcade): Promise<void> {
+  let otraVez = false;
   for (;;) {
-    if (!s.vistos.has(def.modo)) {
+    // La pantalla de «cómo se juega» es también la confirmación: VOLVER o ¡A JUGAR!
+    if (!otraVez) {
       const mejor = s.prog.mejor[def.modo];
       const prox = proximaEstrella(def.modo, mejor ?? 0);
-      await comoSeJuega(m, {
+      const jugar = await comoSeJuega(m, {
         titulo: def.titulo,
         color: def.color,
         pasos: def.pasos,
         meta: def.meta,
         record: mejor !== undefined ? `Récord ${mejor}${prox ? ` · próxima estrella ${prox}` : ""}` : undefined,
       });
+      if (!jugar) return;
       s.vistos.add(def.modo);
     }
+    otraVez = false;
     m.barraSuperior = null;
     m.descubrirYa();
     m.fundido = 1;
-    const juego = def.jugar(m, s);
+    const juego = m.atar(def.jugar(m, s));
     await m.fundirA(false, 10);
     const r = await juego;
     await m.fundirA(true);
@@ -651,7 +683,10 @@ async function modoArcade(m: Motor, s: Sesion, def: DefArcade): Promise<void> {
     await m.esperar(Math.min(3000, (m.avisosPendientes * 1000) / 60));
     const sig = await m.menu([{ texto: "OTRA VEZ", color: "#bfe8c9" }, { texto: "VER RANKING" }, { texto: "MENÚ" }]);
     await m.fundirA(true);
-    if (sig === 0) continue;
+    if (sig === 0) {
+      otraVez = true;
+      continue;
+    }
     if (sig === 1) await verRanking(m, s, def.modo);
     return;
   }
@@ -665,7 +700,7 @@ function validarCodigo(c: string): string | null {
 
 async function modoEnVivo(m: Motor, s: Sesion) {
   if (!s.vistos.has("envivo")) {
-    await comoSeJuega(m, {
+    const jugar = await comoSeJuega(m, {
       titulo: "EN VIVO",
       color: PAL.rojo,
       pasos: [
@@ -676,6 +711,7 @@ async function modoEnVivo(m: Motor, s: Sesion) {
       meta: "8 rondas · 10 s cada una",
     });
     s.vistos.add("envivo");
+    if (!jugar) return;
   }
   m.barraSuperior = { texto: "EN VIVO", color: PAL.rojoOscuro };
   m.escena = laboratorio;
@@ -694,10 +730,11 @@ async function modoEnVivo(m: Motor, s: Sesion) {
       [
         { texto: "¿REAL O ESTAFA?", sub: "Mensajes y llamadas", color: PAL.rojo },
         { texto: "¿PAUSA O PASA?", sub: "Eres el sistema", color: PAL.ambarOscuro },
+        { texto: "VOLVER", sub: "Atrás", color: PAL.gris },
       ],
       { estilo: "tarjetas", titulo: "¿Qué juegan?", cancelable: true },
     );
-    if (j < 0) return m.fundirA(true, 10);
+    if (j < 0 || j > 1) return m.fundirA(true, 10);
     const juego = j === 0 ? "real_o_estafa" : "pausa_o_pasa";
     const { codigo, token } = await crearSala({ alias: s.alias, pais: s.pais.id, juego });
     await m.fundirA(true, 10);
@@ -706,9 +743,11 @@ async function modoEnVivo(m: Motor, s: Sesion) {
   }
   if (i !== 1) return m.fundirA(true, 10);
   await m.fundirA(true, 10);
-  const pidiendo = m.nombre(validarCodigo, { titulo: "Código de la sala", ayuda: "Las 4 letras", max: 4 });
+  const pidiendo = m.nombre(validarCodigo, { titulo: "Código de la sala", ayuda: "Las 4 letras", max: 4, cancelable: true });
   await m.fundirA(false, 10);
-  await unirseASala(m, s, await pidiendo);
+  const codigo = await pidiendo;
+  if (!codigo) return m.fundirA(true, 10);
+  await unirseASala(m, s, codigo);
 }
 
 /** Entra a una sala con su código (escrito o desde el QR); si no existe, ofrece otro. */
@@ -728,9 +767,10 @@ async function unirseASala(m: Motor, s: Sesion, primerCodigo: string) {
       const otra = await m.pregunta(`No encontré la sala ${codigo}. Puede que ya haya cerrado. ¿Probamos otro código?`, [{ texto: "OTRO CÓDIGO" }, { texto: "VOLVER" }], VEGA);
       await m.fundirA(true, 10);
       if (otra !== 0) return;
-      const pidiendo = m.nombre(validarCodigo, { titulo: "Código de la sala", ayuda: "Las 4 letras", max: 4 });
+      const pidiendo = m.nombre(validarCodigo, { titulo: "Código de la sala", ayuda: "Las 4 letras", max: 4, cancelable: true });
       await m.fundirA(false, 10);
       codigo = await pidiendo;
+      if (!codigo) return m.fundirA(true, 10);
     }
   }
 }
@@ -765,7 +805,7 @@ async function jugarSala(m: Motor, s: Sesion, codigo: string, token: string | nu
     },
   });
   await m.fundirA(false, 10);
-  await sala;
+  await m.atar(sala);
   await m.fundirA(true, 10);
 }
 

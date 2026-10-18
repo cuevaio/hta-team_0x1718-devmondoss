@@ -14,6 +14,17 @@ import type { Direccion } from "./sprites";
  */
 
 export type Boton = "arriba" | "abajo" | "izq" | "der" | "a" | "b";
+
+/**
+ * Se lanza en las esperas del guion cuando el jugador elige «VOLVER AL MENÚ»
+ * en la pausa: corta el flujo actual de forma limpia (ver `protegido` en
+ * guion.ts). Mientras se corta, toda espera nueva falla igual.
+ */
+export class SalidaDelJugador extends Error {
+  constructor() {
+    super("el jugador volvió al menú");
+  }
+}
 export type Dibujo = (p: Pincel, t: number) => void;
 export type Opcion = {
   texto: string;
@@ -33,6 +44,8 @@ export type Minijuego = {
   dibujar: Dibujo;
   tocar?: (x: number, y: number) => void;
   tecla?: (b: Boton) => void;
+  /** Al soltar el dedo (los menús eligen aquí, no al rozar). */
+  soltar?: (x: number, y: number) => void;
   /** Estado para pruebas end-to-end (`/play?depurar`). */
   info?: () => unknown;
 };
@@ -42,7 +55,8 @@ const LINEAS = 5;
 const ALTO_DIALOGO = 82;
 const LETRAS = ["ABCDEFG", "HIJKLMN", "ÑOPQRST", "UVWXYZ-"];
 const MAX_NOMBRE = 10;
-const BOTON_SONIDO: Caja = { x: W - 20, y: 2, w: 18, h: 16 };
+/** Botón de pausa (≡), siempre arriba a la derecha. */
+const BOTON_PAUSA: Caja = { x: W - 20, y: 2, w: 18, h: 16 };
 const AVISO_CUADROS = 105;
 
 type Dialogo = {
@@ -76,6 +90,8 @@ type Teclado = {
   max: number;
   titulo: string;
   ayuda: string;
+  /** Muestra «< VOLVER»; al tocarlo, `nombre()` devuelve "". */
+  cancelable: boolean;
 };
 
 type Particula = { x: number; y: number; vx: number; vy: number; vida: number; max: number; color: string; tam: number; g: number };
@@ -94,6 +110,8 @@ export class Motor {
   readonly audio = new Audio();
   /** Barra superior: progreso u objetivo. */
   barraSuperior: { texto: string; color?: string } | null = null;
+  /** Si la pausa ofrece «VOLVER AL MENÚ» (solo dentro de un modo, no en el menú). */
+  salidaPermitida = false;
 
   private dialogo: Dialogo | null = null;
   private menuActivo: Menu | null = null;
@@ -103,6 +121,11 @@ export class Motor {
   private resolverToque: (() => void) | null = null;
   private hablandoEnMundo = false;
   private mini: Minijuego | null = null;
+  private abortando = false;
+  private rechazos = new Set<(e: Error) => void>();
+  /** Opción de menú tocada, que se elige al soltar el dedo sobre ella. */
+  private armado: number | null = null;
+  private pausa: { foto: HTMLCanvasElement | null; confirmando: boolean; idx: number; armado: number | null } | null = null;
   private particulas: Particula[] = [];
   private flotantes: Flotante[] = [];
   private sello: Sello | null = null;
@@ -139,9 +162,14 @@ export class Motor {
 
   iniciar() {
     const bucle = () => {
-      this.t++;
-      this.procesar();
-      this.dibujar();
+      if (this.pausa) {
+        this.procesarPausa();
+        this.dibujarPausa();
+      } else {
+        this.t++;
+        this.procesar();
+        this.dibujar();
+      }
       this.raf = requestAnimationFrame(bucle);
     };
     this.raf = requestAnimationFrame(bucle);
@@ -174,22 +202,21 @@ export class Motor {
   /** Toque en la pantalla, en coordenadas lógicas. */
   tocar(x: number, y: number) {
     this.audio.desbloquear();
-    const b = BOTON_SONIDO;
-    if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h + 4) {
-      this.audio.silencio = !this.audio.silencio;
+    if (this.pausa) return this.tocarPausa(x, y, false);
+    const b = BOTON_PAUSA;
+    if (x >= b.x - 4 && x < b.x + b.w + 2 && y >= b.y - 2 && y < b.y + b.h + 6) {
+      this.abrirPausa();
       return;
     }
-    if (this.cortina) return;
+    if (this.cortina || this.abortando) return;
     const m = this.menuActivo;
     if (m) {
+      // Al tocar solo se marca; se elige al soltar sobre la misma opción.
       if (m.elegido) return;
-      for (let i = 0; i < m.opciones.length; i++) {
-        const r = this.rectOpcion(m, i);
-        if (x >= r.x - 2 && x < r.x + r.w + 2 && y >= r.y - 2 && y < r.y + r.h + 2) {
-          m.idx = i;
-          this.elegir(m);
-          return;
-        }
+      const i = this.opcionEn(m, x, y);
+      if (i >= 0) {
+        m.idx = i;
+        this.armado = i;
       }
       return;
     }
@@ -202,9 +229,44 @@ export class Motor {
     }
   }
 
+  /** El dedo se levantó: confirma la opción de menú tocada si sigue encima. */
+  soltar(x: number, y: number) {
+    if (this.pausa) return this.tocarPausa(x, y, true);
+    const m = this.menuActivo;
+    if (m && this.armado !== null && !m.elegido) {
+      const i = this.opcionEn(m, x, y);
+      if (i === this.armado) {
+        m.idx = i;
+        this.elegir(m);
+      }
+      this.armado = null;
+      return;
+    }
+    this.armado = null;
+    if (!this.menuActivo && !this.teclado && !this.dialogo && !this.resolverToque) this.mini?.soltar?.(x, y);
+  }
+
+  /** El toque se canceló (el dedo se fue de la pantalla): nada se elige. */
+  cancelarToque() {
+    this.armado = null;
+    if (this.pausa) this.pausa.armado = null;
+  }
+
+  private opcionEn(m: Menu, x: number, y: number): number {
+    for (let i = 0; i < m.opciones.length; i++) {
+      const r = this.rectOpcion(m, i);
+      if (x >= r.x - 2 && x < r.x + r.w + 2 && y >= r.y - 2 && y < r.y + r.h + 2) return i;
+    }
+    return -1;
+  }
+
   /** Teclado físico (escritorio). */
   pulsar(b: Boton) {
     this.audio.desbloquear();
+    if (this.pausa) {
+      this.teclaPausa(b);
+      return;
+    }
     this.cola.push(b);
   }
 
@@ -289,7 +351,7 @@ export class Motor {
     const paginas: string[][] = [];
     for (let i = 0; i < lineas.length; i += LINEAS) paginas.push(lineas.slice(i, i + LINEAS));
     const entrada = this.dialogo ? this.t - 20 : this.t;
-    return new Promise((resolver) => {
+    return this.prometer<void>((resolver) => {
       this.dialogo = { paginas, pagina: 0, mostrados: 0, quien: quien ? limpiar(quien) : undefined, esperarFinal, entrada, resolver };
     });
   }
@@ -337,7 +399,8 @@ export class Motor {
     opciones: Opcion[],
     o: { estilo?: EstiloMenu; titulo?: string; cancelable?: boolean; limiteCuadros?: number; inicial?: number } = {},
   ): Promise<number> {
-    return new Promise((resolver) => {
+    this.armado = null;
+    return this.prometer<number>((resolver) => {
       this.menuActivo = {
         opciones,
         idx: o.inicial ?? 0,
@@ -476,9 +539,9 @@ export class Motor {
 
   nombre(
     validar: (s: string) => string | null,
-    o: { titulo?: string; ayuda?: string; max?: number } = {},
+    o: { titulo?: string; ayuda?: string; max?: number; cancelable?: boolean } = {},
   ): Promise<string> {
-    return new Promise((resolver) => {
+    return this.prometer<string>((resolver) => {
       this.teclado = {
         nombre: "",
         idx: 0,
@@ -488,6 +551,7 @@ export class Motor {
         max: o.max ?? MAX_NOMBRE,
         titulo: o.titulo ?? "¿Cómo te llamas?",
         ayuda: o.ayuda ?? "Usa un apodo",
+        cancelable: o.cancelable ?? false,
       };
     });
   }
@@ -509,8 +573,18 @@ export class Motor {
     return x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h;
   }
 
+  private rectVolverTeclado(): Caja {
+    return { x: 4, y: 2, w: 66, h: 16 };
+  }
+
   private toqueTeclado(x: number, y: number) {
     const k = this.teclado!;
+    if (k.cancelable && this.dentro(this.rectVolverTeclado(), x, y)) {
+      this.teclado = null;
+      this.audio.mover();
+      k.resolver("");
+      return;
+    }
     if (this.dentro(this.rectBorrar(), x, y)) {
       k.nombre = k.nombre.slice(0, -1);
       k.error = null;
@@ -561,7 +635,7 @@ export class Motor {
     this.explorador = new Explorador(cfg);
     const exp = this.explorador;
     this.escena = (p, t) => exp.dibujar(p, t);
-    return new Promise((resolver) => {
+    return this.prometer<string>((resolver) => {
       this.resolverExplorar = (id) => {
         this.camaraMundo = exp.camY;
         this.explorador = null;
@@ -582,7 +656,7 @@ export class Motor {
     void (async () => {
       for (const linea of e.lineas) await this.decir(linea);
       this.hablandoEnMundo = false;
-    })();
+    })().catch(() => undefined);
   }
 
   // ── Efectos ──────────────────────────────────────────────
@@ -697,7 +771,7 @@ export class Motor {
 
   /** Espera un toque; con `ms`, sigue sola pasado ese tiempo. */
   esperarToque(ms?: number): Promise<void> {
-    return new Promise((r) => {
+    return this.prometer<void>((r) => {
       this.resolverToque = r;
       if (ms) {
         window.setTimeout(() => {
@@ -718,14 +792,77 @@ export class Motor {
   }
 
   esperar(ms: number) {
-    return new Promise<void>((r) => window.setTimeout(r, ms));
+    return this.prometer<void>((r) => window.setTimeout(r, ms));
   }
 
   async animar(cuadros: number, paso: (k: number) => void) {
     for (let i = 1; i <= cuadros; i++) {
+      if (this.abortando) throw new SalidaDelJugador();
       paso(i / cuadros);
       await new Promise((r) => requestAnimationFrame(r));
     }
+  }
+
+  /** Espera la promesa de un minijuego (o un menú propio) y se corta si el jugador sale. */
+  atar<T>(p: Promise<T>): Promise<T> {
+    return this.prometer<T>((resolver) => void p.then(resolver));
+  }
+
+  /** Pregunta de sí o no, para acciones que no se deshacen. */
+  async confirmar(texto: string, si = "SÍ", no = "NO", quien?: string): Promise<boolean> {
+    const i = await this.pregunta(texto, [{ texto: si, color: "#f4c7c3" }, { texto: no }], quien);
+    return i === 0;
+  }
+
+  /** Promesa que el motor puede cortar si el jugador vuelve al menú. */
+  private prometer<T>(ejecutor: (resolver: (v: T) => void) => void): Promise<T> {
+    if (this.abortando) return Promise.reject(new SalidaDelJugador());
+    return new Promise<T>((resolver, rechazo) => {
+      const rechazar = (e: Error) => {
+        this.rechazos.delete(rechazar);
+        rechazo(e);
+      };
+      this.rechazos.add(rechazar);
+      ejecutor((v) => {
+        this.rechazos.delete(rechazar);
+        resolver(v);
+      });
+    });
+  }
+
+  /** Corta lo que se está jugando: toda espera pendiente o nueva falla con SalidaDelJugador. */
+  private salirAlMenu() {
+    this.abortando = true;
+    const e = new SalidaDelJugador();
+    for (const r of [...this.rechazos]) r(e);
+    this.dialogo = null;
+    this.menuActivo = null;
+    this.teclado = null;
+    this.explorador = null;
+    this.resolverExplorar = null;
+    this.resolverToque = null;
+    this.hablandoEnMundo = false;
+    this.mini = null;
+    this.barraSuperior = null;
+    this.comentario = null;
+    this.sello = null;
+    this.cortina = null;
+    this.fundido = 0;
+    this.audio.ritmo = 1;
+    this.escena = (p, t) => {
+      p.rect(PAL.negro, 0, 0, W, this.h);
+      p.centrado("Volviendo al menú" + ".".repeat(1 + (Math.floor(t / 15) % 3)), Math.round(this.h / 2) - 4, PAL.crema);
+    };
+  }
+
+  /** El guion ya volvió al menú: se aceptan esperas otra vez. */
+  reanudar() {
+    this.abortando = false;
+    this.fundido = 1;
+  }
+
+  get saliendo() {
+    return this.abortando;
   }
 
   // ── Dibujo ───────────────────────────────────────────────
@@ -759,7 +896,7 @@ export class Motor {
     if (this.menuActivo) this.dibujarMenu(p, this.menuActivo);
     if (this.cortina) this.dibujarCortina(p, this.cortina);
     if (this.fundido > 0) p.alfa(this.fundido, () => p.rect(PAL.negro, 0, 0, W, this.h));
-    this.dibujarBotonSonido(p);
+    this.dibujarBotonPausa(p);
   }
 
   private dibujarParticulas(p: Pincel) {
@@ -865,22 +1002,144 @@ export class Motor {
     p.texto(texto, 10, 5, PAL.crema);
   }
 
-  private dibujarBotonSonido(p: Pincel) {
-    const b = BOTON_SONIDO;
+  private dibujarBotonPausa(p: Pincel) {
+    const b = BOTON_PAUSA;
     p.rect(PAL.tinta, b.x, b.y, b.w, b.h);
     p.rect(PAL.navy, b.x + 1, b.y + 1, b.w - 2, b.h - 2);
-    // parlante
-    p.rect(PAL.crema, b.x + 4, b.y + 6, 3, 4);
-    p.rect(PAL.crema, b.x + 7, b.y + 4, 2, 8);
-    if (this.audio.silencio) {
-      for (let i = 0; i < 5; i++) {
-        p.rect(PAL.rojo, b.x + 10 + i, b.y + 5 + i, 1, 1);
-        p.rect(PAL.rojo, b.x + 14 - i, b.y + 5 + i, 1, 1);
-      }
-    } else {
-      p.rect(PAL.crema, b.x + 11, b.y + 6, 1, 4);
-      p.rect(PAL.crema, b.x + 13, b.y + 4, 1, 8);
+    for (let i = 0; i < 3; i++) p.rect(PAL.crema, b.x + 4, b.y + 4 + i * 3, 10, 2);
+    if (this.audio.silencio) p.rect(PAL.rojo, b.x + b.w - 5, b.y + 1, 4, 4);
+  }
+
+  // ── Pausa ────────────────────────────────────────────────
+
+  private opcionesPausa(): string[] {
+    if (this.pausa?.confirmando) return ["SÍ, VOLVER", "NO, SEGUIR"];
+    const o = ["CONTINUAR", `SONIDO: ${this.audio.silencio ? "NO" : "SÍ"}`];
+    if (this.salidaPermitida) o.push("VOLVER AL MENÚ");
+    return o;
+  }
+
+  private rectPausa(i: number): Caja {
+    const n = this.opcionesPausa().length;
+    const alto = 28;
+    const sep = 8;
+    const arriba = Math.round(this.h / 2 - (n * alto + (n - 1) * sep) / 2) + 16;
+    return { x: 24, y: arriba + i * (alto + sep), w: W - 48, h: alto };
+  }
+
+  private abrirPausa() {
+    if (this.abortando) return;
+    let foto: HTMLCanvasElement | null = null;
+    try {
+      foto = document.createElement("canvas");
+      foto.width = this.canvas.width;
+      foto.height = this.canvas.height;
+      foto.getContext("2d")?.drawImage(this.canvas, 0, 0);
+    } catch {
+      foto = null;
     }
+    this.pausa = { foto, confirmando: false, idx: 0, armado: null };
+    this.armado = null;
+    this.audio.mover();
+  }
+
+  private cerrarPausa() {
+    this.pausa = null;
+    this.audio.confirmar();
+  }
+
+  private accionPausa(i: number) {
+    const pz = this.pausa!;
+    const op = this.opcionesPausa()[i];
+    if (!op) return;
+    if (pz.confirmando) {
+      if (i === 0) {
+        this.pausa = null;
+        this.salirAlMenu();
+        this.audio.fallo();
+      } else {
+        pz.confirmando = false;
+        pz.idx = 0;
+        this.audio.mover();
+      }
+      return;
+    }
+    if (op === "CONTINUAR") return this.cerrarPausa();
+    if (op.startsWith("SONIDO")) {
+      this.audio.silencio = !this.audio.silencio;
+      this.audio.mover();
+      return;
+    }
+    pz.confirmando = true;
+    pz.idx = 1;
+    this.audio.mover();
+  }
+
+  private tocarPausa(x: number, y: number, alSoltar: boolean) {
+    const pz = this.pausa!;
+    const b = BOTON_PAUSA;
+    if (!alSoltar && x >= b.x - 4 && y < b.y + b.h + 6 && !pz.confirmando) return this.cerrarPausa();
+    const n = this.opcionesPausa().length;
+    let bajo = -1;
+    for (let i = 0; i < n; i++) {
+      const r = this.rectPausa(i);
+      if (x >= r.x - 2 && x < r.x + r.w + 2 && y >= r.y - 3 && y < r.y + r.h + 3) bajo = i;
+    }
+    if (!alSoltar) {
+      pz.armado = bajo >= 0 ? bajo : null;
+      if (bajo >= 0) pz.idx = bajo;
+      return;
+    }
+    if (bajo >= 0 && bajo === pz.armado) this.accionPausa(bajo);
+    pz.armado = null;
+  }
+
+  private teclaPausa(b: Boton) {
+    const pz = this.pausa!;
+    const n = this.opcionesPausa().length;
+    if (b === "arriba") pz.idx = Math.max(0, pz.idx - 1);
+    if (b === "abajo") pz.idx = Math.min(n - 1, pz.idx + 1);
+    if (b === "a") this.accionPausa(pz.idx);
+    if (b === "b") {
+      if (pz.confirmando) pz.confirmando = false;
+      else this.cerrarPausa();
+    }
+  }
+
+  /** Abre o cierra la pausa (tecla P en escritorio). */
+  alternarPausa() {
+    if (this.pausa) this.cerrarPausa();
+    else this.abrirPausa();
+  }
+
+  private procesarPausa() {
+    this.cola.length = 0;
+  }
+
+  private dibujarPausa() {
+    const p = this.pincel;
+    const c = p.ctx;
+    const pz = this.pausa!;
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    if (pz.foto) c.drawImage(pz.foto, 0, 0);
+    c.setTransform(this.escala, 0, 0, this.escala, 0, 0);
+    c.imageSmoothingEnabled = false;
+    p.alfa(0.75, () => p.rect(PAL.negro, 0, 0, W, this.h));
+    const r0 = this.rectPausa(0);
+    if (pz.confirmando) {
+      p.caja(10, r0.y - 58, W - 20, 48, PAL.crema, PAL.tinta, PAL.rojo);
+      p.centrado("¿Volver al menú?", r0.y - 48, PAL.rojoOscuro);
+      p.centrado("Se pierde lo que", r0.y - 34, PAL.tinta);
+      p.centrado("estás jugando.", r0.y - 23, PAL.tinta);
+    } else {
+      p.centrado("PAUSA", r0.y - 36, PAL.ambar, 16, PAL.tinta);
+    }
+    this.opcionesPausa().forEach((op, i) => {
+      const r = this.rectPausa(i);
+      const peligro = (pz.confirmando && i === 0) || op === "VOLVER AL MENÚ";
+      p.boton(r, op, { activo: i === pz.idx, presionado: pz.armado === i, color: peligro ? "#f4c7c3" : undefined });
+    });
+    this.dibujarBotonPausa(p);
   }
 
   private dibujarDialogo(p: Pincel, d: Dialogo) {
@@ -938,7 +1197,7 @@ export class Motor {
     m.opciones.forEach((op, i) => {
       const r = this.rectOpcion(m, i);
       const desfase = Math.round((1 - facil.salida(Math.max(0, Math.min(1, k * 1.4 - i * 0.12 + 0.12)))) * 24);
-      const presionado = m.elegido?.idx === i;
+      const presionado = m.elegido?.idx === i || this.armado === i;
       const activo = i === m.idx;
       if (m.estilo === "caras") {
         if (activo) p.rect(PAL.ambar, r.x - 1, r.y - 1, r.w + 2, r.h + 2);
@@ -976,6 +1235,7 @@ export class Motor {
         p.boton(r, ch, { activo: fi * 7 + ci === k.idx && this.t % 60 < 40 && k.nombre.length > 0 });
       });
     });
+    if (k.cancelable) p.boton(this.rectVolverTeclado(), "< VOLVER");
     p.boton(this.rectBorrar(), "BORRAR", { color: "#f4c7c3" });
     p.boton(this.rectListo(), "LISTO", { color: "#bfe8c9" });
   }
@@ -1019,6 +1279,8 @@ export class Motor {
       barra: this.barraSuperior?.texto ?? null,
       cortina: this.cortina !== null,
       minijuego: this.mini ? (this.mini.info?.() ?? true) : null,
+      pausa: this.pausa ? { opciones: this.opcionesPausa(), rects: this.opcionesPausa().map((_, i) => this.rectPausa(i)) } : null,
+      saliendo: this.abortando,
     };
   }
 }

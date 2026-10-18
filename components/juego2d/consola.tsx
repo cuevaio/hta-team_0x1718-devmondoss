@@ -30,6 +30,7 @@ const ANCHO_MAX = 460;
 
 export default function Consola({ fuente }: { fuente: string }) {
   const lienzo = useRef<HTMLCanvasElement>(null);
+  const pagina = useRef<HTMLElement>(null);
   const motor = useRef<Motor | null>(null);
 
   useEffect(() => {
@@ -40,8 +41,14 @@ export default function Consola({ fuente }: { fuente: string }) {
     const ajustar = () => {
       const m = motor.current;
       if (!m) return;
-      const anchoDisp = Math.min(window.innerWidth, ANCHO_MAX);
-      const altoDisp = window.innerHeight;
+      // El área útil descuenta los márgenes seguros (notch, barra de inicio).
+      const el = pagina.current;
+      const cs = el ? window.getComputedStyle(el) : null;
+      const px = (v: string | undefined) => Number.parseFloat(v ?? "0") || 0;
+      const anchoUtil = (el?.clientWidth ?? window.innerWidth) - px(cs?.paddingLeft) - px(cs?.paddingRight);
+      const altoUtil = (el?.clientHeight ?? window.innerHeight) - px(cs?.paddingTop) - px(cs?.paddingBottom);
+      const anchoDisp = Math.min(anchoUtil, ANCHO_MAX);
+      const altoDisp = altoUtil;
       m.ajustar(anchoDisp, altoDisp, window.devicePixelRatio || 1);
       // Mantener la proporción exacta de la resolución lógica (sin estirar).
       let ancho = anchoDisp;
@@ -74,6 +81,11 @@ export default function Consola({ fuente }: { fuente: string }) {
     const abajo = (e: KeyboardEvent) => {
       const m = motor.current;
       if (!m) return;
+      if ((e.key === "p" || e.key === "P") && !m.pidiendoNombre) {
+        e.preventDefault();
+        m.alternarPausa();
+        return;
+      }
       if (m.pidiendoNombre && (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter")) {
         e.preventDefault();
         m.letra(e.key);
@@ -92,6 +104,7 @@ export default function Consola({ fuente }: { fuente: string }) {
     window.addEventListener("keydown", abajo);
     window.addEventListener("keyup", arriba);
     window.addEventListener("resize", ajustar);
+    window.visualViewport?.addEventListener("resize", ajustar);
     return () => {
       vivo = false;
       motor.current?.detener();
@@ -99,11 +112,12 @@ export default function Consola({ fuente }: { fuente: string }) {
       window.removeEventListener("keydown", abajo);
       window.removeEventListener("keyup", arriba);
       window.removeEventListener("resize", ajustar);
+      window.visualViewport?.removeEventListener("resize", ajustar);
     };
   }, [fuente]);
 
   return (
-    <main className={s.pagina}>
+    <main className={s.pagina} ref={pagina}>
       <canvas
         ref={lienzo}
         className={s.pantalla}
@@ -115,8 +129,19 @@ export default function Consola({ fuente }: { fuente: string }) {
           if (!m) return;
           m.tocar(((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * m.h);
         }}
+        onPointerUp={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          const m = motor.current;
+          if (!m) return;
+          m.soltar(((e.clientX - r.left) / r.width) * W, ((e.clientY - r.top) / r.height) * m.h);
+        }}
+        onPointerCancel={() => motor.current?.cancelarToque()}
         onContextMenu={(e) => e.preventDefault()}
       />
+      <div className={s.girar} role="note">
+        <span aria-hidden="true">📱</span>
+        <p>Gira tu celular: el juego es en vertical.</p>
+      </div>
     </main>
   );
 }

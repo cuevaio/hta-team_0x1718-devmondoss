@@ -502,3 +502,39 @@ El reloj y la calificación son del servidor, así que la latencia no rompe la s
 npm run servidor -- --red --juego --persistir   # celulares en la misma Wi-Fi; guarda memoria, partidas y arcade en .datos/
 cloudflared tunnel --url http://localhost:3000  # URL pública si la Wi-Fi del evento aísla a los clientes
 ```
+
+## 16. Navegación segura y pantallas chicas
+
+**Siempre hay salida.** El botón **≡** (arriba a la derecha, donde antes estaba el de sonido) abre la **pausa**, que congela el juego. Ofrece:
+- CONTINUAR.
+- SONIDO.
+- **VOLVER AL MENÚ**, solo dentro de un modo y con confirmación («Se pierde lo que estás jugando»).
+
+En escritorio se abre con la tecla **P**.
+
+Por dentro, el motor corta todas las esperas pendientes con `SalidaDelJugador` y `protegido` vuelve al menú sin dejar pantallas a medio cargar. Las promesas de los minijuegos se envuelven en `m.atar()` para que también se corten.
+
+**Botones para volver:**
+- *Cómo se juega* tiene VOLVER y ¡A JUGAR!; ahora es también la pantalla de confirmación antes de cada arcade.
+- El teclado del código de sala tiene «< VOLVER».
+- *Cambiar país* tiene una casilla VOLVER.
+- La elección de juego para una sala tiene VOLVER.
+
+**Nada te manda directo:**
+- Los menús, el menú principal y la grilla de países eligen **al soltar el dedo sobre la misma opción**: un roce o un scroll no entra a un juego.
+- Los botones de respuesta de los arcades siguen respondiendo al tocar, porque ahí la rapidez es el juego.
+
+Piden confirmación:
+- empezar una sala estando solo;
+- otra ronda (los puntajes vuelven a cero);
+- que el anfitrión salga con gente esperando;
+- volver a la pantalla de inicio.
+
+**Pantallas chicas:**
+- La consola descuenta los márgenes seguros (notch, barra de inicio), escucha `visualViewport` y pide **girar el celular** si está acostado.
+- Se revisó todo en 360×563, que es la altura lógica mínima de 300 px, y en 390×844.
+- SIGUE EL DINERO compacta su panel en pantallas bajas para darle alto al mapa.
+- El menú principal pone el nombre en una línea, y debajo o «de qué trata + NUEVO» o «estrellas + récord», sin que nada se pise.
+- *Cómo se juega* junta las líneas para que entren 3.
+
+Prueba automática (`navegacion.mjs`, fuera del repo): 10 recorridos de volver, pausa y confirmaciones, sin errores en ambos tamaños.

@@ -212,14 +212,14 @@ export function pausaOPasa(m: Motor, pais: Pais): Promise<ResultadoPOP> {
         m.audio.monedas();
       }
       if (combo > 0 && combo % 3 === 0) m.flotante(`COMBO x${mult}!`, 54, c.y + c.h + 4, PAL.ambar);
-      if ([3, 5, 8, 12].includes(combo)) m.comentar(frase(pais.id, "racha"), { y: m.h - 86 });
-      else if (Math.random() < 0.3) m.comentar(frase(pais.id, "acierto"), { y: m.h - 86 });
+      if ([3, 5, 8, 12].includes(combo)) m.comentar(frase(pais.id, "racha"), { y: 22 });
+      else if (Math.random() < 0.3) m.comentar(frase(pais.id, "acierto"), { y: 22 });
       m.vibrar(10);
       cambiar("bien");
     } else {
       combo = 0;
       vidas--;
-      m.comentar(frase(pais.id, porTiempo ? "tiempo" : t.riesgosa ? "cayo" : "desconfiado"), { y: m.h - 86, color: t.riesgosa ? "#f4c7c3" : PAL.celeste });
+      m.comentar(frase(pais.id, porTiempo ? "tiempo" : t.riesgosa ? "cayo" : "desconfiado"), { y: 22, color: t.riesgosa ? "#f4c7c3" : PAL.celeste });
       if (t.riesgosa) {
         robos++;
         m.audio.drenar();

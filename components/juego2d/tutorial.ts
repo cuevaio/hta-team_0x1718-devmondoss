@@ -133,8 +133,23 @@ export const icono = {
 export async function comoSeJuega(
   m: Motor,
   cfg: { titulo: string; color: string; pasos: Paso[]; meta?: string; record?: string },
-) {
+): Promise<boolean> {
   const inicio = m.t;
+  const botones = (h: number) => ({
+    volver: { x: 8, y: h - 52, w: 62, h: 34 },
+    jugar: { x: 76, y: h - 52, w: W - 84, h: 34 },
+  });
+  let armado: "volver" | "jugar" | null = null;
+  let resolver: (jugar: boolean) => void = () => {};
+  const decision = new Promise<boolean>((r) => (resolver = r));
+  const bajo = (x: number, y: number) => {
+    const b = botones(m.h);
+    for (const k of ["volver", "jugar"] as const) {
+      const c = b[k];
+      if (x >= c.x - 2 && x < c.x + c.w + 2 && y >= c.y - 4 && y < c.y + c.h + 4) return k;
+    }
+    return null;
+  };
   m.barraSuperior = null;
   m.descubrirYa();
   m.escena = (p, t) => {
@@ -164,25 +179,59 @@ export async function comoSeJuega(
       p.rect("#1f2650", x + 1, y + 1, W - 18, alto - 8);
       p.textoSombra(String(i + 1), x + 4, y + 4, PAL.ambar, PAL.tinta);
       paso.icono(p, x + 12, y + Math.round((alto - 6 - 32) / 2), t);
-      const lineas = envolver(paso.texto, 15).slice(0, Math.max(2, Math.floor((alto - 8) / 11)));
-      const y0 = y + Math.round((alto - 6 - lineas.length * 11) / 2) + 1;
-      lineas.forEach((l, j) => p.texto(l, x + 52, y0 + j * 11, PAL.crema));
+      // En pantallas bajas las líneas se juntan para que entren 3.
+      const sepL = alto < 44 ? 9 : 11;
+      const lineas = envolver(paso.texto, 15).slice(0, Math.max(3, Math.floor((alto - 8) / sepL)));
+      const y0 = y + Math.round((alto - 6 - lineas.length * sepL) / 2) + 1;
+      lineas.forEach((l, j) => p.texto(l, x + 52, y0 + j * sepL, PAL.crema));
     });
-    const yb = h - 58;
+    const yb = h - 52;
+    // pista para el botón de pausa
+    if (f > 40 && Math.floor(f / 30) % 2 === 0) p.texto("pausa >", W - 82, 7, PAL.grisClaro);
     const meta = cfg.meta ? envolver(cfg.meta, 23).slice(0, 2) : [];
     meta.forEach((l, i) => p.centrado(l, yb - 12 - (meta.length - 1 - i) * 11, PAL.celeste, 8, PAL.tinta));
     if (cfg.record) envolver(cfg.record, 23).slice(0, 2).forEach((l, i, ls) => p.centrado(l, yb - 14 - meta.length * 11 - (ls.length - 1 - i) * 11, PAL.ambar, 8, PAL.tinta));
-    if (f > 30) {
-      const pulso = 1 + (Math.floor(f / 18) % 2) * 0.06;
-      p.escalado(W / 2, yb + 16, pulso, () => p.boton({ x: 24, y: yb, w: W - 48, h: 34 }, "¡A JUGAR!", { color: PAL.ambar }));
+    if (f > 20) {
+      const b = botones(h);
+      p.boton(b.volver, "VOLVER", { presionado: armado === "volver" });
+      const pulso = 1 + (Math.floor(f / 18) % 2) * 0.05;
+      p.escalado(b.jugar.x + b.jugar.w / 2, b.jugar.y + 17, armado === "jugar" ? 1 : pulso, () =>
+        p.boton(b.jugar, "¡A JUGAR!", { color: PAL.ambar, presionado: armado === "jugar" }),
+      );
     }
   };
+  m.minijuego({
+    dibujar: m.escena,
+    tocar: (x, y) => {
+      if (m.t - inicio > 20) armado = bajo(x, y);
+    },
+    soltar: (x, y) => {
+      if (armado && bajo(x, y) === armado) {
+        const jugar = armado === "jugar";
+        m.minijuego(null);
+        resolver(jugar);
+      }
+      armado = null;
+    },
+    tecla: (b) => {
+      if (b === "a" && m.t - inicio > 20) {
+        m.minijuego(null);
+        resolver(true);
+      }
+      if (b === "b") {
+        m.minijuego(null);
+        resolver(false);
+      }
+    },
+    info: () => ({ comoSeJuega: true, botones: botones(m.h) }),
+  });
   m.musica("titulo");
   await m.fundirA(false, 10);
-  await m.esperar(500);
-  await m.esperarToque();
-  m.audio.cuenta(true);
+  const jugar = await m.atar(decision);
+  if (jugar) m.audio.cuenta(true);
+  else m.audio.mover();
   await m.fundirA(true, 10);
+  return jugar;
 }
 
 // ── LO QUE TE LLEVAS ───────────────────────────────────────────
