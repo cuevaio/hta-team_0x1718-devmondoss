@@ -122,8 +122,10 @@ function railway(args: string[]): boolean {
 }
 
 async function esperarTunel(url: string) {
-  // El DNS del túnel nuevo tarda unos segundos en responder.
-  for (let i = 0; i < 20; i++) {
+  // El DNS del túnel nuevo tarda unos segundos: preguntar muy pronto hace que
+  // la Mac guarde en caché el «no existe». Primero se espera.
+  await new Promise((r) => setTimeout(r, 8000));
+  for (let i = 0; i < 15; i++) {
     try {
       const r = await fetch(`${url}/api/tags`, { headers: { 'x-puente-token': token }, signal: AbortSignal.timeout(5000) });
       if (r.ok) return true;
@@ -160,7 +162,8 @@ async function main() {
   const { url, proceso } = await abrirTunel(`http://127.0.0.1:${puerto}`);
   if (!url) throw new Error('no se pudo abrir el túnel de Cloudflare (¿cloudflared instalado?)');
   console.log('▶ esperando que el túnel responda…');
-  if (!(await esperarTunel(url))) throw new Error(`el túnel ${url} no respondió`);
+  const responde = await esperarTunel(url);
+  if (!responde) console.log('   ⚠ desde esta Mac el túnel aún no responde (suele ser caché de DNS); Railway lo resuelve desde su red. Sigo.');
 
   const caffeinate = platform() === 'darwin' ? spawn('caffeinate', ['-i', '-w', String(process.pid)], { stdio: 'ignore' }) : null;
 
@@ -197,9 +200,10 @@ async function main() {
     cerrando = true;
     if (conectado) {
       console.log('▶ desconectando Railway (vuelve a agentes simulados)…');
-      railway(['variable', 'delete', 'OLLAMA_URL', '--skip-deploys']);
-      railway(['variable', 'delete', 'OLLAMA_TOKEN', '--skip-deploys']);
+      // Primero el modelo (con eso ya vuelve a simulado); `delete` no acepta --skip-deploys.
       railway(['variable', 'delete', 'OLLAMA_MODELO']);
+      railway(['variable', 'delete', 'OLLAMA_URL']);
+      railway(['variable', 'delete', 'OLLAMA_TOKEN']);
     }
     proceso?.kill();
     caffeinate?.kill();
