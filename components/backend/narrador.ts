@@ -63,27 +63,23 @@ export interface Linea {
 }
 
 /** Pausas de la reproducción (ms, a velocidad 1×). */
-export const PAUSA = { comando: 500, evento: 750, tool: 320, decision: 1100, cierre: 700, lote: 320 };
+export const PAUSA = { comando: 250, evento: 380, tool: 140, decision: 650, cierre: 350, lote: 140 };
 
 /**
  * Qué se explica con diálogo en cada prueba: lo que esa prueba vino a mostrar.
  * Lo demás sale como toast, para no frenar diez veces lo mismo.
  */
 const FOCO: Record<string, ClaveNota[]> = {
-  rosa: ["pausa", "detective", "chat", "expediente", "decision"],
-  inyeccion: ["chat", "decision"],
-  silencio: ["chat", "decision"],
-  bodega: ["detective", "decision"],
-  suplantacion: ["chat", "decision"],
-  hotel: ["decision"],
-  alerta: ["detective", "expediente", "veredicto"],
-  memoria: ["memoria", "decision"],
-  red: ["red", "decision"],
-  caida: ["error", "decision"],
+  rosa: ["pausa", "detective", "chat"],
+  inyeccion: ["chat"],
+  alerta: ["veredicto"],
+  memoria: ["memoria"],
+  red: ["red"],
+  caida: ["error"],
   matriz: ["matriz"],
 };
 
-const DURA: Partial<Record<ClaveNota, number>> = { detective: 8000, chat: 8000, expediente: 8000, red: 6500, matriz: 6500 };
+const DURA: Partial<Record<ClaveNota, number>> = { detective: 4500, chat: 4500, matriz: 3500 };
 
 const SENAL: Record<string, string> = {
   beneficiario_nuevo: "beneficiario nuevo",
@@ -150,6 +146,10 @@ function hecho(fuente: string, d: Detalle): string {
       return `${d.operaciones_cercanas_umbral} operaciones justo bajo el umbral`;
     case "reenvio_transfronterizo":
       return `${pct(d.porcentaje_al_exterior)} enviado al exterior`;
+    case "guardian_pregunta":
+      return `pregunta por ${d.canal ?? "app"}`;
+    case "guardian_respuesta":
+      return `«${d.texto ?? ""}»`;
     case "red_regional":
       return d.en_red ? `confirmada por ${(d.emisor as { banco?: string })?.banco}` : "sin avisos de la red";
     default:
@@ -169,7 +169,7 @@ export function linea(e: EventoTimeline): string {
     case "pausa_preventiva":
       return `dinero retenido antes de consultar a ningún agente (score ${d.score})`;
     case "plan":
-      return `invoca ${l(d.invocar) || "—"} · ${d.motivo}`;
+      return `invoca ${l(d.invocar) || "—"}`;
     case "riesgo_destino":
       return `riesgo ${d.riesgo_destino} · ${l(d.tipologias)}`;
     case "pregunta":
@@ -187,7 +187,7 @@ export function linea(e: EventoTimeline): string {
       return `${d.cuenta} confirmada por ${(d.emisor as { banco?: string } | undefined)?.banco ?? "otro banco"}`;
     case "decision":
     case "atajo_determinista":
-      return `${d.accion} · ${d.regla} · ${d.motivo}`;
+      return `${d.accion} · ${d.regla}`;
     case "error_agentes":
       return `${d.agente}: ${d.mensaje}`;
     default: {
@@ -209,26 +209,23 @@ function notaDe(e: EventoTimeline, caso: Caso, ya: Set<ClaveNota>): Omit<Nota, "
       return {
         clave: "pausa",
         quien: "Sistema",
-        titulo: "El dinero se detiene",
-        texto:
-          caso.puerta === "transferencia"
-            ? `Los ${soles(caso.transaccion.monto)} de ${cliente} quedan retenidos antes de consultar a ningún agente (score ${d.score}). La IA investiga después, con el dinero a salvo.`
-            : `La cuenta ${destino} queda retenida antes de consultar a ningún agente.`,
+        titulo: "Dinero retenido",
+        texto: caso.puerta === "transferencia" ? `${soles(caso.transaccion.monto)} · antes de la IA` : `${destino} · antes de la IA`,
       };
     case "mula_confirmada":
       return {
         clave: "memoria",
         quien: "Memoria",
-        titulo: "La Memoria ya la conoce",
-        texto: `Un analista ya confirmó ${d.cuenta} como mula. ${cliente} queda protegido al instante, sin gastar una sola llamada de IA.`,
+        titulo: "Mula ya conocida",
+        texto: `${d.cuenta} · 0 llamadas de IA`,
       };
     case "mula_confirmada_en_red": {
       const em = (d.emisor ?? {}) as { banco?: string; pais?: string };
       return {
         clave: "red",
         quien: "Red regional",
-        titulo: "Aviso de otro país",
-        texto: `${em.banco} (${String(em.pais ?? "").toUpperCase()}) confirmó ${d.cuenta} como mula en su expediente ${d.expediente}. Se retiene antes de cualquier agente. Los bancos comparten el veredicto, no los datos de sus clientes.`,
+        titulo: "Aviso de otro banco",
+        texto: `${em.banco} (${String(em.pais ?? "").toUpperCase()}) ya la confirmó`,
       };
     }
     case "plan":
@@ -247,9 +244,10 @@ function notaDe(e: EventoTimeline, caso: Caso, ya: Set<ClaveNota>): Omit<Nota, "
       return {
         clave: "detective",
         quien: "Detective",
-        titulo: `Investiga ${destino}: riesgo ${d.riesgo_destino}`,
-        texto: String(d.hipotesis ?? ""),
-        docs,
+        titulo: `Riesgo ${d.riesgo_destino} en ${destino}`,
+        texto: "",
+        // Solo lo que pesó: las evidencias marcadas como señal (o las primeras, si ninguna).
+        docs: (docs.some((x) => x.marcado) ? docs.filter((x) => x.marcado) : docs).slice(0, 4),
       };
     }
     case "pregunta": {
@@ -261,8 +259,8 @@ function notaDe(e: EventoTimeline, caso: Caso, ya: Set<ClaveNota>): Omit<Nota, "
       return {
         clave: "chat",
         quien: "Guardián",
-        titulo: `Le escribe a ${cliente}`,
-        texto: "Pregunta por un canal seguro. Nunca pide claves, códigos ni datos de tarjeta.",
+        titulo: `Guardián → ${cliente}`,
+        texto: "",
         chat: { cliente, canal: String(p?.canal ?? "app"), pregunta: String(d.mensaje ?? ""), respuesta: typeof resp === "string" && resp ? resp : null },
       };
     }
@@ -291,7 +289,7 @@ function notaDe(e: EventoTimeline, caso: Caso, ya: Set<ClaveNota>): Omit<Nota, "
         clave: "error",
         quien: "Sistema",
         titulo: `Se cayó el ${d.agente}`,
-        texto: `${d.mensaje}. El sistema no se detiene: decide en modo seguro y el dinero no sale.`,
+        texto: "Modo seguro: el dinero no sale",
       };
     case "decision":
       return {
@@ -308,7 +306,7 @@ function notaDe(e: EventoTimeline, caso: Caso, ya: Set<ClaveNota>): Omit<Nota, "
 
 function conModo(n: Omit<Nota, "modo" | "dura">, prueba: string): Nota {
   const dialogo = (FOCO[prueba] ?? []).includes(n.clave);
-  return { ...n, modo: dialogo ? "dialogo" : "toast", dura: DURA[n.clave] ?? 5500 };
+  return { ...n, modo: dialogo ? "dialogo" : "toast", dura: DURA[n.clave] ?? 3200 };
 }
 
 /**
@@ -325,7 +323,7 @@ export function terminal(r: ResultadoPrueba, caso: Caso): Linea[] {
       const e = caso.evidencia.find((x) => x.id === id);
       if (!e || usadas.has(id)) return [];
       usadas.add(id);
-      return [{ tag: "tool", texto: `${e.fuente}(${cuenta}) → ${e.id}  ${datoCorto(e.dato)}`, tipo: "tool" as const, ev, espera: PAUSA.tool }];
+      return [{ tag: "tool", texto: `${e.fuente} → ${e.id}  ${hecho(e.fuente, (e.dato ?? {}) as Detalle)}`.slice(0, 80), tipo: "tool" as const, ev, espera: PAUSA.tool }];
     });
   const porFuente = (fuente: string) => caso.evidencia.filter((e) => e.fuente === fuente).map((e) => e.id);
   const citas = (d: Detalle) => (Array.isArray(d.evidencia) ? (d.evidencia as string[]) : []);
@@ -353,7 +351,7 @@ export function terminal(r: ResultadoPrueba, caso: Caso): Linea[] {
     lineas.push({
       t: `+${ms(t0, e.t)}ms`,
       tag: e.actor,
-      texto: `${e.evento}  ${linea(e)}`,
+      texto: `${e.evento}  ${linea(e)}`.slice(0, 90),
       tipo,
       ev: i + 1,
       espera: tipo === "decision" ? PAUSA.decision : PAUSA.evento,
@@ -374,8 +372,8 @@ export function terminal(r: ResultadoPrueba, caso: Caso): Linea[] {
         {
           clave: "veredicto",
           quien: "Analista",
-          titulo: `Un humano confirma ${cuenta}`,
-          texto: `El analista revisa el expediente y confirma la mula (${humano.valor}). Desde ahora la Memoria la frena sin IA: así se protege a la siguiente víctima.`,
+          titulo: `Analista confirma ${cuenta}`,
+          texto: "Desde ahora la Memoria la frena sin IA",
         },
         r.id,
       ),
@@ -421,8 +419,8 @@ export function terminalMatriz(r: ResultadoPrueba): Linea[] {
       {
         clave: "matriz",
         quien: "Suite",
-        titulo: `${m.combinaciones} ataques, ${huecos} huecos`,
-        texto: `Cada táctica de estafa contra cada víctima, destino, monto y respuesta. Ninguna combinación rompió las reglas de oro:`,
+        titulo: `${m.combinaciones} ataques · ${huecos} huecos`,
+        texto: "",
         invariantes: m.invariantes.map((v) => ({ texto: v.texto, ok: v.violaciones === 0 })),
       },
       r.id,
