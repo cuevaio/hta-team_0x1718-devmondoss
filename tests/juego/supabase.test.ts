@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const filas = vi.hoisted(() => ({ guardadas: [] as unknown[], previas: [] as unknown[] }));
+const filas = vi.hoisted(() => ({ guardadas: [] as unknown[], previas: [] as unknown[], borrados: 0 }));
 
 vi.mock('@/lib/persistencia/supabase', () => ({
   supabaseActivo: () => true,
   cargarFilas: async () => filas.previas,
   guardarFila: async (_t: string, f: unknown) => void filas.guardadas.push(f),
-  borrarFilas: async () => undefined,
+  borrarFilas: async () => {
+    filas.borrados++;
+  },
 }));
 
 import { RegistroArcade } from '@/lib/juego/arcade';
@@ -30,6 +32,16 @@ describe('arcade con Supabase', () => {
     expect(j.id).not.toBe('ARCADE-00001');
     await Promise.resolve();
     expect(filas.guardadas).toHaveLength(1);
+  });
+
+  it('los récords son para siempre: limpiar no toca Supabase salvo a propósito', async () => {
+    filas.borrados = 0;
+    const r = new RegistroArcade(undefined, true);
+    await r.listo;
+    r.limpiar();
+    expect(filas.borrados).toBe(0);
+    r.limpiar({ nube: true });
+    expect(filas.borrados).toBe(1);
   });
 
   it('sincroniza lo que guardó otro servidor sin perder lo propio', async () => {

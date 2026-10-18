@@ -47,7 +47,14 @@ function ciudad(p: Pincel, base: number, desplaz: number, color: string, ventana
   }
 }
 
-export function titulo(inicio: number): Escena {
+/** Una tabla de récords para el «modo atracción» del título. */
+export type TablaRecords = { titulo: string; filas: Array<{ alias: string; puntaje: number }> };
+
+/**
+ * Pantalla de título. Como en los arcades, con `records` el celular que suena
+ * se alterna con tablas HI-SCORE (los récords guardados para siempre).
+ */
+export function titulo(inicio: number, records: TablaRecords[] = []): Escena {
   return (p, t) => {
     const f = t - inicio;
     const h = p.h;
@@ -89,9 +96,34 @@ export function titulo(inicio: number): Escena {
     }
     if (f > 50) p.alfa(Math.min(1, (f - 50) / 20), () => p.centrado("El barrio no duerme", ly + 48, PAL.celeste));
 
-    // Un celular gigante que suena
+    // Un celular gigante que suena... o la tabla de récords (cada 5 s, después del arranque)
     const cy = Math.round(26 + 70 + (calle - 34 - 96) / 2) - 40;
-    if (f > 30) {
+    const tablas = records.filter((r) => r.filas.length > 0);
+    const turno = f > 240 && tablas.length ? Math.floor((f - 240) / 300) % (tablas.length + 1) : 0;
+    if (turno > 0) {
+      const r = tablas[turno - 1];
+      const fl = (f - 240) % 300;
+      const ap = facil.salida(Math.min(1, fl / 14));
+      p.alfa(ap, () => {
+        p.rect(PAL.tinta, 22, cy - 6, 148, 92);
+        p.rect("#0b1236", 24, cy - 4, 144, 88);
+        p.rect(PAL.ambar, 24, cy - 4, 144, 2);
+        p.rect(PAL.ambar, 24, cy + 82, 144, 2);
+        p.centrado("HI-SCORE", cy, f % 40 < 30 ? PAL.ambar : PAL.crema, 8, PAL.rojoOscuro);
+        p.centrado(r.titulo.slice(0, 17), cy + 11, PAL.celeste);
+        r.filas.slice(0, 5).forEach((fila, i) => {
+          const y = cy + 25 + i * 11;
+          const k = Math.min(1, Math.max(0, (fl - 8 - i * 5) / 8));
+          const color = i === 0 ? (f % 30 < 20 ? PAL.ambar : PAL.blanco) : PAL.crema;
+          p.alfa(k, () => {
+            p.texto(`${i + 1}`, 30, y, i === 0 ? PAL.ambar : PAL.gris);
+            p.texto(fila.alias.toUpperCase().slice(0, 9), 42, y, color);
+            const pts = String(fila.puntaje).padStart(6, "0");
+            p.texto(pts, 164 - p.ancho(pts), y, color);
+          });
+        });
+      });
+    } else if (f > 30) {
       const ap = facil.salida(Math.min(1, (f - 30) / 25));
       const vibra = Math.floor(f / 3) % 2 ? 1 : -1;
       p.alfa(ap, () => {

@@ -178,10 +178,11 @@ export class RegistroPartidas {
     return this.partidas.map((p) => structuredClone(p));
   }
 
-  limpiar(): void {
+  /** Vacía este servidor. Supabase solo con `nube: true` (los datos del evento no se pierden por un clic). */
+  limpiar(o: { nube?: boolean } = {}): void {
     this.partidas = [];
     this.guardar();
-    void borrarFilas('partidas').catch((e: Error) => console.error(`Partidas: no se borró en Supabase. ${e.message}`));
+    if (o.nube) void borrarFilas('partidas').catch((e: Error) => console.error(`Partidas: no se borró en Supabase. ${e.message}`));
   }
 
   get cantidad(): number {
