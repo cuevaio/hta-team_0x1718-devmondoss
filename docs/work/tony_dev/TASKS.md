@@ -115,3 +115,4 @@
   - `lib/diferir.ts`: el Auditor también se difiere con `ollama`, porque en la laptop tarda segundos.
   - `scripts/demo.ts`: imprime el modelo local.
   - `scripts/servidor.ts`: verifica y precarga Ollama, `--tunel` abre cloudflared solo e imprime la URL pública, y `--persistir` también guarda el arcade.
+- [x] **Resistencia bajo carga** ([DEMO_EN_VIVO](../../DEMO_EN_VIVO.md)): limitador y cortacircuitos del modelo (`lib/agents/limitador.ts`), ola de ataques del presentador (`lib/juego/ola.ts`, `app/api/carga`) y panel *Resistencia* en el monitor. Medido: 500 ataques + 60 jugadores en sala, 0 errores
