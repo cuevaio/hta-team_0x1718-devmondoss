@@ -2,6 +2,8 @@ import type { Caso } from "@/lib/contracts";
 import { motivoAliasInvalido } from "@/lib/juego/alias";
 import type { PreguntaEncuesta } from "@/lib/juego/arcade";
 import {
+  accionSala,
+  crearSala,
   registrarArcade,
   registrarPartida,
   responderGuardian,
@@ -66,6 +68,8 @@ import { cuadroEstrella, escenaRanking, escenaResultado, type DatosResultado } f
 import { mazo, realOEstafa } from "./realOEstafa";
 import { escenaMemoria, sigueElDinero } from "./sigueElDinero";
 import { comoSeJuega, icono, teLlevas, type Paso } from "./tutorial";
+import { menuHub } from "./hub";
+import { pantallaSala, type ResultadoSala } from "./sala";
 import type { Direccion } from "./sprites";
 
 /**
@@ -127,7 +131,8 @@ export async function jugar(m: Motor) {
     for (;;) {
       const eleccion = await menuPrincipal(m, s);
       if (eleccion === "titulo") break;
-      if (eleccion in ARCADES) await protegido(m, () => modoArcade(m, s, ARCADES[eleccion as ModoArcade]));
+      if (eleccion === "envivo") await protegido(m, () => modoEnVivo(m, s));
+      else if (eleccion in ARCADES) await protegido(m, () => modoArcade(m, s, ARCADES[eleccion as ModoArcade]));
       else if (eleccion === "ranking") await protegido(m, () => verRanking(m, s, "general"));
       else if (eleccion === "historias") {
         const ruta = await menuHistorias(m, s);
@@ -171,6 +176,7 @@ async function jugarRuta(m: Motor, s: Sesion, id: RutaId) {
   guardarProgreso(s.alias, s.prog);
   m.aviso(`+${puntos + c.bonus} PUNTOS`, id === "banda" ? `${huecos} huecos encontrados` : marca === SALVO ? "¡Saliste a salvo!" : "Por jugar la historia", PAL.ambar);
   anunciarCosecha(m, c);
+  await m.esperar(Math.min(3000, (m.avisosPendientes * 1000) / 60));
   if (!s.vioDatos) {
     await epilogo(m, s.pais);
     s.vioDatos = true;
@@ -242,43 +248,47 @@ async function elegirPais(m: Motor): Promise<Pais> {
   return pais;
 }
 
-const ORDEN_MENU: Array<ModoArcade | "historias" | "banda" | "ranking" | "mas"> = [
-  "real_o_estafa",
-  "atrapa_la_mula",
-  "pausa_o_pasa",
-  "sigue_el_dinero",
-  "historias",
-  "banda",
-  "ranking",
-  "mas",
-];
+const ICONO_ARCADE: Record<ModoArcade, Paso["icono"]> = {
+  real_o_estafa: icono.carta,
+  atrapa_la_mula: icono.mula,
+  pausa_o_pasa: icono.pausa,
+  sigue_el_dinero: icono.lupa,
+};
 
-function barraRango(s: Sesion) {
-  const r = rango(s.prog.total);
-  return { texto: `${r.nombre} ${s.prog.total}`, color: PAL.navy };
-}
+type Eleccion = ModoArcade | "envivo" | "historias" | "banda" | "ranking" | "mas" | "titulo";
 
-async function menuPrincipal(m: Motor, s: Sesion): Promise<ModoArcade | "historias" | "banda" | "ranking" | "mas" | "titulo"> {
-  m.barraSuperior = barraRango(s);
-  m.escena = laboratorio;
+async function menuPrincipal(m: Motor, s: Sesion): Promise<Eleccion> {
+  m.barraSuperior = null;
+  m.descubrirYa();
   m.musica("barrio");
-  await m.fundirA(false);
-  const jugadas = HISTORIAS.filter((r) => s.resultados[r.id]).length;
-  const nuevo: Marca = { texto: "NUEVO", color: PAL.rojo };
-  const opciones: Opcion[] = ORDEN_MENU.map((id) => {
-    if (id in ARCADES) {
-      const a = ARCADES[id as ModoArcade];
-      const mejor = s.prog.mejor[a.modo];
-      return { texto: a.nombre, sub: a.sub, color: a.color, estrellas: s.prog.estrellas[a.modo] ?? 0, marca: mejor === undefined ? nuevo : undefined };
-    }
-    if (id === "historias") return { texto: "HISTORIAS", sub: "Casos reales", color: PAL.ambar, marca: jugadas ? { texto: `${jugadas}/4`, color: PAL.verdeOscuro } : undefined };
-    if (id === "banda") return { texto: "LA BANDA", sub: "Eres el atacante", color: PAL.rojoOscuro, marca: s.resultados.banda };
-    if (id === "ranking") return { texto: "RANKING", sub: "Top del evento", color: PAL.verde };
-    return { texto: "MÁS", sub: "Datos y país", color: PAL.gris };
+  const r = rango(s.prog.total);
+  const elegido = menuHub(m, {
+    rango: { nombre: r.nombre, total: s.prog.total, k: r.k, siguiente: r.siguiente?.nombre ?? null },
+    envivo: { id: "envivo", nombre: "EN VIVO", sub: "Juega con todos", color: PAL.rojo },
+    arcades: MODOS_ARCADE.map((id) => {
+      const a = ARCADES[id];
+      return {
+        id,
+        nombre: a.nombre,
+        sub: a.sub,
+        color: a.color,
+        icono: ICONO_ARCADE[id],
+        estrellas: s.prog.estrellas[id] ?? 0,
+        mejor: s.prog.mejor[id],
+        nuevo: s.prog.mejor[id] === undefined,
+      };
+    }),
+    chicos: [
+      { id: "historias", nombre: "HISTORIAS", sub: "", color: PAL.ambar },
+      { id: "banda", nombre: "LA BANDA", sub: "", color: PAL.rojoOscuro },
+      { id: "ranking", nombre: "RANKING", sub: "", color: PAL.verde },
+      { id: "mas", nombre: "MÁS", sub: "", color: PAL.gris },
+    ],
   });
-  const i = await m.menu(opciones, { estilo: "tarjetas", titulo: "¿Qué jugamos?" });
-  await m.fundirA(true);
-  return ORDEN_MENU[i] ?? "titulo";
+  await m.fundirA(false, 10);
+  const id = await elegido;
+  await m.fundirA(true, 10);
+  return id as Eleccion;
 }
 
 async function menuHistorias(m: Motor, s: Sesion): Promise<RutaId | null> {
@@ -289,7 +299,7 @@ async function menuHistorias(m: Motor, s: Sesion): Promise<RutaId | null> {
     ...HISTORIAS.map((r) => ({ texto: r.titulo, sub: r.sub, color: r.color, marca: s.resultados[r.id] })),
     { texto: "VOLVER", sub: "Menú", color: PAL.gris },
   ];
-  const i = await m.menu(opciones, { estilo: "tarjetas", titulo: "Ganar: +600 · Jugar: +200", cancelable: true });
+  const i = await m.menu(opciones, { estilo: "tarjetas", titulo: "Ganar: +600 pts", cancelable: true });
   await m.fundirA(true);
   return i >= 0 && i < HISTORIAS.length ? HISTORIAS[i].id : null;
 }
@@ -392,7 +402,7 @@ const ARCADES: Record<ModoArcade, DefArcade> = {
   real_o_estafa: {
     modo: "real_o_estafa",
     nombre: "¿REAL O ESTAFA?",
-    sub: "Decide rápido",
+    sub: "Decide ya",
     titulo: "¿REAL O\nESTAFA?",
     color: PAL.rojo,
     pasos: [
@@ -613,12 +623,115 @@ async function modoArcade(m: Motor, s: Sesion, def: DefArcade): Promise<void> {
     if (c.estrellas === 3 || (posicion !== null && posicion <= 3)) m.confeti();
     anunciarCosecha(m, c);
     await m.esperar(Math.max(600, ((160 - (m.t - inicio)) * 1000) / 60));
+    // Que los avisos de logros terminen aquí y no tapen el menú que sigue.
+    await m.esperar(Math.min(3000, (m.avisosPendientes * 1000) / 60));
     const sig = await m.menu([{ texto: "OTRA VEZ", color: "#bfe8c9" }, { texto: "VER RANKING" }, { texto: "MENÚ" }]);
     await m.fundirA(true);
     if (sig === 0) continue;
     if (sig === 1) await verRanking(m, s, def.modo);
     return;
   }
+}
+
+// ── EN VIVO (multijugador) ────────────────────────────────────
+
+function validarCodigo(c: string): string | null {
+  return /^[A-Z]{4}$/.test(c) ? null : "Son 4 letras (sin Ñ).";
+}
+
+async function modoEnVivo(m: Motor, s: Sesion) {
+  if (!s.vistos.has("envivo")) {
+    await comoSeJuega(m, {
+      titulo: "EN VIVO",
+      color: PAL.rojo,
+      pasos: [
+        { icono: icono.combo, texto: "Uno crea la sala y dicta el código." },
+        { icono: icono.dedo, texto: "Los demás entran con ese código." },
+        { icono: icono.reloj, texto: "Misma carta para todos: ¡el más rápido gana!" },
+      ],
+      meta: "8 rondas · 10 s cada una",
+    });
+    s.vistos.add("envivo");
+  }
+  m.barraSuperior = { texto: "EN VIVO", color: PAL.rojoOscuro };
+  m.escena = laboratorio;
+  m.musica("titulo");
+  await m.fundirA(false, 10);
+  const i = await m.menu(
+    [
+      { texto: "CREAR SALA", sub: "Eres el anfitrión", color: PAL.rojo },
+      { texto: "UNIRME", sub: "Tengo un código", color: PAL.azul },
+      { texto: "VOLVER", sub: "Menú", color: PAL.gris },
+    ],
+    { estilo: "tarjetas", titulo: "Multijugador", cancelable: true },
+  );
+  if (i === 0) {
+    const j = await m.menu(
+      [
+        { texto: "¿REAL O ESTAFA?", sub: "Mensajes y llamadas", color: PAL.rojo },
+        { texto: "¿PAUSA O PASA?", sub: "Eres el sistema", color: PAL.ambarOscuro },
+      ],
+      { estilo: "tarjetas", titulo: "¿Qué juegan?", cancelable: true },
+    );
+    if (j < 0) return m.fundirA(true, 10);
+    const juego = j === 0 ? "real_o_estafa" : "pausa_o_pasa";
+    const { codigo, token } = await crearSala({ alias: s.alias, pais: s.pais.id, juego });
+    await m.fundirA(true, 10);
+    await jugarSala(m, s, codigo, token, juego);
+    return;
+  }
+  if (i !== 1) return m.fundirA(true, 10);
+  await m.fundirA(true, 10);
+  for (;;) {
+    const pidiendo = m.nombre(validarCodigo, { titulo: "Código de la sala", ayuda: "Las 4 letras", max: 4 });
+    await m.fundirA(false, 10);
+    const codigo = await pidiendo;
+    try {
+      const v = await accionSala(codigo, { accion: "unirse", alias: s.alias, pais: s.pais.id });
+      await m.fundirA(true, 10);
+      await jugarSala(m, s, codigo, null, v.juego);
+      return;
+    } catch {
+      m.escena = laboratorio;
+      const otra = await m.pregunta(`No encontré la sala ${codigo}. ¿Probamos otra vez?`, [{ texto: "OTRO CÓDIGO" }, { texto: "VOLVER" }], VEGA);
+      await m.fundirA(true, 10);
+      if (otra !== 0) return;
+    }
+  }
+}
+
+async function jugarSala(m: Motor, s: Sesion, codigo: string, token: string | null, juego: "real_o_estafa" | "pausa_o_pasa") {
+  m.barraSuperior = null;
+  m.descubrirYa();
+  const sala = pantallaSala(m, {
+    codigo,
+    token,
+    alias: s.alias,
+    pais: s.pais,
+    alTerminar: (r: ResultadoSala) => {
+      // Las respuestas valen como dato; el puntaje de sala no entra al ranking arcade.
+      if (r.respuestas.length > 0) {
+        void registrarArcade({
+          modo: juego,
+          alias: s.alias,
+          pais: s.pais.id,
+          puntaje: Math.min(100_000, r.puntaje),
+          respuestas: r.respuestas,
+          origen: "sala",
+        } as JugadaArcade).catch(() => undefined);
+      }
+      const puntos = 200 + (r.posicion === 1 ? 600 : r.posicion === 2 ? 400 : r.posicion === 3 ? 250 : 0);
+      const logros: IdLogro[] = ["en_vivo"];
+      if (r.posicion === 1 && r.jugadores > 1) logros.push("campeon");
+      const c = sumarPartida(s.prog, null, puntos, logros);
+      guardarProgreso(s.alias, s.prog);
+      m.aviso(`+${puntos + c.bonus} PUNTOS`, `Puesto #${r.posicion} de ${r.jugadores}`, PAL.ambar);
+      anunciarCosecha(m, c);
+    },
+  });
+  await m.fundirA(false, 10);
+  await sala;
+  await m.fundirA(true, 10);
 }
 
 /** La mula confirmada protege a la siguiente víctima: 0 IA. */

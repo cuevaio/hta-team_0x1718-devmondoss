@@ -51,7 +51,9 @@ export type IdLogro =
   | "tres_estrellas"
   | "todoterreno"
   | "salvaste"
-  | "hacker_etico";
+  | "hacker_etico"
+  | "en_vivo"
+  | "campeon";
 
 export const LOGROS: Record<IdLogro, { titulo: string; sub: string; bonus: number }> = {
   primera: { titulo: "PRIMERA PARTIDA", sub: "Bienvenido", bonus: 100 },
@@ -65,6 +67,8 @@ export const LOGROS: Record<IdLogro, { titulo: string; sub: string; bonus: numbe
   todoterreno: { titulo: "TODOTERRENO", sub: "4 arcades", bonus: 500 },
   salvaste: { titulo: "A SALVO", sub: "Historia", bonus: 200 },
   hacker_etico: { titulo: "HACKER ÉTICO", sub: "Hueco hallado", bonus: 300 },
+  en_vivo: { titulo: "EN VIVO", sub: "Jugaste en sala", bonus: 200 },
+  campeon: { titulo: "CAMPEÓN EN VIVO", sub: "1° de la sala", bonus: 500 },
 };
 
 export type Progreso = {

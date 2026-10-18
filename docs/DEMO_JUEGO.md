@@ -442,3 +442,33 @@ El monitor muestra el panel **«Tracción y encuesta»** con todo esto en vivo.
 - `pausa_o_pasa` guarda cada decisión. El resumen calcula `% de robos que dejaron pasar` y `% de pagos normales que pausaron`, que mide cuánto les molesta la fricción.
 - El ranking `general` se calcula con estos datos.
 - El monitor muestra todo esto.
+
+## 14. EN VIVO (multijugador) y menú propio
+
+**Multijugador estilo concurso.**
+- Desde el menú, **EN VIVO**: alguien elige *CREAR SALA* y el juego (¿REAL O ESTAFA? o ¿PAUSA O PASA?). Aparece un código de 4 letras, sin I ni O. Los demás eligen *UNIRME* y lo escriben.
+- Todos ven la misma carta al mismo tiempo, durante 8 rondas de 10 s. Acertar vale 500 puntos más hasta 500 por rapidez, y hay bonus por racha.
+- Al revelar cada carta, cada celular ve cuánto de la sala respondió ESTAFA o REAL y en qué puesto va. Al final hay podio, y el anfitrión puede pedir otra ronda.
+- Cada jugador ve los textos de su país: un peruano ve S/, un mexicano ve $.
+
+**Servidor:**
+- `lib/juego/salas.ts` y `app/api/juego/salas/**`.
+- El reloj es del servidor: las rondas avanzan solas y los celulares solo consultan cada 0,6 s. También califica el servidor, con la verdad de `lib/juego/cartas.ts`; un test verifica que coincida con las cartas del cliente.
+- Las salas viven en RAM y duran 2 h. No exigen token: el anfitrión se identifica con el token que recibe al crear la sala.
+- Endpoints:
+  - `POST /api/juego/salas` crea una sala.
+  - `GET /api/juego/salas` lista las activas (para el monitor).
+  - `GET /api/juego/salas/:codigo?alias=` devuelve el estado.
+  - `POST /api/juego/salas/:codigo` recibe `unirse | iniciar | reiniciar | responder`.
+
+**Datos.** Al terminar, cada jugador registra sus respuestas en `/api/juego/arcade` con `origen: 'sala'`. Cuentan para «en qué estafa cae la gente» y para los jugadores totales, pero no entran al ranking arcade porque la escala de puntos es otra. Hay dos logros nuevos: EN VIVO y CAMPEÓN EN VIVO.
+
+**Monitor.** El panel «🔴 Salas en vivo» va arriba de la columna derecha, para proyectarlo. Muestra la carta en juego, cuántos respondieron, el reparto al revelar y el top 5.
+
+**Menú principal propio** (`hub.ts`). Ya no son tarjetas sobre la escena de Vega, que se asomaba por los huecos. Es una pantalla con:
+- Arriba, el rango con su barra de progreso.
+- EN VIVO destacado.
+- Los 4 arcades con ícono, estrellas, récord o etiqueta NUEVO.
+- Abajo, 2×2 accesos chicos.
+
+Los demás menús de tarjetas llevan ahora un tablero sólido detrás. Los avisos de logros bajan solo hasta la franja de cabecera y el resultado espera a que terminen.

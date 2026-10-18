@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { Caso, DecisionAccion, ReglaPolicy } from "@/lib/contracts";
 import { api, post } from "@/components/juego/api";
 import { SENALES, TACTICAS, explicar, retiene, soles } from "@/components/juego/datos";
+import { PAISES } from "@/components/juego2d/paises";
+import { TICKETS } from "@/components/juego2d/pausaOPasa";
+import { mazo } from "@/components/juego2d/realOEstafa";
 import s from "./monitor.module.css";
 
 /**
@@ -335,6 +338,86 @@ function cuota(r: Record<string, number> | undefined, ok: (k: string) => boolean
   return { pct: Math.round((si / n) * 100), n };
 }
 
+type SalaVivo = {
+  codigo: string;
+  juego: "real_o_estafa" | "pausa_o_pasa";
+  host: string;
+  fase: string;
+  ronda: number;
+  rondas: number;
+  carta: string | null;
+  verdad: boolean | null;
+  reparto: { estafa: number; real: number; sin_responder: number } | null;
+  respondieron: number;
+  jugadores: Array<{ alias: string; pais: string; puntaje: number }>;
+};
+
+const CARTAS_PE = mazo(PAISES.pe);
+
+function textoCarta(sala: SalaVivo): string {
+  if (!sala.carta) return "";
+  if (sala.juego === "pausa_o_pasa") {
+    const t = TICKETS.find((x) => x.id === sala.carta);
+    return t ? `A: ${t.destino} · ${t.senales.map((x) => x.texto).join(" · ")}` : sala.carta;
+  }
+  const c = CARTAS_PE.find((x) => x.id === sala.carta);
+  return c ? `${c.canal} · ${c.de}: «${c.texto}»` : sala.carta;
+}
+
+const FASE_SALA: Record<string, string> = {
+  espera: "En espera",
+  cuenta: "Empieza…",
+  responder: "Respondiendo",
+  revelar: "Respuesta",
+  fin: "Terminó",
+};
+
+/** Salas EN VIVO, para proyectar: la carta, cómo respondió la sala y el top. */
+function PanelSalas({ salas }: { salas: SalaVivo[] }) {
+  const vivas = salas.filter((x) => x.fase !== "fin" || x.jugadores.some((j) => j.puntaje > 0)).slice(0, 2);
+  if (vivas.length === 0) return null;
+  return (
+    <section className={s.panel}>
+      <h2>🔴 Salas en vivo</h2>
+      {vivas.map((sala) => {
+        const r = sala.reparto;
+        const tot = r ? Math.max(1, r.estafa + r.real + r.sin_responder) : 1;
+        const [a, b] = sala.juego === "pausa_o_pasa" ? ["Pausa", "Pasa"] : ["Estafa", "Real"];
+        return (
+          <div key={sala.codigo} className={s.sala}>
+            <p className={s.salaCabecera}>
+              <strong>{sala.codigo}</strong> · {sala.juego === "pausa_o_pasa" ? "¿Pausa o pasa?" : "¿Real o estafa?"} · {FASE_SALA[sala.fase] ?? sala.fase}
+              {sala.fase === "responder" || sala.fase === "revelar" ? ` · ronda ${sala.ronda + 1}/${sala.rondas}` : ""} · {sala.jugadores.length} jugando
+            </p>
+            {sala.carta && <p className={s.salaCarta}>{textoCarta(sala)}</p>}
+            {sala.fase === "responder" && (
+              <p className={s.nota}>
+                Respondieron {sala.respondieron}/{sala.jugadores.length}
+              </p>
+            )}
+            {r && (
+              <p className={s.salaReparto}>
+                {sala.verdad ? "✅ Era " + (sala.juego === "pausa_o_pasa" ? "para pausar" : "estafa") : "✅ Era " + (sala.juego === "pausa_o_pasa" ? "para dejar pasar" : "real")} · {a}{" "}
+                {Math.round((r.estafa / tot) * 100)}% · {b} {Math.round((r.real / tot) * 100)}% · sin responder {r.sin_responder}
+              </p>
+            )}
+            <ul className={s.lista}>
+              {sala.jugadores.slice(0, 5).map((j, i) => (
+                <li key={j.alias}>
+                  <span>#{i + 1}</span>
+                  <span>
+                    {BANDERAS[j.pais] ?? ""} {j.alias} · {j.puntaje}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 function PanelTraccion({ a }: { a: Arcade | null }) {
   if (!a) return null;
   const vivido = cuota(a.encuesta.vivido, (k) => k !== "no");
@@ -447,6 +530,7 @@ export default function Monitor() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [arcade, setArcade] = useState<Arcade | null>(null);
+  const [salasVivas, setSalasVivas] = useState<SalaVivo[]>([]);
   const [seleccion, setSeleccion] = useState<string | null>(null);
   const [fijo, setFijo] = useState(false);
   const [detalle, setDetalle] = useState<Caso | null>(null);
@@ -470,6 +554,9 @@ export default function Monitor() {
       setResumen(r);
       setError(null);
       api<Arcade>("/api/juego/arcade").then(setArcade).catch(() => undefined);
+      api<{ salas: SalaVivo[] }>("/api/juego/salas")
+        .then((x) => setSalasVivas(x.salas))
+        .catch(() => undefined);
     } catch (e) {
       setError(e instanceof Error ? `Sin conexión con el sistema: ${e.message}` : "Sin conexión con el sistema.");
     }
@@ -610,6 +697,7 @@ export default function Monitor() {
         </div>
 
         <div style={{ display: "grid", gap: 16 }}>
+          <PanelSalas salas={salasVivas} />
           <section className={s.panel}>
             <h2>Marcador</h2>
             <div className={s.marcador}>

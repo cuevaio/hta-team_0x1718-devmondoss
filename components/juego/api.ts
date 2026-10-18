@@ -1,5 +1,6 @@
 import type { Caso } from "@/lib/contracts";
 import { tokenOperador } from "@/components/demo-dashboard";
+import type { VistaSala } from "@/lib/juego/salas";
 import type { ContextoJugada } from "./datos";
 
 /**
@@ -104,4 +105,22 @@ export function registrarArcade(jugada: JugadaArcade) {
 
 export function resumenArcade() {
   return api<ResumenArcade>("/api/juego/arcade");
+}
+
+export type { VistaSala };
+
+export function crearSala(body: { alias: string; pais: string; juego: "real_o_estafa" | "pausa_o_pasa" }) {
+  return post<{ codigo: string; token: string }>("/api/juego/salas", body);
+}
+
+export function accionSala(codigo: string, body: Record<string, unknown>) {
+  return post<VistaSala>(`/api/juego/salas/${codigo}`, body);
+}
+
+export function verSala(codigo: string, alias?: string) {
+  return api<VistaSala>(`/api/juego/salas/${codigo}${alias ? `?alias=${encodeURIComponent(alias)}` : ""}`);
+}
+
+export function salasActivas() {
+  return api<{ salas: VistaSala[] }>("/api/juego/salas");
 }
