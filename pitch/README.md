@@ -3,9 +3,9 @@
 Portada y 3 diapositivas con animaciones, en HTML. No necesita build.
 
 1. **Portada**: Mule Zero, el equipo y el QR del juego.
-2. **El problema**: muchas víctimas, una sola cuenta.
-3. **La solución**: frenar, investigar, recordar.
-4. **La oportunidad**: una mula confirmada en un país, frenada en todos.
+2. **El problema**: a la víctima no la hackean, la convencen.
+3. **La solución**: la red de agentes, paso a paso.
+4. **La oportunidad**: los pagos de la región se conectan; el fraude va a cruzar fronteras.
 
 ## Ejecutarla
 
@@ -33,7 +33,7 @@ En el celular se desliza. Las animaciones se reinician al entrar a cada diaposit
 ## Archivos
 
 - `index.html`: las diapositivas y las escenas (SVG).
-- `estilos.css`: estilo del juego (pixel, azul noche, ámbar).
+- `estilos.css`: estilo sobrio (azul noche, marfil, dorado; rojo solo para el fraude).
 - `presentacion.js`: navegación y animaciones.
 - `servir.mjs`: servidor local sin dependencias.
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mule Zero</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Geist:wght@400..800&family=Geist+Mono:wght@400..600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap">
 <link rel="stylesheet" href="estilos.css">
 <script src="presentacion.js" defer></script>
 </head>
@@ -12,106 +12,127 @@
 <div class="deck" id="deck">
 <main class="stage" id="stage" aria-roledescription="presentación">
   <header class="hud">
-    <div class="brand"><i></i>MULE ZERO</div>
+    <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M6 18L18 6" stroke="currentColor" stroke-width="2.4"/></svg>Mule Zero</div>
     <div class="count" id="count">01 / 04</div>
   </header>
 
   <!-- 1 · Portada -->
   <section class="slide cover is-active" aria-label="Portada">
     <div class="netbg" aria-hidden="true"><svg id="net" data-smil viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice"></svg></div>
-    <div class="cover-text">
-      <p class="kicker rise" style="--d:.1s">HACK THE ANDES · TRACK 04</p>
-      <h1 class="logo rise" style="--d:.25s">MULE ZERO<span class="cursor" aria-hidden="true"></span></h1>
-      <p class="tagline rise" style="--d:.5s">Le quitamos al estafador la cuenta que necesita.</p>
-      <div class="team rise" style="--d:.8s">
-        <p class="member" style="--c:var(--cyan)"><b>TONY</b><span>Agentes de IA</span></p>
-        <p class="member" style="--c:var(--green)"><b>ALE</b><span>Plataforma</span></p>
-        <p class="member" style="--c:var(--amber)"><b>JHOSTYN</b><span>QA</span></p>
-      </div>
+    <div class="cover-main">
+      <p class="kicker rise" style="--d:.1s">HACK THE ANDES 2026 · TRACK 04 SEGURIDAD + RETO B1 AML</p>
+      <h1 class="wordmark rise" style="--d:.2s">Mule Zero</h1>
+      <p class="slogan rise" style="--d:.45s">Detectar una vez.<br>Proteger a toda la región.</p>
+      <p class="lead rise" style="--d:.7s">Antifraude multiagente para pagos inmediatos: frena el dinero antes de que llegue a la cuenta mula y comparte lo aprendido entre bancos y países.</p>
     </div>
-    <div class="play pop" style="--d:1s">
-      <p class="kicker">JUEGA AHORA</p>
-      <div class="qr" role="img" aria-label="Código QR hacia te-estan-robando.vercel.app/play"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><path stroke="#f6ebd7" d="M0 0.5h7m4 0h2m2 0h1m2 0h2m2 0h7M0 1.5h1m5 0h1m2 0h1m2 0h1m2 0h1m1 0h2m3 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m2 0h1m5 0h1m1 0h4m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h1m3 0h1m3 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h2m1 0h2m3 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h1m1 0h1m2 0h1m1 0h1m1 0h3m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 7.5h1m1 0h1m2 0h4M0 8.5h1m2 0h1m1 0h2m1 0h4m1 0h2m3 0h1m2 0h1m1 0h1M2 9.5h1m1 0h1m5 0h2m1 0h1m2 0h1m3 0h1m1 0h1m2 0h1m2 0h1M6 10.5h4m1 0h4m2 0h1m1 0h2m2 0h5M4 11.5h2m2 0h2m2 0h2m1 0h1m4 0h1m1 0h2m2 0h2M1 12.5h2m1 0h1m1 0h3m1 0h2m1 0h1m3 0h1m2 0h3m2 0h1m1 0h2M0 13.5h1m6 0h1m2 0h5m2 0h4M2 14.5h1m1 0h1m1 0h1m1 0h3m1 0h1m7 0h3m1 0h5M0 15.5h2m1 0h2m6 0h5m1 0h1m2 0h2m2 0h2m1 0h1M5 16.5h5m1 0h1m1 0h2m2 0h1m2 0h2m5 0h1M4 17.5h2m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m4 0h2m2 0h1m2 0h1M0 18.5h1m2 0h1m1 0h2m2 0h2m2 0h1m2 0h1m3 0h1m1 0h3m2 0h2M2 19.5h1m2 0h1m1 0h3m1 0h1m1 0h1m3 0h3m2 0h1m4 0h2M0 20.5h1m1 0h1m3 0h1m1 0h2m2 0h1m1 0h3m3 0h5m1 0h1M8 21.5h1m1 0h1m1 0h2m3 0h2m1 0h1m3 0h1m1 0h3M0 22.5h7m3 0h2m1 0h2m2 0h2m1 0h1m1 0h1m1 0h1m2 0h1M0 23.5h1m5 0h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h1m3 0h4M0 24.5h1m1 0h3m1 0h1m2 0h3m2 0h4m2 0h5M0 25.5h1m1 0h3m1 0h1m1 0h1m2 0h4m2 0h1m1 0h1m2 0h6M0 26.5h1m1 0h3m1 0h1m2 0h2m1 0h3m3 0h3m3 0h3m1 0h1M0 27.5h1m5 0h1m3 0h2m1 0h8m1 0h2m3 0h1M0 28.5h7m1 0h1m1 0h1m6 0h1m1 0h2m1 0h3m2 0h1"/></svg>
+    <div class="cover-foot rise" style="--d:.95s">
+      <div class="team">
+        <p><b>Tony</b><span>Agentes de IA</span></p>
+        <p><b>Ale</b><span>Plataforma</span></p>
+        <p><b>Jhostyn</b><span>QA</span></p>
+      </div>
+      <div class="demo">
+        <div class="qr" role="img" aria-label="Código QR hacia te-estan-robando.vercel.app/play"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 29" shape-rendering="crispEdges"><path stroke="#e8edf3" d="M0 0.5h7m4 0h2m2 0h1m2 0h2m2 0h7M0 1.5h1m5 0h1m2 0h1m2 0h1m2 0h1m1 0h2m3 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m2 0h1m5 0h1m1 0h4m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h1m3 0h1m3 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h2m1 0h2m3 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h1m1 0h1m2 0h1m1 0h1m1 0h3m2 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 7.5h1m1 0h1m2 0h4M0 8.5h1m2 0h1m1 0h2m1 0h4m1 0h2m3 0h1m2 0h1m1 0h1M2 9.5h1m1 0h1m5 0h2m1 0h1m2 0h1m3 0h1m1 0h1m2 0h1m2 0h1M6 10.5h4m1 0h4m2 0h1m1 0h2m2 0h5M4 11.5h2m2 0h2m2 0h2m1 0h1m4 0h1m1 0h2m2 0h2M1 12.5h2m1 0h1m1 0h3m1 0h2m1 0h1m3 0h1m2 0h3m2 0h1m1 0h2M0 13.5h1m6 0h1m2 0h5m2 0h4M2 14.5h1m1 0h1m1 0h1m1 0h3m1 0h1m7 0h3m1 0h5M0 15.5h2m1 0h2m6 0h5m1 0h1m2 0h2m2 0h2m1 0h1M5 16.5h5m1 0h1m1 0h2m2 0h1m2 0h2m5 0h1M4 17.5h2m1 0h1m1 0h1m1 0h2m1 0h1m1 0h1m4 0h2m2 0h1m2 0h1M0 18.5h1m2 0h1m1 0h2m2 0h2m2 0h1m2 0h1m3 0h1m1 0h3m2 0h2M2 19.5h1m2 0h1m1 0h3m1 0h1m1 0h1m3 0h3m2 0h1m4 0h2M0 20.5h1m1 0h1m3 0h1m1 0h2m2 0h1m1 0h3m3 0h5m1 0h1M8 21.5h1m1 0h1m1 0h2m3 0h2m1 0h1m3 0h1m1 0h3M0 22.5h7m3 0h2m1 0h2m2 0h2m1 0h1m1 0h1m1 0h1m2 0h1M0 23.5h1m5 0h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h1m3 0h4M0 24.5h1m1 0h3m1 0h1m2 0h3m2 0h4m2 0h5M0 25.5h1m1 0h3m1 0h1m1 0h1m2 0h4m2 0h1m1 0h1m2 0h6M0 26.5h1m1 0h3m1 0h1m2 0h2m1 0h3m3 0h3m3 0h3m1 0h1M0 27.5h1m5 0h1m3 0h2m1 0h8m1 0h2m3 0h1M0 28.5h7m1 0h1m1 0h1m6 0h1m1 0h2m1 0h3m2 0h1"/></svg>
 </div>
-      <p class="url">te-estan-robando.vercel.app/play</p>
+        <p><span>Demo en vivo</span><b>te-estan-robando.vercel.app/play</b></p>
+      </div>
     </div>
   </section>
 
   <!-- 2 · El problema -->
-  <section class="slide with-note" id="s-problema" aria-label="El problema">
+  <section class="slide" aria-label="El problema">
     <div class="head">
       <p class="kicker rise" style="--d:.05s">EL PROBLEMA</p>
-      <h2 class="rise" style="--d:.15s">Muchas víctimas. <span class="red">Una sola cuenta.</span></h2>
+      <h2 class="rise" style="--d:.15s">A la víctima no la hackean. <em>La convencen.</em></h2>
+      <p class="lead rise" style="--d:.3s">Ella misma autoriza la transferencia. Para el banco todo está en orden, y el dinero cae en una cuenta mula que lo saca del país en minutos.</p>
     </div>
     <div class="viz">
-      <svg id="viz-problema" data-smil viewBox="0 0 900 600" role="img" aria-label="Catorce víctimas envían dinero a una sola cuenta mula, que lo reenvía en menos de dos horas a otra cuenta del país y a cuentas de Bolivia y Colombia.">
-        <text class="px" x="80" y="36" text-anchor="middle" font-size="12" fill="#79c7e8">VÍCTIMAS</text>
-        <g id="victimas"></g>
-        <line x1="725" y1="40" x2="725" y2="540" stroke="#93a8c0" stroke-width="2" stroke-dasharray="6 8" opacity="0.5"/>
-        <text class="px" x="733" y="560" font-size="10" fill="#93a8c0">FRONTERA</text>
-        <g opacity="0">
-          <animate attributeName="opacity" from="0" to="1" begin="4.6s" dur="0.5s" fill="freeze"/>
-          <path id="o1" d="M512 285 Q 590 160 628 150" fill="none" stroke="#f1b35b" stroke-width="3" stroke-dasharray="10 10">
-            <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="0.6s" repeatCount="indefinite"/>
-          </path>
-          <path id="o2" d="M516 300 Q 680 260 802 255" fill="none" stroke="#f1b35b" stroke-width="3" stroke-dasharray="10 10">
-            <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="0.6s" repeatCount="indefinite"/>
-          </path>
-          <path id="o3" d="M512 315 Q 680 450 802 455" fill="none" stroke="#f1b35b" stroke-width="3" stroke-dasharray="10 10">
-            <animate attributeName="stroke-dashoffset" from="0" to="-40" dur="0.6s" repeatCount="indefinite"/>
-          </path>
-          <circle r="6" fill="#f6ebd7"><animateMotion dur="1.1s" begin="4.8s" repeatCount="indefinite"><mpath href="#o1"/></animateMotion></circle>
-          <circle r="6" fill="#f6ebd7"><animateMotion dur="1.1s" begin="5.1s" repeatCount="indefinite"><mpath href="#o2"/></animateMotion></circle>
-          <circle r="6" fill="#f6ebd7"><animateMotion dur="1.1s" begin="5.4s" repeatCount="indefinite"><mpath href="#o3"/></animateMotion></circle>
-          <circle cx="640" cy="148" r="16" fill="#0f1d33" stroke="#f1b35b" stroke-width="2"/>
-          <text class="sx" x="640" y="190" text-anchor="middle" font-size="17" fill="#93a8c0">Perú</text>
-          <circle cx="820" cy="255" r="16" fill="#0f1d33" stroke="#f1b35b" stroke-width="2"/>
-          <text class="sx" x="820" y="297" text-anchor="middle" font-size="17" fill="#93a8c0">Bolivia</text>
-          <circle cx="820" cy="455" r="16" fill="#0f1d33" stroke="#f1b35b" stroke-width="2"/>
-          <text class="sx" x="820" y="497" text-anchor="middle" font-size="17" fill="#93a8c0">Colombia</text>
-          <text class="sx" x="470" y="470" text-anchor="middle" font-size="22" font-weight="800" fill="#f1b35b">91% sale en &lt; 2 h</text>
+      <svg id="viz-problema" data-smil viewBox="0 0 1500 300" role="img" aria-label="Una llamada falsa del banco convence a Rosa. Ella autoriza la transferencia con su clave, su celular y su token, y el banco ve todo en orden. El dinero cae en una cuenta mula que recibe de 14 víctimas y sale del país en menos de dos horas.">
+        <defs>
+          <marker id="ahp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#56657a"/></marker>
+        </defs>
+        <g stroke="#56657a" stroke-width="2.5" fill="none" marker-end="url(#ahp)">
+          <path d="M210 90 H486"/>
+          <path d="M634 90 H906"/>
+          <path d="M1054 90 H1286"/>
         </g>
-        <circle cx="470" cy="300" r="46" fill="none" stroke="#e66565" stroke-width="2" opacity="0">
-          <animate attributeName="r" values="46;96" dur="1.6s" begin="1.3s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.7;0" dur="1.6s" begin="1.3s" repeatCount="indefinite"/>
+        <line x1="1215" y1="20" x2="1215" y2="150" stroke="#8a99ad" stroke-width="1.5" stroke-dasharray="4 6"/>
+        <text class="mx" x="1223" y="30" font-size="13" fill="#8a99ad">FRONTERA</text>
+
+        <!-- 1 · Llamada -->
+        <circle cx="150" cy="90" r="56" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
+        <path d="M131 70 c4 -4 9 -4 12 1 l6 9 c2 4 1 8 -2 10 l-4 3 c3 7 8 12 15 15 l3 -4 c2 -3 6 -4 10 -2 l9 6 c5 3 5 8 1 12 l-5 5 c-6 6 -30 -2 -42 -16 c-12 -13 -16 -31 -11 -37 z" fill="#e3b25a"/>
+        <text class="sx" x="150" y="190" text-anchor="middle" font-size="22" font-weight="600" fill="#e8edf3">Llamada del «banco»</text>
+        <text class="sx" x="150" y="220" text-anchor="middle" font-size="18" fill="#8a99ad">«tu cuenta está en peligro»</text>
+
+        <!-- 2 · Rosa autoriza -->
+        <circle cx="560" cy="90" r="56" fill="#111a2b" stroke="#7cc4e6" stroke-width="2"/>
+        <circle cx="560" cy="76" r="14" fill="#7cc4e6"/>
+        <path d="M534 118 a26 23 0 0 1 52 0 z" fill="#7cc4e6"/>
+        <text class="sx" x="560" y="190" text-anchor="middle" font-size="22" font-weight="600" fill="#e8edf3">Rosa autoriza S/4,800</text>
+        <text class="mx" x="470" y="224" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.3s"/>✓ clave</text>
+        <text class="mx" x="560" y="224" text-anchor="middle" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.6s"/>✓ celular</text>
+        <text class="mx" x="650" y="224" text-anchor="end" font-size="17" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="1.9s"/>✓ token</text>
+        <text class="mx" x="560" y="256" text-anchor="middle" font-size="15" fill="#8a99ad" opacity="0"><set attributeName="opacity" to="1" begin="2.3s"/>para el banco: todo en orden</text>
+
+        <!-- 3 · Cuenta mula -->
+        <circle cx="980" cy="90" r="56" fill="none" stroke="#e5645e" stroke-width="2" opacity="0">
+          <animate attributeName="r" values="56;96" dur="1.6s" begin="3.1s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.6;0" dur="1.6s" begin="3.1s" repeatCount="indefinite"/>
         </circle>
-        <circle cx="470" cy="300" r="46" fill="#2a0f14" stroke="#e66565" stroke-width="3"/>
-        <text id="s2-count" class="px" x="470" y="314" text-anchor="middle" font-size="34" fill="#f6ebd7">0</text>
-        <text class="px" x="470" y="378" text-anchor="middle" font-size="12" fill="#e66565">1 CUENTA MULA</text>
-              </svg>
+        <circle cx="980" cy="90" r="56" fill="#2a0f14" stroke="#e5645e" stroke-width="2.5"/>
+        <text class="mx" x="980" y="98" text-anchor="middle" font-size="22" font-weight="600" fill="#e5645e">MULA</text>
+        <text class="sx" x="980" y="190" text-anchor="middle" font-size="22" font-weight="600" fill="#e8edf3">Una cuenta mula</text>
+        <text class="sx" x="980" y="220" text-anchor="middle" font-size="18" fill="#8a99ad">recibe de 14 víctimas</text>
+
+        <!-- 4 · Sale del país -->
+        <circle cx="1360" cy="90" r="56" fill="#111a2b" stroke="#e3b25a" stroke-width="2"/>
+        <path d="M1336 90 h40 M1362 74 l16 16 l-16 16" stroke="#e3b25a" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <text class="sx" x="1360" y="190" text-anchor="middle" font-size="22" font-weight="600" fill="#e8edf3">Sale del país</text>
+        <text class="sx" x="1360" y="220" text-anchor="middle" font-size="18" fill="#8a99ad">en menos de 2 horas</text>
+
+        <!-- El dinero -->
+        <circle r="11" fill="#e3b25a" stroke="#0a0f1a" stroke-width="2">
+          <animateMotion path="M210 90 H486 M634 90 H906 M1054 90 H1286" dur="4.6s" begin="0s" fill="freeze" calcMode="linear"
+            keyPoints="0;0;0.351;0.351;0.697;0.697;1;1" keyTimes="0;0.1;0.25;0.55;0.65;0.75;0.88;1"/>
+        </circle>
+      </svg>
     </div>
-    <div class="facts rise" style="--d:.5s">
-      <p class="fact" style="--c:var(--red)"><b>42,000+</b><span>denuncias por delitos informáticos en Perú, 2024</span></p>
-      <p class="fact" style="--c:var(--cyan)"><b>+42%</b><span>cuentas mula reportadas en LATAM, 2025</span></p>
-      <p class="note">Fuentes: Ministerio Público vía SBS (El Comercio, 2025) · BioCatch (2025) · Escena: simulación con datos sintéticos</p>
+    <p class="insight rise" style="--d:2.6s">Los controles del banco protegen contra el acceso no autorizado. <em>Aquí, el pago sí está autorizado.</em></p>
+    <div class="stats rise" style="--d:.5s">
+      <p><b data-count="42000" data-suf="+" data-delay=".6">42,000+</b><span>denuncias por delitos informáticos en Perú en 2024. Cinco veces más que en 2020.</span></p>
+      <p><b>1 de 10</b><span>usuarios de finanzas digitales en Perú perdió dinero por fraude.</span></p>
+      <p><b data-count="42" data-pre="+" data-suf="%" data-delay=".8">+42%</b><span>cuentas mula reportadas por bancos de LATAM en 2025.</span></p>
     </div>
+    <p class="source">Fuentes: Ministerio Público vía SBS (El Comercio, may. 2025) · CGAP, encuesta a 1,007 usuarios en Perú (2025) · BioCatch, 36 instituciones de LATAM (2025) · Rosa: caso ilustrativo</p>
   </section>
 
-  <!-- 5 · La solución -->
-  <section class="slide" aria-label="La solución: cómo funciona la red de agentes">
+  <!-- 3 · La solución -->
+  <section class="slide" aria-label="La solución">
     <div class="head">
-      <p class="kicker rise" style="--d:.05s">LA SOLUCIÓN · CÓMO FUNCIONA</p>
-      <h2 class="rise" style="--d:.15s">Cuatro agentes de IA investigan. <span class="green">Una regla fija decide.</span></h2>
+      <p class="kicker rise" style="--d:.05s">LA SOLUCIÓN</p>
+      <h2 class="rise" style="--d:.15s">Frenamos el dinero <em>antes</em> de que llegue a la mula.</h2>
+      <p class="lead rise" style="--d:.3s">Cuatro agentes de IA investigan la cuenta que recibe. Una regla auditable decide. Un analista confirma, y lo aprendido protege al siguiente.</p>
     </div>
     <div class="viz">
       <svg id="viz-solucion" data-smil viewBox="0 0 1600 650" role="img" aria-label="Diagrama de flujo. Frenar: las reglas, sin IA, retienen el dinero de Rosa. Investigar: el Coordinador, un agente de IA, llama a dos agentes; el Guardián habla con Rosa y detecta que la guían por teléfono; el Detective revisa la cuenta que recibe: 14 personas le envían y reenvía en 2 horas. Decidir: la Política, una regla fija sin IA, decide escalar; el Auditor, de IA, arma el expediente con pruebas. Recordar: un analista humano confirma que es mula y la Memoria marca la cuenta. Cuando Jorge paga a la misma cuenta, se le frena en el paso 1 sin IA.">
         <defs>
-          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#5d7390"/></marker>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#56657a"/></marker>
         </defs>
 
         <!-- Fases -->
-        <g stroke="#22416a" stroke-width="2" stroke-dasharray="4 10">
+        <g stroke="#24324a" stroke-width="2" stroke-dasharray="4 10">
           <line x1="390" y1="110" x2="390" y2="440"/>
           <line x1="805" y1="110" x2="805" y2="440"/>
           <line x1="1210" y1="110" x2="1210" y2="440"/>
         </g>
-        <text class="px" x="290" y="34" text-anchor="middle" font-size="15" fill="#f1b35b">1 · FRENAR</text>
-        <text class="px" x="597" y="34" text-anchor="middle" font-size="15" fill="#79c7e8">2 · INVESTIGAR</text>
-        <text class="px" x="1007" y="34" text-anchor="middle" font-size="15" fill="#e66565">3 · DECIDIR</text>
-        <text class="px" x="1405" y="34" text-anchor="middle" font-size="15" fill="#65be83">4 · RECORDAR</text>
+        <text class="px" x="290" y="34" text-anchor="middle" font-size="17" fill="#e3b25a">1 · FRENAR</text>
+        <text class="px" x="597" y="34" text-anchor="middle" font-size="17" fill="#7cc4e6">2 · INVESTIGAR</text>
+        <text class="px" x="1007" y="34" text-anchor="middle" font-size="17" fill="#e5645e">3 · DECIDIR</text>
+        <text class="px" x="1405" y="34" text-anchor="middle" font-size="17" fill="#5cc8a8">4 · RECORDAR</text>
 
         <!-- Flechas -->
-        <g stroke="#5d7390" stroke-width="3" fill="none" marker-end="url(#ah)">
+        <g stroke="#56657a" stroke-width="3" fill="none" marker-end="url(#ah)">
           <path d="M138 270 H238"/>
           <path d="M338 270 H438"/>
           <path d="M530 247 L656 174"/>
@@ -124,220 +145,226 @@
         </g>
 
         <!-- Vuelta de la memoria (Jorge) -->
-        <path id="loop" d="M1510 318 C 1510 690 290 690 290 318" fill="none" stroke="#65be83" stroke-width="3" stroke-dasharray="6 8" opacity="0">
+        <path id="loop" d="M1510 318 C 1510 690 290 690 290 318" fill="none" stroke="#5cc8a8" stroke-width="3" stroke-dasharray="6 8" opacity="0">
           <set attributeName="opacity" to="0.85" begin="7.6s"/>
         </path>
 
         <!-- Persona que paga -->
-        <circle cx="90" cy="270" r="46" fill="#0f1d33" stroke="#79c7e8" stroke-width="3"/>
-        <circle cx="90" cy="257" r="11" fill="#79c7e8"/>
-        <path d="M70 292 a20 18 0 0 1 40 0 z" fill="#79c7e8"/>
-        <text class="sx" x="90" y="348" text-anchor="middle" font-size="20" font-weight="700" fill="#eef3f8">Rosa<set attributeName="opacity" to="0" begin="7.5s"/></text>
-        <text class="sx" x="90" y="348" text-anchor="middle" font-size="20" font-weight="700" fill="#eef3f8" opacity="0"><set attributeName="opacity" to="1" begin="7.5s"/>Jorge</text>
-        <text class="sx" x="90" y="374" text-anchor="middle" font-size="17" fill="#93a8c0">quiere pagar</text>
+        <circle cx="90" cy="270" r="46" fill="#111a2b" stroke="#7cc4e6" stroke-width="3"/>
+        <circle cx="90" cy="257" r="11" fill="#7cc4e6"/>
+        <path d="M70 292 a20 18 0 0 1 40 0 z" fill="#7cc4e6"/>
+        <text class="sx" x="90" y="348" text-anchor="middle" font-size="20" font-weight="700" fill="#e8edf3">Rosa<set attributeName="opacity" to="0" begin="7.5s"/></text>
+        <text class="sx" x="90" y="348" text-anchor="middle" font-size="20" font-weight="700" fill="#e8edf3" opacity="0"><set attributeName="opacity" to="1" begin="7.5s"/>Jorge</text>
+        <text class="sx" x="90" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">quiere pagar</text>
 
         <!-- 1 · Reglas (sin IA) -->
-        <circle cx="290" cy="270" r="46" fill="#0a0f1a" stroke="#93a8c0" stroke-width="3">
+        <circle cx="290" cy="270" r="46" fill="#0a0f1a" stroke="#8a99ad" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="0.9s" fill="freeze"/>
-          <set attributeName="stroke" to="#65be83" begin="8.4s"/>
+          <set attributeName="stroke" to="#5cc8a8" begin="8.4s"/>
         </circle>
-        <polygon points="310.3,261.6 298.4,249.7 281.6,249.7 269.7,261.6 269.7,278.4 281.6,290.3 298.4,290.3 310.3,278.4" fill="#f1b35b"/>
-        <text class="px" x="290" y="348" text-anchor="middle" font-size="12" fill="#f6ebd7">REGLAS</text>
-        <text class="sx" x="290" y="374" text-anchor="middle" font-size="17" fill="#93a8c0">retienen el dinero</text>
-        <text class="px" x="290" y="200" text-anchor="middle" font-size="12" fill="#f1b35b" opacity="0"><set attributeName="opacity" to="1" begin="1s"/>RETENIDO</text>
+        <polygon points="310.3,261.6 298.4,249.7 281.6,249.7 269.7,261.6 269.7,278.4 281.6,290.3 298.4,290.3 310.3,278.4" fill="#e3b25a"/>
+        <text class="px" x="290" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">REGLAS</text>
+        <text class="sx" x="290" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">retienen el dinero</text>
+        <text class="px" x="290" y="200" text-anchor="middle" font-size="12" fill="#e3b25a" opacity="0"><set attributeName="opacity" to="1" begin="1s"/>RETENIDO</text>
 
         <!-- 2 · Coordinador (IA) -->
-        <circle cx="490" cy="270" r="46" fill="#0a0f1a" stroke="#79c7e8" stroke-width="3">
+        <circle cx="490" cy="270" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="1.9s" fill="freeze"/>
         </circle>
-        <path d="M490 247 L512 270 L490 293 L468 270 Z" fill="#f6ebd7"/>
-        <text class="px" x="490" y="348" text-anchor="middle" font-size="12" fill="#f6ebd7">COORDINADOR</text>
-        <text class="sx" x="490" y="374" text-anchor="middle" font-size="17" fill="#93a8c0">elige a quién llamar</text>
-        <text class="mx" x="490" y="200" text-anchor="middle" font-size="16" fill="#79c7e8" opacity="0"><set attributeName="opacity" to="1" begin="2s"/>llama a 2 agentes</text>
+        <path d="M490 247 L512 270 L490 293 L468 270 Z" fill="#e8edf3"/>
+        <text class="px" x="490" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">COORDINADOR</text>
+        <text class="sx" x="490" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">elige a quién llamar</text>
+        <text class="mx" x="490" y="200" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="2s"/>llama a 2 agentes</text>
 
         <!-- 2 · Guardián (IA) -->
-        <circle cx="700" cy="150" r="46" fill="#0a0f1a" stroke="#79c7e8" stroke-width="3">
+        <circle cx="700" cy="150" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="2.6s" fill="freeze"/>
         </circle>
-        <path d="M700 127 l19 7 v15 c0 12 -8 20 -19 25 c-11 -5 -19 -13 -19 -25 v-15 z" fill="#f6ebd7"/>
-        <text class="px" x="700" y="228" text-anchor="middle" font-size="12" fill="#f6ebd7">GUARDIÁN</text>
-        <text class="sx" x="700" y="254" text-anchor="middle" font-size="17" fill="#93a8c0">habla con Rosa</text>
-        <text class="mx" x="700" y="84" text-anchor="middle" font-size="16" fill="#79c7e8" opacity="0"><set attributeName="opacity" to="1" begin="2.7s"/>«me guían por teléfono»</text>
+        <path d="M700 127 l19 7 v15 c0 12 -8 20 -19 25 c-11 -5 -19 -13 -19 -25 v-15 z" fill="#e8edf3"/>
+        <text class="px" x="700" y="228" text-anchor="middle" font-size="15" fill="#e8edf3">GUARDIÁN</text>
+        <text class="sx" x="700" y="254" text-anchor="middle" font-size="17" fill="#8a99ad">habla con Rosa</text>
+        <text class="mx" x="700" y="84" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="2.7s"/>«me guían por teléfono»</text>
 
         <!-- 2 · Detective (IA) -->
-        <circle cx="700" cy="390" r="46" fill="#0a0f1a" stroke="#79c7e8" stroke-width="3">
+        <circle cx="700" cy="390" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="2.6s" fill="freeze"/>
         </circle>
-        <circle cx="694" cy="384" r="13" fill="none" stroke="#f6ebd7" stroke-width="5"/>
-        <line x1="703" y1="393" x2="716" y2="406" stroke="#f6ebd7" stroke-width="6" stroke-linecap="round"/>
-        <text class="px" x="700" y="468" text-anchor="middle" font-size="12" fill="#f6ebd7">DETECTIVE</text>
-        <text class="sx" x="700" y="494" text-anchor="middle" font-size="17" fill="#93a8c0">revisa quién recibe</text>
-        <text class="mx" x="700" y="530" text-anchor="middle" font-size="16" fill="#79c7e8" opacity="0"><set attributeName="opacity" to="1" begin="2.7s"/>14 le envían · reenvía en 2 h</text>
+        <circle cx="694" cy="384" r="13" fill="none" stroke="#e8edf3" stroke-width="5"/>
+        <line x1="703" y1="393" x2="716" y2="406" stroke="#e8edf3" stroke-width="6" stroke-linecap="round"/>
+        <text class="px" x="700" y="468" text-anchor="middle" font-size="15" fill="#e8edf3">DETECTIVE</text>
+        <text class="sx" x="700" y="494" text-anchor="middle" font-size="17" fill="#8a99ad">revisa quién recibe</text>
+        <text class="mx" x="700" y="530" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="2.7s"/>14 le envían · reenvía en 2 h</text>
 
         <!-- 3 · Política (sin IA) -->
-        <circle cx="910" cy="270" r="46" fill="#0a0f1a" stroke="#93a8c0" stroke-width="3">
+        <circle cx="910" cy="270" r="46" fill="#0a0f1a" stroke="#8a99ad" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="3.6s" fill="freeze"/>
         </circle>
-        <path d="M910 250 v40 M893 258 h34 M893 258 l-9 16 h18 z M927 258 l-9 16 h18 z M898 290 h24" stroke="#f6ebd7" stroke-width="3" fill="none" stroke-linejoin="round"/>
-        <text class="px" x="910" y="348" text-anchor="middle" font-size="12" fill="#f6ebd7">POLÍTICA</text>
-        <text class="sx" x="910" y="374" text-anchor="middle" font-size="17" fill="#93a8c0">una regla decide</text>
+        <path d="M910 250 v40 M893 258 h34 M893 258 l-9 16 h18 z M927 258 l-9 16 h18 z M898 290 h24" stroke="#e8edf3" stroke-width="3" fill="none" stroke-linejoin="round"/>
+        <text class="px" x="910" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">POLÍTICA</text>
+        <text class="sx" x="910" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">una regla decide</text>
         <g opacity="0" transform="rotate(-6 910 194)"><set attributeName="opacity" to="1" begin="3.7s"/>
-          <rect x="840" y="174" width="140" height="40" rx="6" fill="#2a0f14" stroke="#e66565" stroke-width="3"/>
-          <text class="px" x="910" y="200" text-anchor="middle" font-size="13" fill="#e66565">ESCALAR</text>
+          <rect x="840" y="174" width="140" height="40" rx="6" fill="#2a0f14" stroke="#e5645e" stroke-width="3"/>
+          <text class="px" x="910" y="200" text-anchor="middle" font-size="13" fill="#e5645e">ESCALAR</text>
         </g>
 
         <!-- 3 · Auditor (IA) -->
-        <circle cx="1110" cy="270" r="46" fill="#0a0f1a" stroke="#79c7e8" stroke-width="3">
+        <circle cx="1110" cy="270" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="4.8s" fill="freeze"/>
         </circle>
-        <rect x="1096" y="250" width="28" height="38" rx="3" fill="#f6ebd7"/>
+        <rect x="1096" y="250" width="28" height="38" rx="3" fill="#e8edf3"/>
         <path d="M1102 262 h16 M1102 270 h16 M1102 278 h10" stroke="#0a0f1a" stroke-width="2.5"/>
-        <text class="px" x="1110" y="348" text-anchor="middle" font-size="12" fill="#f6ebd7">AUDITOR</text>
-        <text class="sx" x="1110" y="374" text-anchor="middle" font-size="17" fill="#93a8c0">arma el expediente</text>
-        <text class="mx" x="1110" y="200" text-anchor="middle" font-size="16" fill="#79c7e8" opacity="0"><set attributeName="opacity" to="1" begin="4.9s"/>cada dato con prueba</text>
+        <text class="px" x="1110" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">AUDITOR</text>
+        <text class="sx" x="1110" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">arma el expediente</text>
+        <text class="mx" x="1110" y="200" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="4.9s"/>cada dato con prueba</text>
 
         <!-- 4 · Analista (humano) -->
-        <circle cx="1310" cy="270" r="46" fill="#0a0f1a" stroke="#65be83" stroke-width="3">
+        <circle cx="1310" cy="270" r="46" fill="#0a0f1a" stroke="#5cc8a8" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="5.8s" fill="freeze"/>
         </circle>
-        <circle cx="1310" cy="257" r="11" fill="#f6ebd7"/>
-        <path d="M1290 292 a20 18 0 0 1 40 0 z" fill="#f6ebd7"/>
-        <text class="px" x="1310" y="348" text-anchor="middle" font-size="12" fill="#f6ebd7">ANALISTA</text>
-        <text class="sx" x="1310" y="374" text-anchor="middle" font-size="17" fill="#93a8c0">confirma</text>
-        <text class="sx" x="1310" y="200" text-anchor="middle" font-size="18" font-weight="700" fill="#65be83" opacity="0"><set attributeName="opacity" to="1" begin="5.9s"/>✓ es mula</text>
+        <circle cx="1310" cy="257" r="11" fill="#e8edf3"/>
+        <path d="M1290 292 a20 18 0 0 1 40 0 z" fill="#e8edf3"/>
+        <text class="px" x="1310" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">ANALISTA</text>
+        <text class="sx" x="1310" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">confirma</text>
+        <text class="sx" x="1310" y="200" text-anchor="middle" font-size="18" font-weight="700" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="5.9s"/>✓ es mula</text>
 
         <!-- 4 · Memoria (sin IA) -->
-        <circle cx="1510" cy="270" r="46" fill="#0a0f1a" stroke="#93a8c0" stroke-width="3">
+        <circle cx="1510" cy="270" r="46" fill="#0a0f1a" stroke="#8a99ad" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="6.8s" fill="freeze"/>
         </circle>
-        <path d="M1500 266 v-8 a10 10 0 0 1 20 0 v8" stroke="#5d7390" stroke-width="4" fill="none"><set attributeName="stroke" to="#65be83" begin="6.8s"/></path>
-        <rect x="1494" y="266" width="32" height="24" rx="3" fill="#5d7390"><set attributeName="fill" to="#65be83" begin="6.8s"/></rect>
-        <text class="px" x="1510" y="348" text-anchor="middle" font-size="12" fill="#f6ebd7">MEMORIA</text>
-        <text class="sx" x="1510" y="374" text-anchor="middle" font-size="17" fill="#93a8c0">marca la cuenta</text>
-        <text class="mx" x="1510" y="200" text-anchor="middle" font-size="16" fill="#65be83" opacity="0"><set attributeName="opacity" to="1" begin="6.9s"/>cuenta marcada</text>
+        <path d="M1500 266 v-8 a10 10 0 0 1 20 0 v8" stroke="#56657a" stroke-width="4" fill="none"><set attributeName="stroke" to="#5cc8a8" begin="6.8s"/></path>
+        <rect x="1494" y="266" width="32" height="24" rx="3" fill="#56657a"><set attributeName="fill" to="#5cc8a8" begin="6.8s"/></rect>
+        <text class="px" x="1510" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">MEMORIA</text>
+        <text class="sx" x="1510" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">marca la cuenta</text>
+        <text class="mx" x="1510" y="200" text-anchor="middle" font-size="16" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="6.9s"/>cuenta marcada</text>
 
         <!-- El dinero de Rosa recorre el flujo -->
-        <circle r="12" fill="#f1b35b" stroke="#0a0f1a" stroke-width="2">
+        <circle r="12" fill="#e3b25a" stroke="#0a0f1a" stroke-width="2">
           <animateMotion path="M150 270 H432" dur="2s" begin="0s" fill="freeze" calcMode="linear" keyPoints="0;0;0.29;0.29;1;1" keyTimes="0;0.15;0.45;0.7;0.95;1"/>
           <set attributeName="opacity" to="0" begin="2s"/>
         </circle>
-        <circle r="10" fill="#79c7e8" opacity="0">
+        <circle r="10" fill="#7cc4e6" opacity="0">
           <set attributeName="opacity" to="1" begin="2s"/><set attributeName="opacity" to="0" begin="3.6s"/>
           <animateMotion path="M530 247 L656 174 M744 174 L866 246" dur="1.6s" begin="2s" fill="freeze" calcMode="linear" keyPoints="0;0.5;0.5;1" keyTimes="0;0.35;0.65;1"/>
         </circle>
-        <circle r="10" fill="#79c7e8" opacity="0">
+        <circle r="10" fill="#7cc4e6" opacity="0">
           <set attributeName="opacity" to="1" begin="2s"/><set attributeName="opacity" to="0" begin="3.6s"/>
           <animateMotion path="M530 293 L656 366 M744 366 L866 294" dur="1.6s" begin="2s" fill="freeze" calcMode="linear" keyPoints="0;0.5;0.5;1" keyTimes="0;0.35;0.65;1"/>
         </circle>
-        <circle r="12" fill="#f1b35b" stroke="#0a0f1a" stroke-width="2" opacity="0">
+        <circle r="12" fill="#e3b25a" stroke="#0a0f1a" stroke-width="2" opacity="0">
           <set attributeName="opacity" to="1" begin="4.3s"/><set attributeName="opacity" to="0" begin="7.1s"/>
           <animateMotion path="M958 270 H1052 M1168 270 H1252 M1368 270 H1452" dur="2.5s" begin="4.3s" fill="freeze" calcMode="linear" keyPoints="0;0.359;0.359;0.679;0.679;1" keyTimes="0;0.2;0.4;0.6;0.8;1"/>
         </circle>
 
         <!-- Jorge: la Memoria lo frena en el paso 1 -->
-        <circle r="12" fill="#79c7e8" stroke="#0a0f1a" stroke-width="2" opacity="0">
+        <circle r="12" fill="#7cc4e6" stroke="#0a0f1a" stroke-width="2" opacity="0">
           <set attributeName="opacity" to="1" begin="7.5s"/>
           <animateMotion path="M150 270 H232" dur="0.5s" begin="7.5s" fill="freeze"/>
         </circle>
-        <circle r="10" fill="#65be83" opacity="0">
+        <circle r="10" fill="#5cc8a8" opacity="0">
           <set attributeName="opacity" to="1" begin="7.6s"/><set attributeName="opacity" to="0" begin="8.4s"/>
           <animateMotion dur="0.8s" begin="7.6s" fill="freeze"><mpath href="#loop"/></animateMotion>
         </circle>
-        <text class="sx" x="900" y="628" text-anchor="middle" font-size="20" font-weight="800" fill="#65be83" opacity="0"><set attributeName="opacity" to="1" begin="8.5s"/>Jorge, misma cuenta: frenado en el paso 1 · 0 IA</text>
+        <text class="sx" x="900" y="628" text-anchor="middle" font-size="20" font-weight="800" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="8.5s"/>Jorge, misma cuenta: frenado en el paso 1 · 0 IA</text>
 
         <!-- Leyenda -->
-        <g class="sx" font-size="16" fill="#93a8c0">
-          <circle cx="40" cy="622" r="8" fill="none" stroke="#79c7e8" stroke-width="3"/><text x="56" y="628">agente de IA</text>
-          <circle cx="190" cy="622" r="8" fill="none" stroke="#93a8c0" stroke-width="3"/><text x="206" y="628">sin IA</text>
-          <circle cx="290" cy="622" r="8" fill="none" stroke="#65be83" stroke-width="3"/><text x="306" y="628">humano</text>
+        <g class="sx" font-size="16" fill="#8a99ad">
+          <circle cx="40" cy="622" r="8" fill="none" stroke="#7cc4e6" stroke-width="3"/><text x="56" y="628">agente de IA</text>
+          <circle cx="190" cy="622" r="8" fill="none" stroke="#8a99ad" stroke-width="3"/><text x="206" y="628">sin IA</text>
+          <circle cx="290" cy="622" r="8" fill="none" stroke="#5cc8a8" stroke-width="3"/><text x="306" y="628">humano</text>
         </g>
       </svg>
     </div>
   </section>
 
-  <!-- 6 · La red regional -->
-  <section class="slide with-note" aria-label="La red regional">
+  <!-- 4 · La oportunidad -->
+  <section class="slide" aria-label="La oportunidad">
     <div class="head">
       <p class="kicker rise" style="--d:.05s">LA OPORTUNIDAD</p>
-      <h2 class="rise" style="--d:.15s">Una mula confirmada en un país. <span class="green">Frenada en todos.</span></h2>
+      <h2 class="rise" style="--d:.15s">La región está conectando sus pagos inmediatos. <em>El fraude va a cruzar fronteras.</em></h2>
     </div>
-    <div class="viz">
-      <svg id="viz-red" data-smil viewBox="0 0 900 600" role="img" aria-label="Un banco de Colombia confirma una mula y la red avisa a Perú, Bolivia y Brasil. Cuando Ana, en Lima, intenta pagar a esa cuenta, el pago se retiene antes de que corra la IA.">
-        <g stroke="#22416a" stroke-width="2" stroke-dasharray="6 8">
+    <div class="split">
+      <ol class="points">
+        <li class="rise" style="--d:.35s"><b>Lo que viene</b><span>TAPP (Perú), Bre-B (Colombia), QR (Bolivia) y PIX (Brasil) se están interconectando. Un pago podrá cruzar la frontera en segundos.</span></li>
+        <li class="rise" style="--d:.5s"><b>Lo que enseña Brasil</b><span><strong>30,900 → 390,000+</strong> reportes de fraude con PIX al mes, entre 2021 y 2024. Cuando los pagos inmediatos crecen, el fraude crece con ellos.</span></li>
+        <li class="rise" style="--d:.65s"><b>El hueco</b><span>Hoy cada banco, en cada país, aprende solo. Una mula detectada en Bogotá sigue recibiendo desde Lima.</span></li>
+        <li class="rise" style="--d:.8s"><b>Nuestra respuesta</b><span>Mule Zero es la memoria compartida de la red: un banco confirma una mula y todos la frenan antes de pagar, sin compartir datos de sus clientes.</span></li>
+      </ol>
+      <div class="viz">
+        <svg id="viz-red" data-smil viewBox="0 0 900 600" role="img" aria-label="Un banco de Colombia confirma una mula y la red avisa a Perú, Bolivia y Brasil. Cuando Ana, en Lima, intenta pagar a esa cuenta, el pago se retiene antes de que corra la IA.">
+        <g stroke="#24324a" stroke-width="2" stroke-dasharray="6 8">
           <line x1="450" y1="144" x2="450" y2="252"/>
           <line x1="386" y1="315" x2="246" y2="315"/>
           <line x1="514" y1="315" x2="684" y2="315"/>
           <line x1="450" y1="378" x2="450" y2="472"/>
         </g>
-        <path id="ana" d="M236 290 L420 128" fill="none" stroke="#f1b35b" stroke-width="2" stroke-dasharray="4 8" opacity="0">
+        <path id="ana" d="M236 290 L420 128" fill="none" stroke="#e3b25a" stroke-width="2" stroke-dasharray="4 8" opacity="0">
           <set attributeName="opacity" to="0.7" begin="3.6s"/>
         </path>
-        <circle cx="450" cy="315" r="62" fill="none" stroke="#65be83" stroke-width="2" opacity="0">
+        <circle cx="450" cy="315" r="62" fill="none" stroke="#5cc8a8" stroke-width="2" opacity="0">
           <animate attributeName="r" values="62;120" dur="1s" begin="2.1s" fill="freeze"/>
           <animate attributeName="opacity" values="0.9;0" dur="1s" begin="2.1s" fill="freeze"/>
         </circle>
-        <circle cx="450" cy="315" r="62" fill="#0f2a1c" stroke="#65be83" stroke-width="3"/>
-        <text class="px" x="450" y="321" text-anchor="middle" font-size="13" fill="#65be83">RED</text>
+        <circle cx="450" cy="315" r="62" fill="#0e2620" stroke="#5cc8a8" stroke-width="3"/>
+        <text class="px" x="450" y="321" text-anchor="middle" font-size="16" fill="#5cc8a8">RED</text>
 
-        <circle cx="450" cy="110" r="34" fill="#10213a" stroke="#79c7e8" stroke-width="2"><set attributeName="stroke" to="#e66565" begin="0.6s"/></circle>
-        <circle cx="450" cy="110" r="34" fill="none" stroke="#e66565" stroke-width="3" opacity="0">
+        <circle cx="450" cy="110" r="34" fill="#111a2b" stroke="#7cc4e6" stroke-width="2"><set attributeName="stroke" to="#e5645e" begin="0.6s"/></circle>
+        <circle cx="450" cy="110" r="34" fill="none" stroke="#e5645e" stroke-width="3" opacity="0">
           <animate attributeName="r" values="34;76" dur="1s" begin="0.6s" repeatCount="2" fill="freeze"/>
           <animate attributeName="opacity" values="1;0" dur="1s" begin="0.6s" repeatCount="2" fill="freeze"/>
         </circle>
-        <text class="px" x="450" y="116" text-anchor="middle" font-size="15" fill="#eef3f8">CO</text>
-        <text class="sx" x="450" y="56" text-anchor="middle" font-size="17" fill="#93a8c0">Bre-B</text>
-        <text class="sx" x="500" y="122" font-size="17" font-weight="700" fill="#e66565" opacity="0"><set attributeName="opacity" to="1" begin="0.7s"/>mula confirmada</text>
+        <text class="px" x="450" y="116" text-anchor="middle" font-size="18" fill="#e8edf3">CO</text>
+        <text class="sx" x="450" y="56" text-anchor="middle" font-size="17" fill="#8a99ad">Bre-B</text>
+        <text class="sx" x="500" y="122" font-size="17" font-weight="700" fill="#e5645e" opacity="0"><set attributeName="opacity" to="1" begin="0.7s"/>mula confirmada</text>
 
-        <circle cx="212" cy="315" r="34" fill="#10213a" stroke="#79c7e8" stroke-width="2"><set attributeName="stroke" to="#65be83" begin="3s"/></circle>
-        <text class="px" x="212" y="321" text-anchor="middle" font-size="15" fill="#eef3f8">PE</text>
-        <text class="sx" x="212" y="378" text-anchor="middle" font-size="17" fill="#93a8c0">TAPP</text>
-        <circle cx="718" cy="315" r="34" fill="#10213a" stroke="#79c7e8" stroke-width="2"><set attributeName="stroke" to="#65be83" begin="3s"/></circle>
-        <text class="px" x="718" y="321" text-anchor="middle" font-size="15" fill="#eef3f8">BR</text>
-        <text class="sx" x="718" y="378" text-anchor="middle" font-size="17" fill="#93a8c0">PIX</text>
-        <circle cx="450" cy="506" r="34" fill="#10213a" stroke="#79c7e8" stroke-width="2"><set attributeName="stroke" to="#65be83" begin="3s"/></circle>
-        <text class="px" x="450" y="512" text-anchor="middle" font-size="15" fill="#eef3f8">BO</text>
-        <text class="sx" x="450" y="570" text-anchor="middle" font-size="17" fill="#93a8c0">QR</text>
+        <circle cx="212" cy="315" r="34" fill="#111a2b" stroke="#7cc4e6" stroke-width="2"><set attributeName="stroke" to="#5cc8a8" begin="3s"/></circle>
+        <text class="px" x="212" y="321" text-anchor="middle" font-size="18" fill="#e8edf3">PE</text>
+        <text class="sx" x="212" y="378" text-anchor="middle" font-size="17" fill="#8a99ad">TAPP</text>
+        <circle cx="718" cy="315" r="34" fill="#111a2b" stroke="#7cc4e6" stroke-width="2"><set attributeName="stroke" to="#5cc8a8" begin="3s"/></circle>
+        <text class="px" x="718" y="321" text-anchor="middle" font-size="18" fill="#e8edf3">BR</text>
+        <text class="sx" x="718" y="378" text-anchor="middle" font-size="17" fill="#8a99ad">PIX</text>
+        <circle cx="450" cy="506" r="34" fill="#111a2b" stroke="#7cc4e6" stroke-width="2"><set attributeName="stroke" to="#5cc8a8" begin="3s"/></circle>
+        <text class="px" x="450" y="512" text-anchor="middle" font-size="18" fill="#e8edf3">BO</text>
+        <text class="sx" x="450" y="570" text-anchor="middle" font-size="17" fill="#8a99ad">QR</text>
 
-        <circle r="8" fill="#e66565" opacity="0">
+        <circle r="8" fill="#e5645e" opacity="0">
           <set attributeName="opacity" to="1" begin="1.4s"/><set attributeName="opacity" to="0" begin="2.1s"/>
           <animateMotion path="M450 144 L450 253" dur="0.7s" begin="1.4s" fill="freeze"/>
         </circle>
-        <circle r="8" fill="#65be83" opacity="0">
+        <circle r="8" fill="#5cc8a8" opacity="0">
           <set attributeName="opacity" to="1" begin="2.3s"/><set attributeName="opacity" to="0" begin="3s"/>
           <animateMotion path="M388 315 L246 315" dur="0.7s" begin="2.3s" fill="freeze"/>
         </circle>
-        <circle r="8" fill="#65be83" opacity="0">
+        <circle r="8" fill="#5cc8a8" opacity="0">
           <set attributeName="opacity" to="1" begin="2.3s"/><set attributeName="opacity" to="0" begin="3s"/>
           <animateMotion path="M512 315 L684 315" dur="0.7s" begin="2.3s" fill="freeze"/>
         </circle>
-        <circle r="8" fill="#65be83" opacity="0">
+        <circle r="8" fill="#5cc8a8" opacity="0">
           <set attributeName="opacity" to="1" begin="2.3s"/><set attributeName="opacity" to="0" begin="3s"/>
           <animateMotion path="M450 377 L450 472" dur="0.7s" begin="2.3s" fill="freeze"/>
         </circle>
 
-        <circle r="10" fill="#f1b35b" opacity="0">
+        <circle r="10" fill="#e3b25a" opacity="0">
           <set attributeName="opacity" to="1" begin="3.6s"/>
           <animateMotion dur="0.9s" begin="3.6s" fill="freeze" keyPoints="0;0.45" keyTimes="0;1" calcMode="linear"><mpath href="#ana"/></animateMotion>
         </circle>
-        <circle cx="319" cy="217" r="10" fill="none" stroke="#f1b35b" stroke-width="3" opacity="0">
+        <circle cx="319" cy="217" r="10" fill="none" stroke="#e3b25a" stroke-width="3" opacity="0">
           <animate attributeName="r" values="10;48" dur="0.7s" begin="4.5s" fill="freeze"/>
           <animate attributeName="opacity" values="1;0" dur="0.7s" begin="4.5s" fill="freeze"/>
         </circle>
         <g opacity="0"><set attributeName="opacity" to="1" begin="4.6s"/>
-          <rect x="40" y="420" width="300" height="70" rx="10" fill="#2a1f0e" stroke="#f1b35b" stroke-width="2"/>
-          <text class="sx" x="60" y="450" font-size="18" font-weight="700" fill="#eef3f8">Ana · Lima</text>
-          <text class="px" x="60" y="476" font-size="11" fill="#f1b35b">PAGO RETENIDO</text>
+          <rect x="40" y="420" width="300" height="70" rx="10" fill="#2a1f0e" stroke="#e3b25a" stroke-width="2"/>
+          <text class="sx" x="60" y="450" font-size="18" font-weight="700" fill="#e8edf3">Ana · Lima</text>
+          <text class="px" x="60" y="476" font-size="14" fill="#e3b25a">PAGO RETENIDO</text>
         </g>
       </svg>
+      </div>
     </div>
-    <p class="note rise" style="--d:.6s">Diseñado para pagos interoperables: TAPP · Bre-B · QR · PIX</p>
+    <p class="source">Fuentes: Banco Central do Brasil vía Estadão/Broadcast (abr. 2025). Mule Zero está diseñado para estos rieles; no es una integración existente.</p>
   </section>
-
-  <div class="wipe" id="wipe" aria-hidden="true"></div>
 
   <footer class="hud-bottom">
     <nav class="progress" id="progress" aria-label="Diapositivas"></nav>
-    <button type="button" class="full" id="full" aria-label="Pantalla completa">⛶</button>
+    <button type="button" class="full" id="full" aria-label="Pantalla completa (F)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
   </footer>
 </main>
 </div>
