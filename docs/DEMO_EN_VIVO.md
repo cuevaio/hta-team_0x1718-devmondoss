@@ -6,6 +6,35 @@
 
 **El público ataca al sistema desde su celular mientras lo proyectamos; después lo saturamos a propósito y se ve que igual frena los robos.**
 
+## La presentación: slides → demo → juego
+
+Son **tres pantallas en el proyector, en este orden**. Conviene abrirlas antes en tres pestañas.
+
+| # | Pantalla | URL | Tiempo |
+|---|---|---|---|
+| 1 | **Slides** (portada, problema, solución) | `npm run pitch` → http://localhost:4000 | ~1:30 |
+| 2 | **Demo de la solución**: el caso de Rosa de punta a punta | `https://web-production-be4c9.up.railway.app/demo?token=TOKEN` | ~2:00 |
+| 3 | **Juego + monitor**: el público ataca | QR de la portada (`/play`) y `/monitor?token=TOKEN` | ~3:00 |
+| 4 | **Slides**: la oportunidad (última diapositiva) | pestaña 1 | ~0:30 |
+
+El token es el `DEMO_TOKEN` del servidor y se borra de la barra de direcciones al cargar. Sin token, el público puede ejecutar los actos de `/demo`; **confirmar la mula y reiniciar** son del presentador.
+
+### Guion de `/demo` (2 minutos)
+
+Antes de empezar: **Reiniciar demo**.
+
+1. **Acto 1 · Rosa recibe una llamada** → *Ejecutar*. A la izquierda, el celular de Rosa: el dinero queda en **pausa preventiva** antes de que actúe la IA. A la derecha, la consola del banco: la línea de tiempo muestra Reglas → Coordinador → Detective → Guardián. En el celular de Rosa tocar **«Sí, el banco»**: el Guardián detecta que la están guiando y el caso pasa al analista con el expediente citado (E-01, E-03…).
+   > «A Rosa no la hackearon: la convencieron. Por eso frenamos el dinero primero y preguntamos después.»
+2. **Acto 2 · Revisión de M-01** → *Ejecutar* → **Confirmar mula**. Decide una persona, no la IA.
+   > «El analista confirma la mula con el expediente que armaron los agentes.»
+3. **Acto 3 · Jorge es la siguiente víctima** → *Ejecutar*. Resultado: **P1 · 0 llamadas de IA**, «Cuenta reconocida». El embudo muestra las llamadas evitadas por la memoria.
+   > «Lo aprendimos con Rosa: Jorge está protegido al instante y sin gastar IA.»
+4. (Si hay tiempo) **Control · Bodega Don Pepe**: un pago legítimo pasa. El sistema no bloquea todo.
+
+Después: «Ahora ustedes son la banda» → pestaña 3 y el guion de abajo desde el minuto 0:00.
+
+> El juego del público está en Vercel (`te-estan-robando.vercel.app/play`, el QR de los slides) y `/demo` en Railway. Usan el mismo Supabase, así que el ranking y la encuesta son los mismos. Los casos de `/demo` viven en Railway.
+
 ## Las 3 pantallas
 
 | Pantalla | Dónde | Quién la mira |
