@@ -1,14 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { Check, Circle, CircleCheck, CircleX, Gauge, Loader2, MessageSquareText, Play, X } from "lucide-react";
 import type { ResultadoPrueba } from "@/lib/demo/suite";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { COLOR_ACCION, Explicacion } from "./explicacion";
@@ -28,7 +26,7 @@ type Prueba = { id: string; titulo: string; demuestra: string };
 type Agentes = { modo: "claude" | "ollama" | "simulado"; modelo: string | null };
 
 /** Lo que se espera en pantalla con el resultado completo antes de pasar a la prueba siguiente. */
-const RESPIRO_MS = 1800;
+const RESPIRO_MS = 800;
 
 export default function PanelBackend() {
   const [pruebas, setPruebas] = useState<Prueba[]>([]);
@@ -108,7 +106,6 @@ export default function PanelBackend() {
 
   return (
     <div className="ui-oscuro dark bg-background text-foreground min-h-dvh font-sans antialiased">
-      <Toaster position="bottom-right" visibleToasts={4} />
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-8">
         <header className="flex items-center gap-3">
           <svg viewBox="0 0 24 24" aria-hidden="true" className="size-5 text-amber-400">
@@ -194,12 +191,10 @@ export default function PanelBackend() {
   );
 }
 
-const TOAST_MS = 3800;
-
 /**
  * Reproduce las líneas de a una, cada una con su pausa. Si una línea trae una
- * nota de diálogo, el flujo espera a que se cierre; las demás notas salen
- * como toast sin detener nada.
+ * nota de diálogo, el flujo espera a que se cierre. Las demás notas no se
+ * muestran: la terminal y el flujo ya cuentan esos pasos.
  */
 function useReproducir(lineas: Linea[], velocidad: number, explicar: boolean) {
   const [visibles, setVisibles] = useState(0);
@@ -217,7 +212,6 @@ function useReproducir(lineas: Linea[], velocidad: number, explicar: boolean) {
       const n = l.nota;
       if (!n) return;
       if (n.modo === "dialogo" && exp.current) setNota(n);
-      else toast(n.titulo, { description: `${n.quien} · ${n.texto}`, duration: TOAST_MS / vel.current });
     }, l.espera / vel.current);
     return () => clearTimeout(t);
   }, [lineas, visibles, nota]);
@@ -330,7 +324,7 @@ function Terminal({ lineas, esperando, activo }: { lineas: Linea[]; esperando: b
         <span className="ml-2">backend · pipeline</span>
         {(esperando || activo) && <Loader2 className="ml-auto size-3 animate-spin" />}
       </div>
-      <div ref={caja} className="h-52 overflow-y-auto px-3 py-2 font-mono text-xs leading-6">
+      <div ref={caja} className="h-44 overflow-y-auto px-3 py-2 font-mono text-xs leading-6">
         {esperando && (
           <div className="text-muted-foreground animate-entra">
             <span className="text-amber-300">$</span> esperando al pipeline…

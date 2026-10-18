@@ -86,7 +86,8 @@ export function Explicacion({ nota, velocidad, onContinuar }: { nota: Nota | nul
               <span className="text-muted-foreground font-mono text-xs tracking-wide uppercase">{nota.quien}</span>
             </div>
             <DialogTitle className="text-2xl tracking-tight">{nota.titulo}</DialogTitle>
-            <DialogDescription className="text-base leading-relaxed">{nota.texto}</DialogDescription>
+            {/* Radix pide una descripción; vacía, solo para lectores de pantalla. */}
+            <DialogDescription className={cn("text-base leading-relaxed", !nota.texto && "sr-only")}>{nota.texto || nota.titulo}</DialogDescription>
           </DialogHeader>
 
           {nota.docs && nota.docs.length > 0 && (
