@@ -119,40 +119,6 @@ svg .mx { font-family: var(--mono); }
 .cursor { display: inline-block; width: 0.55em; height: 0.85em; margin-left: 0.15em; background: var(--amber); vertical-align: -0.05em; animation: blink 1s steps(1) infinite; }
 .tagline { margin: 0; font-size: 2.6cqw; font-weight: 700; line-height: 1.15; color: var(--ink); max-width: 48cqw; }
 
-/* Solución: la red de agentes, por fases */
-.flow { display: grid; grid-template-columns: 1fr 1.9fr 1fr 1fr; gap: 2cqw; align-items: start; min-height: 0; }
-.phase { display: flex; flex-direction: column; gap: 1.4cqh; position: relative; min-width: 0; }
-.phase:not(:last-child)::after {
-  content: ""; position: absolute; top: 0.6cqh; right: -1.45cqw; width: 0.9cqw; height: 0.9cqw;
-  border-top: 0.25cqw solid var(--dim); border-right: 0.25cqw solid var(--dim); transform: rotate(45deg);
-}
-.phase-name { margin: 0; font-family: var(--pixel); font-size: 0.8cqw; line-height: 1.8; color: var(--c); letter-spacing: 0.1em; }
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1cqw; }
-.card {
-  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 1.6cqh 1cqw;
-  display: flex; flex-direction: column; gap: 1cqh; min-width: 0;
-}
-.slide.is-active .card { animation: rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both var(--d, 0s), lit 0.5s ease forwards var(--l, 0s); }
-@keyframes lit {
-  to { border-color: var(--c); box-shadow: 0 0 0 1px var(--c), 0 0 2.2cqw color-mix(in srgb, var(--c) 30%, transparent); }
-}
-.card-top { display: flex; align-items: center; gap: 0.6cqw; }
-.card-top svg { width: 1.3cqw; height: 1.3cqw; flex: none; color: var(--c); }
-.card-top b { font-family: var(--pixel); font-weight: 400; font-size: 0.72cqw; line-height: 1.6; color: var(--cream); }
-.card-top i { margin-left: auto; font-style: normal; font-family: var(--mono); font-size: 0.72cqw; padding: 0.2cqh 0.5cqw; border-radius: 4px; white-space: nowrap; }
-.card-top i.ia { background: var(--cyan); color: #0a0f1a; font-weight: 600; }
-.card-top i.no { border: 1px solid var(--dim); color: var(--muted); }
-.card-top i.hu { border: 1px solid var(--green); color: var(--green); }
-.card p { margin: 0; font-size: 1.05cqw; line-height: 1.35; color: var(--ink); }
-.card .out {
-  align-self: flex-start; font-family: var(--mono); font-size: 0.85cqw; color: var(--c);
-  border: 1px dashed var(--c); border-radius: 6px; padding: 0.4cqh 0.6cqw; opacity: 0;
-}
-.slide.is-active .card .out { animation: pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both calc(var(--l, 0s) + 0.25s); }
-.jorge { margin: 0; font-size: 1.25cqw; color: var(--ink); border-left: 0.3cqw solid var(--green); padding-left: 1cqw; }
-.jorge b { color: var(--green); }
-.jorge span { color: var(--muted); }
-
 /* Cifras del problema */
 .facts { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 4cqw; row-gap: 1cqh; }
 .fact { margin: 0; display: flex; align-items: baseline; gap: 1cqw; }
@@ -175,7 +141,5 @@ svg .mx { font-family: var(--mono); }
   .slide { transition: none; }
   .slide.is-active .rise, .slide.is-active .pop, .slide.is-active .logo { animation: none; opacity: 1; transform: none; }
   .cursor { animation: none; }
-  .slide.is-active .card { animation: none; opacity: 1; border-color: var(--c); }
-  .slide.is-active .card .out { animation: none; opacity: 1; }
   .wipe { display: none; }
 }
