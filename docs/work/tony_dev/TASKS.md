@@ -95,7 +95,8 @@
 - Coordinador como función determinista
 
 ## Demo jugable (frontend) — hecho
-- [x] `/play`: víctima (ronda A con aviso genérico simulado, ronda B con el motor real, pago a Don Pepe, 3 preguntas) y atacante (5 cartas, red-teaming, revelación de señales → agentes → decisión). Diseño: [DEMO_JUEGO](../../DEMO_JUEGO.md)
+- [x] `/play`: **juego 2D estilo consola portátil** (`components/juego2d/`): barrio caminable, la llamada del estafador como combate por turnos, el Guardián entra al combate en la ronda 2, el atacante pelea contra el Sistema; nombre, encuestas y menús dentro del juego, todo en tipografía pixel. Víctima: ronda A con aviso genérico simulado, ronda B con el motor real, pago a Don Pepe. Atacante: 5 tácticas, red-teaming. Diseño: [DEMO_JUEGO](../../DEMO_JUEGO.md)
+- [x] Prueba end-to-end: `/play?depurar` expone `window.__motor.estado()` para que un bot juegue con teclado y toques
 - [x] `/monitor`: feed en vivo, pipeline en el orden real, expediente con citas, veredicto del analista de simulación, marcador y experimento en vivo (`/api/juego/resumen`)
 - [x] Tests contra el pipeline real: `tests/juego/datos.test.ts`
 - ⚠️ Para Ale: en `next dev` cada ruta tiene su propia copia de los stores en memoria (un caso creado en `/api/transfers` da 404 en `/guardian/reply`). En `next build && next start` (`npm run servidor`) funciona. Si se quiere arreglar dev: singletons en `globalThis`.

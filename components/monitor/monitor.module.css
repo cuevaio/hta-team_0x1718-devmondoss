@@ -372,3 +372,28 @@
   .item { animation: none; }
   .nodoActivo { animation-duration: 1ms; }
 }
+
+/* ── Tipografía pixel, la misma del juego ─────────────────── */
+.pagina { font-family: var(--font-pixel), monospace; font-size: 10px; line-height: 1.7; }
+.pagina button { font-family: inherit; }
+.titulo { font-size: clamp(14px, 1.8vw, 22px); line-height: 1.4; }
+.jugar { font-size: clamp(9px, 1vw, 12px); }
+.sello { font-size: 8px; }
+.panel h2 { font-size: 9px; }
+.alias { font-size: 10px; }
+.meta { font-size: 8px; }
+.chip { font-size: 8px; padding: 3px 6px; }
+.nodo { font-size: 8px; }
+.decision strong { font-size: clamp(12px, 1.4vw, 17px); line-height: 1.5; }
+.ceroIA { font-size: clamp(14px, 1.8vw, 22px); }
+.lista { font-size: 9px; }
+.cita { font-size: 8px; }
+.evidencia { font-size: 8px; }
+.kpi span { font-size: 7px; }
+.kpi strong { font-size: clamp(14px, 1.8vw, 22px); }
+.nota { font-size: 8px; }
+.boton { font-size: 9px; }
+/* La fuente dibuja mayúsculas con tilde como minúsculas: sin mayúsculas automáticas */
+.panel h2, .kpi span, .sello { text-transform: none; letter-spacing: 0; }
+.nodo { font-size: 7px; overflow-wrap: anywhere; }
+.kpiAncho strong { font-size: clamp(12px, 1.4vw, 16px); }
