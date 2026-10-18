@@ -121,6 +121,7 @@ export function reenvioRapido(
     ventana_horas: horas,
     destinos: [...new Set(salida.map((m) => m.destino))],
     marcado: pct >= UMBRALES.reenvio_porcentaje,
+    observable: esBancoPropio(cuentaId),
   };
 }
 
@@ -162,7 +163,7 @@ export function ciclos(
   }
 
   const ciclo = buscar(cuentaId, []);
-  return { cuenta: cuentaId, ciclo, marcado: ciclo !== null };
+  return { cuenta: cuentaId, ciclo, marcado: ciclo !== null, observable: esBancoPropio(cuentaId) };
 }
 
 /**
@@ -222,6 +223,7 @@ export function reenvioTransfronterizo(
     ventana_horas: horas,
     destinos,
     marcado: pct >= UMBRALES.transfronterizo_porcentaje,
+    observable: esBancoPropio(cuentaId),
   };
 }
 

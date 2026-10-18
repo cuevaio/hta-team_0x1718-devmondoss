@@ -89,6 +89,11 @@ export const ResultadoReenvio = z.object({
   ventana_horas: z.number().positive(),
   destinos: z.array(z.string()),
   marcado: z.boolean(),
+  /**
+   * false = cuenta de otra entidad: este banco no ve sus salidas (19 §10), así
+   * que `porcentaje`/`ciclo` no son un dato observado. Ausente = observable.
+   */
+  observable: z.boolean().optional(),
 });
 export type ResultadoReenvio = z.infer<typeof ResultadoReenvio>;
 
@@ -103,6 +108,11 @@ export const ResultadoCiclos = z.object({
   cuenta: z.string().min(1),
   ciclo: z.array(z.string()).nullable(),
   marcado: z.boolean(),
+  /**
+   * false = cuenta de otra entidad: este banco no ve sus salidas (19 §10), así
+   * que `porcentaje`/`ciclo` no son un dato observado. Ausente = observable.
+   */
+  observable: z.boolean().optional(),
 });
 export type ResultadoCiclos = z.infer<typeof ResultadoCiclos>;
 
@@ -133,6 +143,11 @@ export const ResultadoTransfronterizo = z.object({
   ventana_horas: z.number().positive(),
   destinos: z.array(z.object({ cuenta: z.string().min(1), pais: Pais })),
   marcado: z.boolean(),
+  /**
+   * false = cuenta de otra entidad: este banco no ve sus salidas (19 §10), así
+   * que `porcentaje`/`ciclo` no son un dato observado. Ausente = observable.
+   */
+  observable: z.boolean().optional(),
 });
 export type ResultadoTransfronterizo = z.infer<typeof ResultadoTransfronterizo>;
 

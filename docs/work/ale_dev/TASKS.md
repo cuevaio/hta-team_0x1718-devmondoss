@@ -172,7 +172,13 @@ enseña porque en la ronda B siempre se transfiere a M-01 (la mula conocida).
 
 ## Para Tony — pendientes que son de tu bloque (no los toqué)
 
-### 1. Cuentas externas: una afirmación sin respaldo con cita válida ⏳
+### 1. Cuentas externas: una afirmación sin respaldo con cita válida ✅
+
+> Resuelto por Tony el 18/10 con tu propuesta: `observable` en `ResultadoReenvio`,
+> `ResultadoCiclos` y `ResultadoTransfronterizo` (opcional, ausente = observable).
+> El Auditor escribe «No se ven las salidas de la cuenta X: es de otra entidad».
+> Test: `tests/scenarios/red-regional.test.ts`. Importa para la red regional:
+> CO-M-11 (CU-06) es una cuenta externa.
 
 **Repro:** `POST /api/transfers` de `C-ROSA` a `X-99` (cuenta de otro banco,
 `banco_propio: false`). `reenvio_rapido` devuelve `porcentaje_reenviado: 0` y
