@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { evaluarAlerta } from '@/lib/pipeline';
 import { repo } from '@/lib/data/repo';
 import { Alias } from '@/lib/juego/alias';
+import { opcionDiferir } from '@/lib/diferir';
 
 /**
  * POST /api/alerts — Puerta B: alerta AML (blueprint §3).
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
   }
   const { caso } = await evaluarAlerta(parsed.data.cuenta, parsed.data.motivo, {
     alias: parsed.data.alias,
+    ...opcionDiferir(),
   });
   return NextResponse.json(caso, { status: 201 });
 }

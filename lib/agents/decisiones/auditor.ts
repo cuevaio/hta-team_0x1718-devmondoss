@@ -105,6 +105,24 @@ export interface ContextoAuditor {
 
 const CLIENTE_EN_RIESGO = ['canal_comprometido', 'manipulacion_probable', 'sin_respuesta'];
 
+/** Números de un texto, sin separadores de miles: «S/ 4,800» → «4800», «91%» → «91». */
+function cifrasDe(texto: string): string[] {
+  return (texto.match(/\d[\d.,]*/g) ?? []).map((n) => n.replace(/[.,](?=\d{3}\b)/g, '').replace(/[.,]$/, ''));
+}
+
+/**
+ * Cifras del resumen (texto libre del LLM) que NO aparecen en las afirmaciones
+ * elegidas. Las afirmaciones las arma el código desde la evidencia; el resumen
+ * no. Sin esta verificación, «el modelo nunca produce una cifra» era falso.
+ */
+export function cifrasSinRespaldo(resumen: string, afirmaciones: Afirmacion[]): string[] {
+  const respaldadas = new Set(afirmaciones.flatMap((a) => cifrasDe(a.texto)));
+  return [...new Set(cifrasDe(resumen))].filter((n) => !respaldadas.has(n));
+}
+
+export const RESUMEN_RETIRADO =
+  'Resumen retirado: citaba cifras que no están en la evidencia. Revisar las afirmaciones adjuntas.';
+
 /** Arma la `SalidaAuditor` con lo que eligió el LLM, aplicando las validaciones del playbook. */
 export function ensamblarAuditor(
   llm: AuditorLLM,
@@ -121,8 +139,12 @@ export function ensamblarAuditor(
     revision = true; // descartar con el cliente en riesgo es incoherente: que lo vea un humano
   }
 
+  // Una cifra sin respaldo no se muestra al analista: se retira el resumen.
+  const inventadas = cifrasSinRespaldo(llm.resumen, afirmaciones);
+  if (inventadas.length > 0) revision = true;
+
   const salida: SalidaAuditor = {
-    resumen: llm.resumen,
+    resumen: inventadas.length > 0 ? RESUMEN_RETIRADO : llm.resumen,
     hipotesis: TEXTO_HIPOTESIS[llm.hipotesis],
     recomendacion: llm.recomendacion,
     afirmaciones,

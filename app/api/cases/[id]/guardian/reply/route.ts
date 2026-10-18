@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { responderGuardian } from '@/lib/pipeline';
+import { opcionDiferir } from '@/lib/diferir';
 
 /**
  * POST /api/cases/[id]/guardian/reply — el cliente responde al Guardián.
@@ -25,7 +26,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: 'cuerpo inválido', detalle: parsed.error.issues }, { status: 400 });
   }
 
-  const caso = await responderGuardian(id, parsed.data.texto);
+  const caso = await responderGuardian(id, parsed.data.texto, opcionDiferir());
   if (!caso) return NextResponse.json({ error: 'caso no encontrado' }, { status: 404 });
 
   return NextResponse.json(caso);

@@ -49,9 +49,23 @@ function guardian(b: { respuesta_cliente?: string }) {
   if (/cuenta segura|cuenta nueva|otra cuenta/.test(t)) senales.add('cuenta_segura');
   if (/amenaz|familiar|policia|fiscal|secuestr/.test(t)) senales.add('presion_tercero');
   if (/aprueb|autoriz|soy yo|libera/.test(t)) senales.add('intenta_aprobar_por_chat');
+  const duda = /\bno\s+(lo\s+)?se\b|no estoy segur|ni idea|no recuerdo|no entiendo/.test(t);
   const niega = /^(no|nadie|nunca)\b|yo solo|nadie me/.test(t);
-  const respuesta = senales.size > 0 && !niega ? 'si' : niega ? 'no' : /^(si|claro)\b/.test(t) ? 'si' : 'incierta';
-  return { respuesta, senales_extra: niega ? [] : [...senales] };
+  // Un «no» que viene con una señal de riesgo («no, solo me llamó el banco para
+  // moverlo») no es una negación limpia: se marca incierta y se mantiene la
+  // pausa. Antes se descartaba la señal y contaba como «no».
+  const respuesta = duda
+    ? 'incierta'
+    : senales.size > 0 && !niega
+      ? 'si'
+      : niega && senales.size > 0
+        ? 'incierta'
+        : niega
+          ? 'no'
+          : /^(si|claro)\b/.test(t)
+            ? 'si'
+            : 'incierta';
+  return { respuesta, senales_extra: respuesta === 'si' ? [...senales] : [] };
 }
 
 interface BriefingAuditor {

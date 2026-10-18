@@ -40,7 +40,7 @@ forma más rápida de ver qué hace el sistema.
 
 ```bash
 npm run dev        # desarrollo en http://localhost:3000
-npm test           # 359 tests
+npm test           # 410 tests
 npm run typecheck
 npm run seed       # regenera lib/data/seed.json (determinista)
 ```
@@ -105,7 +105,7 @@ es explicable y auditable.
 
 **Las tools calculan; los agentes interpretan.** Los hechos del expediente
 («14 remitentes nuevos en 48h», «91% reenviado en menos de 2h») los calculan
-funciones deterministas en `lib/analytics/`. El modelo nunca produce una cifra.
+funciones deterministas en `lib/analytics/`. Si el resumen del modelo trae una cifra que no está en la evidencia, se retira y el caso pasa a revisión manual.
 
 **Los ids de evidencia los emite el sistema.** `lib/evidence/ledger.ts` asigna
 `E-01`, `E-02`… y cada afirmación del expediente debe citar uno que exista. Una
@@ -167,7 +167,7 @@ scripts/
   seed.ts             genera los datos
   demo.ts             los 5 casos de uso en consola
   servidor.ts         la laptop como servidor del demo
-tests/                359 tests
+tests/                410 tests
 ```
 
 ---
@@ -209,7 +209,7 @@ identidad.
 
 **Backend completo y verificado**: datos, reglas, policy, memoria, ledger de
 evidencia, analytics, observabilidad, pipeline, la API y los scripts de demo y
-de servidor. 359 tests, typecheck y lint limpios, `next build` correcto, y la
+de servidor. 410 tests, typecheck y lint limpios, `next build` correcto, y la
 secuencia del demo verificada por HTTP contra el build de producción.
 
 **Listo para el demo jugable** (DEMO_JUEGO §9): feed en vivo

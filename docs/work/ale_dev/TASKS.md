@@ -115,6 +115,36 @@ degrada a P10. Mi captura en el pipeline queda como segunda barrera.
 
 ---
 
+## Para Tony — auditoría de agentes pre-demo (TOQUÉ tu bloque, a pedido de Ale)
+
+Revisión crítica de lógica antes del demo. Cada arreglo tiene un test que lo
+reproducía (`tests/agents/auditoria-logica.test.ts`,
+`tests/agents/llm-parametros.test.ts`) y la matriz del atacante
+(`tests/scenarios/matriz-atacante.test.ts`, 750 combinaciones) que lo fija. No
+cambié ningún contrato.
+
+| Archivo | Error | Arreglo |
+|---|---|---|
+| `llm.ts` | `thinking: disabled` en todas las llamadas: **Opus 5.5 (Auditor) responde 400 siempre** | solo Haiku lo manda; en Opus/Sonnet 5.5 se omite (adaptativo con `effort: low`) |
+| `llm.ts` | `max_tokens` 700 del Auditor: con thinking activo se cortaba y `parsed_output` llegaba `null` | mínimo 4,000 cuando hay thinking |
+| `llm.ts` + `runtime.ts` | reintentos multiplicados (SDK 2 × runtime 2): hasta ~150 s colgado | `maxRetries: 0` en el SDK; el runtime no reintenta 400/401/403/404/422 ni un `refusal` |
+| `decisiones/guardian.ts` | «no sé», «no recuerdo», «no estoy segura» se leían como **«no»** → `confirmado_seguro` → P8 liberaba | `DUDA` se evalúa antes que la negación → `incierta` |
+| `llm-simulado.ts` | igual que arriba, y un «no, solo me llamó el banco…» descartaba la señal | duda → `incierta`; «no» + señal → `incierta` |
+| `decisiones/detective.ts` | el LLM podía bajar a `bajo` (→ P8, libera) una cuenta con **reenvío rápido** o estructuración; la regla 2 del prompt no se hacía cumplir | `llmPuedeBajar`: solo `fan_in` (la Bodega) es descartable |
+| `decisiones/auditor.ts` | el `resumen` libre podía traer cifras sin respaldo (y el README decía «el modelo nunca produce una cifra») | `cifrasSinRespaldo`: se retira el resumen y va a revisión manual |
+
+Lo más grave estaba en MI bloque (Policy): con el Guardián esperando
+respuesta, P8 liberaba el dinero. **Un «falso banco» (score 7) hacia cualquier
+cuenta que no fuera M-01 pasaba** con la pregunta en pantalla: 280 de 750
+combinaciones. Ahora es P7 hasta que el cliente responda.
+
+**Riesgo residual que no es un bug:** un cliente coaccionado que responde «no»
+a todo, hacia una cuenta sin tipologías (p. ej. externa), termina en P8. El
+sistema solo puede frenar ahí si el destino muestra algo. Conviene decirlo en
+el pitch antes de que lo pregunte el jurado.
+
+---
+
 ## Para Tony — pendientes que son de tu bloque (no los toqué)
 
 ### 1. Cuentas externas: una afirmación sin respaldo con cita válida ⏳

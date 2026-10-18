@@ -33,6 +33,18 @@ export function modelosDesdeEnv(env: NodeJS.ProcessEnv = process.env): ConfigRun
   };
 }
 
+/**
+ * ¿Vale la pena reintentar? Sí: red, timeout, 408/409/429 y 5xx (incluido el
+ * 529 de sobrecarga). No: 400/401/403/404/413/422 —una petición inválida o
+ * una key mala dan lo mismo la segunda vez— ni un rechazo del modelo.
+ */
+export function esReintentable(err: unknown): boolean {
+  if ((err as { reintentable?: boolean }).reintentable === false) return false;
+  const status = (err as { status?: number }).status;
+  if (typeof status !== 'number') return true; // red o timeout
+  return status === 408 || status === 409 || status === 429 || status >= 500;
+}
+
 export function crearRunAgent(cfg: ConfigRuntime): RunAgent {
   return async function runAgent<S extends z.ZodType>(
     nombre: Parameters<RunAgent>[0],
@@ -67,6 +79,7 @@ export function crearRunAgent(cfg: ConfigRuntime): RunAgent {
         nota = '\nTu salida anterior no cumplió el esquema. Responde solo con el JSON pedido.';
       } catch (err) {
         ultimoError = err instanceof Error ? err.message : String(err);
+        if (!esReintentable(err)) break; // directo al fallback: no gastar otro intento
       }
     }
     uso.ms = Date.now() - t0;

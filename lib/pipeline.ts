@@ -52,6 +52,12 @@ export interface OpcionesPipeline {
   degradado?: boolean;
   /** Alias del jugador (modo juego), ya validado con `Alias`. Se asocia al crear el caso. */
   alias?: string;
+  /**
+   * Si se pasa, el expediente del Auditor corre DESPUÉS de devolver la
+   * decisión (las rutas HTTP lo usan con el modelo real; ver `lib/diferir.ts`).
+   * Sin esto, se espera al Auditor: es lo que usan el demo de consola y los tests.
+   */
+  diferir?: (tarea: () => Promise<void>) => void;
 }
 
 export interface ResultadoPipeline {
@@ -283,6 +289,8 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
     score: caso.nivel0.score,
     riesgoDestino: caso.salidas.detective?.riesgo_destino,
     estadoUsuario: caso.salidas.guardian?.estado_usuario,
+    // Pregunta hecha y sin respuesta: retener hasta que conteste (P7).
+    guardianPendiente: Boolean(turno && !turno.terminado),
     degradado,
   });
 
@@ -292,30 +300,51 @@ async function ejecutar(vivo: CasoVivo, opciones: OpcionesPipeline): Promise<Res
   // PAUSAR/ESCALAR. La acción protectora ya ocurrió mucho antes (pausa
   // preventiva), así que el expediente nunca retiene dinero.
   caso.decision = { accion: resultado.accion, regla: resultado.regla, t: new Date().toISOString() };
-  if (debeAuditar(caso)) {
-    storeCasos.sincronizarEvidencia(id);
-    const a = await auditar(caso, ctx, agentes).catch((error: unknown) => ({
-      salida: undefined,
-      uso: { llamadas: 0, tokens: 0, ms: 0 },
-      error: error instanceof Error ? error.message : String(error),
-    }));
-    caso.ia = acumularIA(caso.ia, { auditor: a.uso });
-    registro.agente(id, 'auditor', a.uso, a.salida ? 'ok' : 'error');
-    if (a.salida) {
-      caso.salidas.auditor = a.salida;
-      storeCasos.registrarEvento(id, 'auditor', 'expediente', {
-        recomendacion: a.salida.recomendacion,
-        afirmaciones: a.salida.afirmaciones.length,
-      });
-    } else if (a.error) {
-      storeCasos.registrarEvento(id, 'sistema', 'error_auditor', {
-        mensaje: a.error,
-        nota: 'el expediente falló pero la decisión ya estaba tomada',
-      });
-    }
-  }
+  const expediente = debeAuditar(caso) ? () => generarExpediente(caso, ctx, agentes) : null;
+  if (expediente && !opciones.diferir) await expediente();
 
-  return finalizar(vivo, buzon, resultado);
+  const r = finalizar(vivo, buzon, resultado);
+  if (expediente && opciones.diferir) programarExpediente(caso.id, expediente, opciones.diferir);
+  return r;
+}
+
+/**
+ * El expediente del Auditor. Se usa igual en la primera decisión y al
+ * re-decidir tras la respuesta del cliente. Nunca lanza: si falla, la decisión
+ * ya estaba tomada y queda registrado `error_auditor`.
+ */
+async function generarExpediente(caso: Caso, ctx: ReturnType<typeof construirToolContext>, agentes: AgentsApi) {
+  const id = caso.id;
+  storeCasos.sincronizarEvidencia(id);
+  const a = await auditar(caso, ctx, agentes).catch((error: unknown) => ({
+    salida: undefined,
+    uso: { llamadas: 0, tokens: 0, ms: 0 },
+    error: error instanceof Error ? error.message : String(error),
+  }));
+  caso.ia = acumularIA(caso.ia, { auditor: a.uso });
+  registro.agente(id, 'auditor', a.uso, a.salida ? 'ok' : 'error');
+  if (a.salida) {
+    caso.salidas.auditor = a.salida;
+    storeCasos.registrarEvento(id, 'auditor', 'expediente', {
+      recomendacion: a.salida.recomendacion,
+      afirmaciones: a.salida.afirmaciones.length,
+    });
+  } else if (a.error) {
+    storeCasos.registrarEvento(id, 'sistema', 'error_auditor', {
+      mensaje: a.error,
+      nota: 'el expediente falló pero la decisión ya estaba tomada',
+    });
+  }
+}
+
+/**
+ * Expediente diferido: la respuesta HTTP sale con la decisión y el Auditor
+ * (Opus, varios segundos) corre después. El frontend ya hace polling de
+ * `GET /api/cases/[id]` y muestra «el Auditor aún no emitió un expediente».
+ */
+function programarExpediente(id: string, tarea: () => Promise<void>, diferir: (t: () => Promise<void>) => void) {
+  storeCasos.registrarEvento(id, 'auditor', 'expediente_en_curso');
+  diferir(tarea);
 }
 
 function finalizar(
@@ -397,7 +426,7 @@ function registrarUsoInvestigacion(
 export async function responderGuardian(
   casoId: string,
   texto: string,
-  opciones: Pick<OpcionesPipeline, 'agentes'> = {},
+  opciones: Pick<OpcionesPipeline, 'agentes' | 'diferir'> = {},
 ): Promise<Caso | null> {
   const vivo = storeCasos.get(casoId);
   if (!vivo) return null;
@@ -462,20 +491,9 @@ export async function responderGuardian(
   moverDineroSiPermitido(caso);
 
   if (debeAuditar(caso) && !caso.salidas.auditor) {
-    const a = await auditar(caso, ctx, agentes).catch((error: unknown) => ({
-      salida: undefined,
-      uso: { llamadas: 0, tokens: 0, ms: 0 },
-      error: error instanceof Error ? error.message : String(error),
-    }));
-    caso.ia = acumularIA(caso.ia, { auditor: a.uso });
-    registro.agente(casoId, 'auditor', a.uso, a.salida ? 'ok' : 'error');
-    if (a.salida) {
-      caso.salidas.auditor = a.salida;
-      storeCasos.registrarEvento(casoId, 'auditor', 'expediente', {
-        recomendacion: a.salida.recomendacion,
-        afirmaciones: a.salida.afirmaciones.length,
-      });
-    }
+    const expediente = () => generarExpediente(caso, ctx, agentes);
+    if (opciones.diferir) programarExpediente(casoId, expediente, opciones.diferir);
+    else await expediente();
   }
 
   return caso;

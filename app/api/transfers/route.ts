@@ -3,6 +3,7 @@ import { Transaccion } from '@/lib/contracts';
 import { z } from 'zod';
 import { evaluarTransferencia } from '@/lib/pipeline';
 import { Alias } from '@/lib/juego/alias';
+import { opcionDiferir } from '@/lib/diferir';
 
 /**
  * POST /api/transfers — Puerta A: evaluar una transferencia (blueprint §3).
@@ -33,6 +34,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'cuerpo inválido', detalle: parsed.error.issues }, { status: 400 });
   }
   const { transaccion, contexto, respuestaCliente, alias } = parsed.data;
-  const { caso } = await evaluarTransferencia(transaccion, { contexto, respuestaCliente, alias });
+  const { caso } = await evaluarTransferencia(transaccion, {
+    contexto,
+    respuestaCliente,
+    alias,
+    ...opcionDiferir(),
+  });
   return NextResponse.json(caso, { status: 201 });
 }

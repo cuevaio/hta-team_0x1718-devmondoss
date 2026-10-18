@@ -29,6 +29,12 @@ export interface EntradaPolicy {
   riesgoDestino?: RiesgoDestino;
   /** Salida del Guardián, si corrió. */
   estadoUsuario?: EstadoUsuario;
+  /**
+   * El Guardián le hizo una pregunta al cliente y todavía no hay respuesta.
+   * No es lo mismo que «no se invocó» (CU-05, no molestar): aquí hay una señal
+   * del lado del cliente sin resolver, y el silencio no es aprobación.
+   */
+  guardianPendiente?: boolean;
   /** Error, timeout o presupuesto excedido → P10. */
   degradado?: boolean;
 }
@@ -53,7 +59,7 @@ const ESTADOS_SIN_ALERTA: EstadoUsuario[] = ['confirmado_seguro', 'no_consultado
  * El orden de los `if` ES la especificación. No reordenar sin cambiar el doc 19.
  */
 export function decide(entrada: EntradaPolicy): ResultadoPolicy {
-  const { mulaEnMemoria, atajo, score, riesgoDestino, estadoUsuario, degradado } = entrada;
+  const { mulaEnMemoria, atajo, score, riesgoDestino, estadoUsuario, guardianPendiente, degradado } = entrada;
 
   // P10 se evalúa primero en la práctica porque un sistema degradado no puede
   // confiar en las salidas de los agentes. El doc lo lista al final porque es
@@ -158,6 +164,21 @@ export function decide(entrada: EntradaPolicy): ResultadoPolicy {
       accion: 'PAUSAR',
       regla: 'P7',
       motivo: `cliente en estado ${estadoUsuario}; pausa hasta verificación por canal seguro`,
+    };
+  }
+
+  // P7 (extensión) — el Guardián preguntó y el cliente aún no contesta.
+  //
+  // Sin esto, P8 trataba «pregunta sin responder» igual que «Guardián no
+  // invocado» y LIBERABA el dinero: un «falso banco» (llamada activa, score 7)
+  // hacia cualquier cuenta sin tipologías pasaba con la pregunta en pantalla.
+  // Va después de P4/P5: con destino alto se escala igual. Cuando el cliente
+  // responde, `responderGuardian` vuelve a decidir.
+  if (guardianPendiente && !estadoUsuario) {
+    return {
+      accion: 'PAUSAR',
+      regla: 'P7',
+      motivo: 'esperando la respuesta del cliente; el silencio no es aprobación',
     };
   }
 

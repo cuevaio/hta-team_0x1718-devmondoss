@@ -120,6 +120,18 @@ export interface SalidaEnsambladoDetective {
   motivoAjuste?: string;
 }
 
+/**
+ * Tipologías que el LLM puede considerar un falso positivo. Solo `fan_in`: es
+ * el caso de la Bodega (CU-05), muchos pagadores legítimos. Reenvío rápido,
+ * estructuración, ciclo o lista NO se explican con «es un comercio».
+ */
+const DESCARTABLES_POR_LLM: ReadonlySet<Tipologia> = new Set(['fan_in']);
+
+/** ¿Puede el LLM bajar este patrón a `bajo`? Lo decide el código, no el prompt. */
+export function llmPuedeBajar(tipologias: Tipologia[]): boolean {
+  return tipologias.every((t) => DESCARTABLES_POR_LLM.has(t));
+}
+
 /** Arma la `SalidaDetective` final. El LLM, si participó, solo puede bajar de `medio` a `bajo`. */
 export function ensamblarDetective(e: EntradaEnsamblado): SalidaEnsambladoDetective {
   const tipologias = tipologiasMarcadas(e.hallazgos);
@@ -130,10 +142,17 @@ export function ensamblarDetective(e: EntradaEnsamblado): SalidaEnsambladoDetect
   let evidencia = e.evidencia;
 
   if (base === 'medio' && e.llm) {
-    riesgo = e.llm.riesgo_destino; // el esquema ya impide 'alto'
-    hipotesis = e.llm.hipotesis;
-    const citadas = e.llm.evidencia.filter((id) => e.evidencia.includes(id));
-    if (citadas.length > 0) evidencia = citadas;
+    // La regla 2 del prompt («baja solo si no hay reenvío rápido») se hace
+    // cumplir AQUÍ: un `bajo` termina en P8 y libera el dinero, así que no puede
+    // depender de que el modelo obedezca. Si el patrón no es descartable, el
+    // riesgo se queda en `medio` aunque el modelo diga `bajo`.
+    const bajaPermitida = e.llm.riesgo_destino !== 'bajo' || llmPuedeBajar(tipologias);
+    if (bajaPermitida) {
+      riesgo = e.llm.riesgo_destino; // el esquema ya impide 'alto'
+      hipotesis = e.llm.hipotesis;
+      const citadas = e.llm.evidencia.filter((id) => e.evidencia.includes(id));
+      if (citadas.length > 0) evidencia = citadas;
+    }
   }
 
   const cadena = e.cadena ?? e.hallazgos.reenvio?.destinos ?? [];

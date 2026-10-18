@@ -279,6 +279,19 @@ decisión recalculada si la conversación cerró.
 `texto: ""` significa **el cliente no respondió a tiempo**. El texto se trata
 como dato, nunca como instrucción para un modelo (doc 15, R5).
 
+### Mientras el cliente no responde, el dinero queda retenido (P7)
+
+Si el Guardián hizo una pregunta y todavía no hay respuesta, la decisión es
+**`PAUSAR` por P7** («esperando la respuesta del cliente»), salvo que el
+destino sea de riesgo alto, que escala por P5. Antes, con un destino sin
+tipologías, la decisión era `PERMITIR P8` con la pregunta en pantalla: un
+«falso banco» hacia cualquier cuenta que no fuera M-01 pasaba. Cuando el
+cliente responde, `/guardian/reply` vuelve a decidir.
+
+«No sé», «no recuerdo» o «no estoy segura» se clasifican como **incierta**, no
+como «no»: tres respuestas así terminan en `sin_respuesta` → P7, nunca en
+`confirmado_seguro`.
+
 ### El Guardián es multiturno
 
 `POST /api/transfers` abre la conversación y **deja la pregunta pendiente**: no
@@ -473,13 +486,24 @@ explicabilidad es un criterio de aceptación de los tres casos de uso *must*.
 ```bash
 npm run dev          # servidor en :3000
 npm run demo         # los 5 casos de uso en consola, con sus reglas
-npm test             # 359 tests
+npm test             # 410 tests
 npm run typecheck
 ```
 
 El script `npm run demo` recorre CU-01 a CU-05 e imprime decisión, regla,
 evidencia y consumo de IA de cada caso. Es la forma más rápida de ver qué debe
 devolver la API antes de escribir la UI.
+
+---
+
+### Con el modelo real, el expediente llega después
+
+Con `agentes: "claude"`, `POST /api/transfers`, `/api/alerts` y
+`/guardian/reply` responden **con la decisión, sin esperar al Auditor** (Opus
+tarda varios segundos). El timeline trae `expediente_en_curso`, y
+`salidas.auditor` aparece en un `GET /api/cases/[id]` posterior: el polling de
+1.5 s del frontend ya lo resuelve. En modo simulado se espera al Auditor como
+siempre. `AUDITOR_DIFERIDO=1|0` fuerza un modo u otro.
 
 ---
 

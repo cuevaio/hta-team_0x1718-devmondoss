@@ -46,6 +46,10 @@ export function seleccionarPreguntas(senales: string[]): IdPregunta[] {
 
 export type RespuestaClasificada = 'si' | 'no' | 'incierta' | 'sin_respuesta';
 
+/** Expresiones de duda (texto ya normalizado: minúsculas, sin tildes ni signos). */
+export const DUDA =
+  /^(no\s+(lo\s+)?se\b|no\s+(me\s+)?(recuerdo|acuerdo)\b|no\s+estoy\s+segur|no\s+entiendo\b|no\s+sabria\b|ni\s+idea\b|quien\s+sabe\b|tal\s+vez\b|quizas?\b|puede\s+ser\b|creo\b|nose\b)/;
+
 /**
  * Clasificación por regla, sin LLM. Devuelve `null` si la respuesta no es
  * trivial (entonces sí se llama al modelo).
@@ -60,6 +64,10 @@ export function clasificarRapido(texto: string | null | undefined): RespuestaCla
     .trim();
   const palabras = t.split(/\s+/);
   if (palabras.length > 4) return null; // frase larga: que la lea el modelo
+  // Duda ANTES que negación: «no sé» empieza con «no» pero no niega nada. Si se
+  // leyera como «no», tres «no sé» dejaban al cliente como confirmado_seguro y,
+  // con destino bajo, P8 liberaba el dinero de alguien confundido.
+  if (DUDA.test(t)) return 'incierta';
   if (/^(si|sii+|claro|asi es|correcto|ajam|aja|afirmativo)\b/.test(t)) return 'si';
   if (/^(no|nop|nel|negativo|para nada|nadie)\b/.test(t)) return 'no';
   return null;
