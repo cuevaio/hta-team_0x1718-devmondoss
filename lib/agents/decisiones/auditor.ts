@@ -56,6 +56,11 @@ export function afirmacionDe(e: Evidencia): Afirmacion | null {
     }
     case 'reenvio_rapido': {
       const d = ResultadoReenvio.safeParse(e.dato);
+      // Cuenta de otra entidad: un 0% no es un dato observado. Afirmar «reenvió
+      // el 0%» citaría un E-xx válido sobre algo que nadie vio (19 §10).
+      if (d.success && d.data.observable === false) {
+        return { texto: `No se ven las salidas de la cuenta ${d.data.cuenta}: es de otra entidad`, evidencia: cita };
+      }
       return d.success
         ? { texto: `Reenvió el ${Math.round(d.data.porcentaje_reenviado * 100)}% de lo recibido en menos de ${d.data.ventana_horas} h`, evidencia: cita }
         : null;
@@ -80,7 +85,7 @@ export function afirmacionDe(e: Evidencia): Afirmacion | null {
     }
     case 'reenvio_transfronterizo': {
       const d = ResultadoTransfronterizo.safeParse(e.dato);
-      if (!d.success || d.data.destinos.length === 0) return null;
+      if (!d.success || d.data.observable === false || d.data.destinos.length === 0) return null;
       const paises = [...new Set(d.data.destinos.map((x) => x.pais.toUpperCase()))].join(', ');
       return {
         texto: `Envió el ${Math.round(d.data.porcentaje_al_exterior * 100)}% de lo recibido a cuentas de otro país (${paises}) en menos de ${d.data.ventana_horas} h`,

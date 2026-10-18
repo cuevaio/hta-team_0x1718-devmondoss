@@ -108,3 +108,27 @@ describe('Red regional · de punta a punta', () => {
     expect(red.cantidad).toBe(1);
   });
 });
+
+describe('Cuentas de otra entidad: no se afirma lo que no se ve (19 §10)', () => {
+  beforeEach(() => {
+    storeCasos.limpiar();
+    memoria.limpiar();
+    red.reiniciar();
+  });
+
+  it('el reenvío de una cuenta externa no es observable', () => {
+    expect(analytics.reenvioRapido('CO-M-11').observable).toBe(false);
+    expect(analytics.reenvioRapido('M-01').observable).toBe(true);
+  });
+
+  it('CU-06: el expediente no dice «Reenvió el 0%» sobre la cuenta colombiana', async () => {
+    const { caso } = await evaluarTransferencia(
+      { origen: 'C-ANA', destino: 'CO-M-11', monto: 2500, moneda: 'PEN' },
+      // Agentes del despliegue (simulados): el mock trae hallazgos fijos y no pasa por las analytics.
+      { respuestaCliente: 'sí' },
+    );
+    const textos = (caso.salidas.auditor?.afirmaciones ?? []).map((a) => a.texto);
+    expect(textos.some((t) => /Reenvió el 0%/.test(t))).toBe(false);
+    expect(textos.some((t) => /No se ven las salidas de la cuenta CO-M-11/.test(t))).toBe(true);
+  });
+});
