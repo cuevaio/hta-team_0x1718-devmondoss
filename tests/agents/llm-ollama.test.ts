@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { modoAgentes, modelosOllama } from '@/lib/agents';
 import { GuardianLLM } from '@/lib/agents/esquemas';
-import { configOllamaDesdeEnv, crearLlmOllama, cuerpoOllama, MIN_TOKENS_RAZONANDO } from '@/lib/agents/llm-ollama';
+import { cabecerasOllama, configOllamaDesdeEnv, crearLlmOllama, cuerpoOllama, MIN_TOKENS_RAZONANDO } from '@/lib/agents/llm-ollama';
 import { crearRunAgent } from '@/lib/agents/runtime';
 import { ErrorLlm } from '@/lib/agents/llm';
 
@@ -43,6 +43,11 @@ describe('cuerpo de /api/chat', () => {
     expect(c.think).toBe('low');
     expect(c.options.num_predict).toBe(MIN_TOKENS_RAZONANDO);
     expect(cuerpoOllama(req, configOllamaDesdeEnv(env({ OLLAMA_THINK: 'false' }))).think).toBe(false);
+  });
+
+  it('con OLLAMA_TOKEN manda la clave del puente; sin él, nada', () => {
+    expect(cabecerasOllama(configOllamaDesdeEnv(env({ OLLAMA_TOKEN: 'abc' })))).toEqual({ 'content-type': 'application/json', 'x-puente-token': 'abc' });
+    expect(cabecerasOllama(configOllamaDesdeEnv(env({})))).toEqual({ 'content-type': 'application/json' });
   });
 
   it('OLLAMA_URL sin barra final', () => {
