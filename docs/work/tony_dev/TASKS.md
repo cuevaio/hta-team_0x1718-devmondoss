@@ -102,3 +102,5 @@
 - [x] Tests contra el pipeline real: `tests/juego/datos.test.ts`
 - ⚠️ Para Ale: en `next dev` cada ruta tiene su propia copia de los stores en memoria (un caso creado en `/api/transfers` da 404 en `/guardian/reply`). En `next build && next start` (`npm run servidor`) funciona. Si se quiere arreglar dev: singletons en `globalThis`.
 - ⚠️ La entrega exige URL pública (no laptop): desplegar un solo proceso con `MOVIMIENTOS_EN_VIVO=1`.
+- [x] **v3 «que enganche»** ([DEMO_JUEGO §12](../../DEMO_JUEGO.md)): arcade ¿REAL O ESTAFA? (16 casuísticas + 8 mensajes reales), SIGUE EL DINERO (Detective + Memoria), ranking del evento, encuesta como bonus de un toque y panel de tracción en el monitor
+- ⚠️ Para Ale: nuevo endpoint aislado `app/api/juego/arcade` + `lib/juego/arcade.ts` (no toca partidas ni el pipeline). En Railway las partidas y el arcade se guardan en un volumen (`PARTIDAS_ARCHIVO`, `ARCADE_ARCHIVO`) para no perder los datos del evento en cada redeploy

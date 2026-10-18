@@ -56,3 +56,41 @@ export type PartidaAtacante = {
 export function registrarPartida(partida: PartidaVictima | PartidaAtacante) {
   return post<{ id: string }>("/api/juego/partidas", partida);
 }
+
+export type JugadaArcade =
+  | {
+      modo: "real_o_estafa";
+      alias: string;
+      pais: string;
+      puntaje: number;
+      respuestas: Array<{ carta: string; categoria: string; estafa: boolean; dijo_estafa: boolean; ms: number }>;
+      encuesta?: Record<string, string>;
+    }
+  | {
+      modo: "sigue_el_dinero";
+      alias: string;
+      pais: string;
+      puntaje: number;
+      recuperado_pct: number;
+      falsos_positivos: number;
+      mulas: number;
+      segundos: number;
+      encuesta?: Record<string, string>;
+    };
+
+export type FilaRanking = { alias: string; pais: string; puntaje: number };
+
+export type ResumenArcade = {
+  jugadas: number;
+  jugadores: number;
+  ranking: Record<"real_o_estafa" | "sigue_el_dinero", FilaRanking[]>;
+  caidas: Array<{ categoria: string; vistas: number; cayeron: number; pct: number }>;
+};
+
+export function registrarArcade(jugada: JugadaArcade) {
+  return post<{ id: string; posicion: number }>("/api/juego/arcade", jugada);
+}
+
+export function resumenArcade() {
+  return api<ResumenArcade>("/api/juego/arcade");
+}

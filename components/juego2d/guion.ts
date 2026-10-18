@@ -1,6 +1,7 @@
 import type { Caso } from "@/lib/contracts";
 import { motivoAliasInvalido } from "@/lib/juego/alias";
-import { registrarPartida, responderGuardian, transferir } from "@/components/juego/api";
+import type { PreguntaEncuesta } from "@/lib/juego/arcade";
+import { registrarArcade, registrarPartida, responderGuardian, resumenArcade, transferir, type FilaRanking } from "@/components/juego/api";
 import {
   DESTINOS,
   ESTAFA_ROSA,
@@ -38,6 +39,9 @@ import type { Motor, Opcion } from "./motor";
 import { TILE, posicionObjetivo, type ConfigMundo, type Npc } from "./mundo";
 import { PAISES, dinero, type Pais, type PaisId } from "./paises";
 import { PAL, W, facil } from "./pincel";
+import { escenaRanking, escenaResultado, type DatosResultado } from "./ranking";
+import { NOMBRE_CATEGORIA, realOEstafa } from "./realOEstafa";
+import { escenaMemoria, sigueElDinero } from "./sigueElDinero";
 import type { Direccion } from "./sprites";
 
 /**
@@ -52,22 +56,28 @@ const VEGA = "ANALISTA VEGA";
 type RutaId = "llamada" | "senal" | "familiar" | "comprobante" | "banda";
 type Marca = { texto: string; color: string };
 
-const RUTAS: Array<{ id: RutaId; titulo: string; sub: string; color: string }> = [
+const HISTORIAS: Array<{ id: RutaId; titulo: string; sub: string; color: string }> = [
   { id: "llamada", titulo: "LA LLAMADA", sub: "Falso banco", color: PAL.ambar },
   { id: "senal", titulo: "SIN SEÑAL", sub: "Viaje sin cobertura", color: PAL.celeste },
   { id: "familiar", titulo: "EL FAMILIAR", sub: "Número nuevo", color: PAL.verde },
   { id: "comprobante", titulo: "EL COMPROBANTE", sub: "Pago falso", color: "#b48be0" },
-  { id: "banda", titulo: "LA BANDA", sub: "Eres el atacante", color: PAL.rojo },
 ];
 
 const SALVO: Marca = { texto: "SALVO", color: PAL.verdeOscuro };
 const ROBADO: Marca = { texto: "ROBADO", color: PAL.rojoOscuro };
 
+type Modo = "real_o_estafa" | "sigue_el_dinero";
+type Sesion = {
+  alias: string;
+  pais: Pais;
+  mejor: Partial<Record<Modo, number>>;
+  resultados: Partial<Record<RutaId, Marca>>;
+  respondidas: Set<PreguntaEncuesta>;
+  vioDatos: boolean;
+};
+
 export async function jugar(m: Motor) {
-  let alias: string | null = null;
-  let pais: Pais | null = null;
-  let vioDatos = false;
-  const resultados: Partial<Record<RutaId, Marca>> = {};
+  let sesion: Sesion | null = null;
   await videoIntro(m);
   for (;;) {
     m.barraSuperior = null;
@@ -79,42 +89,60 @@ export async function jugar(m: Motor) {
     await m.iris(true);
     m.descubrirYa();
     m.fundido = 1;
-    if (!alias) alias = await intro(m);
-    if (!pais) pais = await elegirPais(m);
+    if (!sesion) {
+      const alias = await intro(m);
+      const pais = await elegirPais(m);
+      sesion = { alias, pais, mejor: {}, resultados: {}, respondidas: new Set(), vioDatos: false };
+      // Sin tutorial: la primera partida es el arcade.
+      await protegido(m, () => modoRealOEstafa(m, sesion!));
+    }
+    const s = sesion;
 
     for (;;) {
-      const eleccion = await menuRutas(m, pais, resultados);
+      const eleccion = await menuPrincipal(m, s);
       if (eleccion === "titulo") break;
-      if (eleccion === "pais") {
-        pais = await elegirPais(m);
-        continue;
-      }
-      if (eleccion === "datos") {
-        await epilogo(m, pais);
-        vioDatos = true;
-        continue;
-      }
-      if (eleccion === "intro") {
-        await videoIntro(m);
-        continue;
-      }
-      try {
-        const marca = await correrRuta(m, eleccion, pais, alias);
-        if (marca) resultados[eleccion] = marca;
-        if (!vioDatos) {
-          await epilogo(m, pais);
-          vioDatos = true;
-        }
-      } catch {
-        m.barraSuperior = null;
-        m.descubrirYa();
-        m.escena = laboratorio;
-        m.musica("triste");
-        await m.fundirA(false);
-        await m.decir("Se perdió la conexión con el sistema. Volvamos al menú.", VEGA);
-        await m.fundirA(true);
+      if (eleccion === "roe") await protegido(m, () => modoRealOEstafa(m, s));
+      else if (eleccion === "sed") await protegido(m, () => modoSigueElDinero(m, s));
+      else if (eleccion === "ranking") await protegido(m, () => verRanking(m, s, "real_o_estafa"));
+      else if (eleccion === "historias") {
+        const ruta = await menuHistorias(m, s);
+        if (ruta) await protegido(m, () => jugarRuta(m, s, ruta));
+      } else if (eleccion === "banda") await protegido(m, () => jugarRuta(m, s, "banda"));
+      else if (eleccion === "mas") {
+        const extra = await menuMas(m, s);
+        if (extra === "datos") {
+          await epilogo(m, s.pais);
+          s.vioDatos = true;
+        } else if (extra === "pais") s.pais = await elegirPais(m);
+        else if (extra === "intro") await videoIntro(m);
+        else if (extra === "titulo") break;
       }
     }
+  }
+}
+
+async function jugarRuta(m: Motor, s: Sesion, id: RutaId) {
+  const marca = await correrRuta(m, id, s.pais, s.alias);
+  if (marca) s.resultados[id] = marca;
+  if (!s.vioDatos) {
+    await epilogo(m, s.pais);
+    s.vioDatos = true;
+  }
+}
+
+/** Si se cae la conexión a mitad de un modo, vuelve al menú sin romper el juego. */
+async function protegido(m: Motor, fn: () => Promise<unknown>) {
+  try {
+    await fn();
+  } catch {
+    m.minijuego(null);
+    m.barraSuperior = null;
+    m.descubrirYa();
+    m.escena = laboratorio;
+    m.musica("triste");
+    await m.fundirA(false);
+    await m.decir("Se perdió la conexión con el sistema. Volvamos al menú.", VEGA);
+    await m.fundirA(true);
   }
 }
 
@@ -126,7 +154,7 @@ function correrRuta(m: Motor, id: RutaId, pais: Pais, alias: string): Promise<Ma
   return rutaBanda(m, pais, alias);
 }
 
-// ── Intro, país y menú ────────────────────────────────────────
+// ── Intro, país y menús ───────────────────────────────────────
 
 function validarAlias(alias: string): string | null {
   const motivo = motivoAliasInvalido(alias);
@@ -138,17 +166,15 @@ async function intro(m: Motor): Promise<string> {
   m.escena = laboratorio;
   m.musica("barrio");
   await m.fundirA(false);
-  await m.decir("¡Hola! Soy la ANALISTA VEGA. Estudio cómo le roban a la gente del barrio... y cómo evitarlo.", VEGA);
-  await m.decir("Esto es una SIMULACIÓN: el dinero, los bancos y las personas son ficticios. Los casos y las cifras, no.", VEGA);
-  await m.decir("Guardamos tus elecciones de forma anónima. Nunca te pediremos tu nombre real, DNI ni datos bancarios.", VEGA);
-  await m.decir("Primero, ¿cómo te llamo? Usa un apodo.", VEGA);
+  await m.decir("¡Hola! Soy la ANALISTA VEGA. Aquí vas a vivir las estafas que vacían cuentas en la región... y a ganarles.", VEGA);
+  await m.decir("Todo es ficticio y anónimo: nunca te pediremos tu nombre real ni datos bancarios. ¿Cómo te llamo?", VEGA);
   await m.fundirA(true);
   const pidiendo = m.nombre(validarAlias);
   await m.fundirA(false);
   const nombre = await pidiendo;
   await m.fundirA(true);
   await m.fundirA(false);
-  await m.decir(`¡Mucho gusto, ${nombre}!`, VEGA);
+  await m.decir(`¡${nombre}! Tu nombre va a salir en el RANKING del evento.`, VEGA);
   return nombre;
 }
 
@@ -157,32 +183,282 @@ async function elegirPais(m: Motor): Promise<Pais> {
   m.escena = laboratorio;
   m.musica("barrio");
   await m.fundirA(false);
-  await m.decir("Estas estafas pasan en toda la región. Cuéntame desde dónde juegas y lo adapto a tu país.", VEGA);
+  await m.decir("¿Desde dónde juegas? Lo adapto a tu país.", VEGA);
   const ids: PaisId[] = ["pe", "co", "mx", "ar"];
   const i = await m.menu(
     ids.map((id) => ({ texto: PAISES[id].nombre, sub: PAISES[id].billeterasCortas, bandera: PAISES[id].bandera, color: PAL.navy })),
     { estilo: "tarjetas", titulo: "¿Desde dónde juegas?" },
   );
   const pais = PAISES[ids[Math.max(0, i)]];
-  await m.decir(`¡${pais.nombre}! Aquí la gente paga con ${pais.billeterasReales}. En el juego el banco será «${pais.banco}» y la billetera «${pais.billetera}»: son ficticios.`, VEGA);
+  await m.decir(`¡${pais.nombre}! El banco del juego será «${pais.banco}» y la billetera «${pais.billetera}»: son ficticios.`, VEGA);
   await m.fundirA(true);
   return pais;
 }
 
-async function menuRutas(m: Motor, pais: Pais, resultados: Partial<Record<RutaId, Marca>>): Promise<RutaId | "datos" | "pais" | "titulo" | "intro"> {
-  m.barraSuperior = { texto: `RUTAS · ${pais.nombre}`, color: PAL.navy };
+const marcaPuntos = (n?: number): Marca | undefined => (n === undefined ? undefined : { texto: String(n), color: PAL.ambarOscuro });
+
+async function menuPrincipal(m: Motor, s: Sesion): Promise<"roe" | "sed" | "historias" | "banda" | "ranking" | "mas" | "titulo"> {
+  m.barraSuperior = { texto: `${s.alias} · ${s.pais.nombre}`, color: PAL.navy };
   m.escena = laboratorio;
   m.musica("barrio");
   await m.fundirA(false);
+  const jugadas = HISTORIAS.filter((r) => s.resultados[r.id]).length;
   const opciones: Opcion[] = [
-    ...RUTAS.map((r) => ({ texto: r.titulo, sub: r.sub, color: r.color, marca: resultados[r.id] })),
-    { texto: "LOS DATOS", sub: "Cifras reales", color: PAL.rojoOscuro },
-    { texto: "CAMBIAR PAÍS", sub: pais.nombre, color: PAL.gris, bandera: pais.bandera },
+    { texto: "¿REAL O ESTAFA?", sub: "Arcade · 45 s", color: PAL.rojo, marca: marcaPuntos(s.mejor.real_o_estafa) },
+    { texto: "SIGUE EL DINERO", sub: "Eres el Detective", color: PAL.celeste, marca: marcaPuntos(s.mejor.sigue_el_dinero) },
+    { texto: "HISTORIAS", sub: "Casos reales", color: PAL.ambar, marca: jugadas ? { texto: `${jugadas}/4`, color: PAL.verdeOscuro } : undefined },
+    { texto: "LA BANDA", sub: "Eres el atacante", color: PAL.rojoOscuro, marca: s.resultados.banda },
+    { texto: "RANKING", sub: "Top del evento", color: PAL.verde },
+    { texto: "MÁS", sub: "Datos y país", color: PAL.gris },
   ];
-  const i = await m.menu(opciones, { estilo: "tarjetas", titulo: "Elige tu ruta" });
+  const i = await m.menu(opciones, { estilo: "tarjetas", titulo: "¿Qué jugamos?" });
   await m.fundirA(true);
-  if (i < RUTAS.length) return RUTAS[i].id;
-  return i === RUTAS.length ? "datos" : "pais";
+  return (["roe", "sed", "historias", "banda", "ranking", "mas"] as const)[i] ?? "titulo";
+}
+
+async function menuHistorias(m: Motor, s: Sesion): Promise<RutaId | null> {
+  m.barraSuperior = { texto: "HISTORIAS", color: PAL.ambarOscuro };
+  m.escena = laboratorio;
+  await m.fundirA(false);
+  const opciones: Opcion[] = [
+    ...HISTORIAS.map((r) => ({ texto: r.titulo, sub: r.sub, color: r.color, marca: s.resultados[r.id] })),
+    { texto: "VOLVER", sub: "Menú", color: PAL.gris },
+  ];
+  const i = await m.menu(opciones, { estilo: "tarjetas", titulo: "Casos de la vida real", cancelable: true });
+  await m.fundirA(true);
+  return i >= 0 && i < HISTORIAS.length ? HISTORIAS[i].id : null;
+}
+
+async function menuMas(m: Motor, s: Sesion): Promise<"datos" | "pais" | "intro" | "titulo" | null> {
+  m.barraSuperior = null;
+  m.escena = laboratorio;
+  await m.fundirA(false);
+  const i = await m.menu(
+    [
+      { texto: "LOS DATOS", sub: "Cifras reales", color: PAL.rojoOscuro },
+      { texto: "CAMBIAR PAÍS", sub: s.pais.nombre, color: PAL.gris, bandera: s.pais.bandera },
+      { texto: "VER LA INTRO", sub: "El video", color: PAL.azul },
+      { texto: "PANTALLA DE INICIO", sub: "Título", color: PAL.gris },
+      { texto: "VOLVER", sub: "Menú", color: PAL.gris },
+    ],
+    { estilo: "tarjetas", titulo: "Más", cancelable: true },
+  );
+  await m.fundirA(true);
+  return (["datos", "pais", "intro", "titulo"] as const)[i] ?? null;
+}
+
+// ── Modos arcade ──────────────────────────────────────────────
+
+/** Una pregunta de encuesta como bonus del juego: un toque, +100 puntos. */
+const PREGUNTAS: Record<PreguntaEncuesta, { texto: string; opciones: Array<{ texto: string; valor: string }> }> = {
+  vivido: {
+    texto: "¿A ti o a alguien cercano le pasó algo así DE VERDAD?",
+    opciones: [{ texto: "A MÍ", valor: "yo" }, { texto: "A ALGUIEN CERCANO", valor: "cercano" }, { texto: "NO", valor: "no" }],
+  },
+  protege_hoy: {
+    texto: "¿Sientes que tu banco HOY te protege de estas estafas?",
+    opciones: [{ texto: "SÍ", valor: "si" }, { texto: "NO", valor: "no" }, { texto: "NO SÉ", valor: "no_se" }],
+  },
+  espera: {
+    texto: "Si tu banco PAUSA un pago raro para protegerte, ¿cuánto esperarías?",
+    opciones: [{ texto: "NADA", valor: "nada" }, { texto: "5 MINUTOS", valor: "5min" }, { texto: "1 HORA", valor: "1h" }, { texto: "HASTA 24 H", valor: "24h" }],
+  },
+  activaria: {
+    texto: "¿Activarías esta protección en tu banco, aunque a veces pause un pago?",
+    opciones: [{ texto: "SÍ", valor: "si" }, { texto: "NO", valor: "no" }, { texto: "NO SÉ", valor: "no_se" }],
+  },
+  recomendaria: {
+    texto: "¿Le pasarías este juego a un familiar para que no lo estafen?",
+    opciones: [{ texto: "SÍ", valor: "si" }, { texto: "NO", valor: "no" }],
+  },
+};
+
+async function preguntaBonus(m: Motor, s: Sesion, orden: PreguntaEncuesta[]): Promise<Record<string, string>> {
+  const id = orden.find((q) => !s.respondidas.has(q));
+  if (!id) return {};
+  const q = PREGUNTAS[id];
+  m.audio.confirmar();
+  const i = await m.pregunta(q.texto, q.opciones.map((o) => ({ texto: o.texto })), "BONUS +100", { corta: "Un toque, +100 puntos:" });
+  if (i < 0) return {};
+  s.respondidas.add(id);
+  m.audio.monedas();
+  m.flotante("+100", 80, 80, PAL.ambar);
+  return { [id]: q.opciones[i].valor };
+}
+
+async function mostrarResultado(m: Motor, d: DatosResultado): Promise<number> {
+  m.barraSuperior = null;
+  m.descubrirYa();
+  m.escena = escenaResultado(m.t, d);
+  m.musica(d.color === PAL.verde ? "guardian" : "titulo");
+  await m.fundirA(false);
+  if (d.posicion && d.posicion <= 3) {
+    m.confeti();
+    m.audio.exito();
+  }
+  await m.esperar(1800);
+  return m.menu([{ texto: "OTRA VEZ", color: "#bfe8c9" }, { texto: "VER RANKING" }, { texto: "MENÚ" }]);
+}
+
+async function modoRealOEstafa(m: Motor, s: Sesion): Promise<void> {
+  for (;;) {
+    m.barraSuperior = null;
+    m.descubrirYa();
+    await m.fundirA(true, 8);
+    const juego = realOEstafa(m, s.pais);
+    await m.fundirA(false, 10);
+    const r = await juego;
+    await m.fundirA(true);
+
+    m.escena = laboratorio;
+    m.musica("barrio");
+    await m.fundirA(false);
+    if (r.caidas.length > 0) {
+      const nombres = r.caidas.slice(0, 3).map((c) => NOMBRE_CATEGORIA[c] ?? c);
+      await m.decir(`Caíste con ${nombres.join(", ")}. Tranquilo: así cae la gente de verdad, con prisa y bajo presión.`, VEGA);
+    } else {
+      await m.decir("¡Ninguna estafa te pasó! Pero en la vida real no llegan en un juego: llegan a las 11 de la noche, con miedo.", VEGA);
+    }
+    if (r.realesRechazados > 0) await m.decir(`Y marcaste ${r.realesRechazados} ${r.realesRechazados === 1 ? "mensaje real" : "mensajes reales"} como estafa. Desconfiar de todo también cuesta.`, VEGA);
+    await m.decir("Por eso no puede depender solo de ti. Nuestra capa PAUSA, PREGUNTA, INVESTIGA y APRENDE por ti.", VEGA);
+    const encuesta = await preguntaBonus(m, s, ["vivido", "protege_hoy", "recomendaria"]);
+    const puntaje = r.puntaje + (Object.keys(encuesta).length ? 100 : 0);
+    let posicion: number | null = null;
+    try {
+      ({ posicion } = await registrarArcade({ modo: "real_o_estafa", alias: s.alias, pais: s.pais.id, puntaje, respuestas: r.respuestas, ...(Object.keys(encuesta).length ? { encuesta } : {}) }));
+    } catch {
+      // sin conexión: el juego sigue
+    }
+    s.mejor.real_o_estafa = Math.max(s.mejor.real_o_estafa ?? 0, puntaje);
+    await m.fundirA(true);
+    const sig = await mostrarResultado(m, {
+      titulo: r.vidas > 0 ? "¡BIEN!" : "¡TE ROBARON!",
+      color: r.vidas > 0 ? PAL.verde : PAL.rojo,
+      puntaje,
+      lineas: [
+        { texto: `Aciertos ${r.aciertos}/${r.total}` },
+        { texto: `Mejor combo x${r.mejorCombo}`, color: PAL.ambar },
+        { texto: `Caíste en ${r.respuestas.filter((x) => x.estafa && !x.dijo_estafa).length}`, color: PAL.rojo },
+      ],
+      posicion,
+    });
+    await m.fundirA(true);
+    if (sig === 0) continue;
+    if (sig === 1) await verRanking(m, s, "real_o_estafa");
+    return;
+  }
+}
+
+async function modoSigueElDinero(m: Motor, s: Sesion): Promise<void> {
+  for (;;) {
+    await tarjeta(m, "SIGUE EL DINERO", "DETECTIVE", "Congela las mulas\nantes de que el\ndinero se esfume.", PAL.celeste);
+    await vega(
+      m,
+      `Nuestra capa ya PAUSÓ la transferencia de ${s.pais.rosa}. Pero la cuenta que la iba a recibir ya le robó a 14 personas... y ese dinero se mueve.`,
+      "Un sistema de patrones solo mira a la víctima. Nosotros miramos el OTRO lado: la cuenta que recibe. ¡A investigar!",
+    );
+    await m.fundirA(true);
+    m.descubrirYa();
+    const juego = sigueElDinero(m, s.pais);
+    await m.fundirA(false, 10);
+    const r = await juego;
+    await m.fundirA(true);
+
+    // APRENDE
+    if (r.mulas > 0) await aprende(m, s);
+    await vega(
+      m,
+      r.mulas === 3
+        ? `¡Desarmaste la red! Recuperaste el ${r.recuperadoPct}%. Hoy un analista tarda DÍAS en reconstruir esto a mano.`
+        : `Recuperaste el ${r.recuperadoPct}%. El resto se esfumó en segundos: así de rápido mueven el dinero las mulas.`,
+      r.falsosPositivos > 0
+        ? "Y congelaste a un comercio honesto. Por eso nuestro DETECTIVE cita evidencia y un humano confirma antes de marcar a nadie."
+        : "Sin falsos positivos: que una cuenta reciba de muchos no la vuelve mula. Hay que mirar adónde va el dinero.",
+    );
+    const encuesta = await preguntaBonus(m, s, ["espera", "activaria", "recomendaria"]);
+    const puntaje = r.puntaje + (Object.keys(encuesta).length ? 100 : 0);
+    let posicion: number | null = null;
+    try {
+      ({ posicion } = await registrarArcade({
+        modo: "sigue_el_dinero",
+        alias: s.alias,
+        pais: s.pais.id,
+        puntaje,
+        recuperado_pct: r.recuperadoPct,
+        falsos_positivos: r.falsosPositivos,
+        mulas: r.mulas,
+        segundos: r.segundos,
+        ...(Object.keys(encuesta).length ? { encuesta } : {}),
+      }));
+    } catch {
+      // sin conexión: el juego sigue
+    }
+    s.mejor.sigue_el_dinero = Math.max(s.mejor.sigue_el_dinero ?? 0, puntaje);
+    await m.fundirA(true);
+    const sig = await mostrarResultado(m, {
+      titulo: r.mulas === 3 ? "¡RED CAÍDA!" : "SE ESCAPÓ",
+      color: r.mulas === 3 ? PAL.verde : PAL.rojo,
+      puntaje,
+      lineas: [
+        { texto: `Recuperado ${r.recuperadoPct}%`, color: PAL.celeste },
+        { texto: `Mulas ${r.mulas}/3` },
+        { texto: `Falsos positivos ${r.falsosPositivos}`, color: r.falsosPositivos ? PAL.rojo : PAL.verde },
+      ],
+      posicion,
+    });
+    await m.fundirA(true);
+    if (sig === 0) continue;
+    if (sig === 1) await verRanking(m, s, "sigue_el_dinero");
+    return;
+  }
+}
+
+/** La mula confirmada protege a la siguiente víctima: 0 IA. */
+async function aprende(m: Motor, s: Sesion) {
+  const estado = { k: 0, nombre: s.pais.jorge, monto: dinero(s.pais, 1500), escudo: 0 };
+  m.barraSuperior = { texto: "APRENDE", color: PAL.verdeOscuro };
+  m.escena = escenaMemoria(estado);
+  m.musica("guardian");
+  await m.fundirA(false);
+  await m.decir("Tú confirmas: es una mula. Desde ahora, la MEMORIA la conoce.", "AUDITOR");
+  await m.decir(`Al día siguiente, a ${s.pais.jorge} le escriben «soy tu hijo» y transfiere a la misma cuenta...`);
+  await m.animar(50, (k) => {
+    estado.k = k;
+  });
+  estado.k = 0;
+  m.audio.sello();
+  m.sacudir(10);
+  await m.animar(10, (k) => {
+    estado.escudo = k;
+  });
+  await m.sellar("PAUSA", PAL.verde, "Memoria · 0 IA", 1300);
+  await m.decir(`${s.pais.jorge} no pierde nada. Y no hizo falta gastar ni una llamada de IA: lo que aprendimos con ${s.pais.rosa} lo protegió.`);
+  await m.fundirA(true);
+}
+
+async function verRanking(m: Motor, s: Sesion, inicial: Modo) {
+  let modo = inicial;
+  for (;;) {
+    m.barraSuperior = null;
+    m.descubrirYa();
+    let filas: FilaRanking[] = [];
+    let jugadores = 0;
+    try {
+      const r = await resumenArcade();
+      filas = r.ranking[modo];
+      jugadores = r.jugadores;
+    } catch {
+      // sin conexión: ranking vacío
+    }
+    m.escena = escenaRanking(m.t, modo === "real_o_estafa" ? "¿REAL O ESTAFA?" : "SIGUE EL DINERO", filas, s.alias, jugadores);
+    m.musica("titulo");
+    await m.fundirA(false);
+    const otro: Modo = modo === "real_o_estafa" ? "sigue_el_dinero" : "real_o_estafa";
+    const i = await m.menu([{ texto: otro === "real_o_estafa" ? "VER ¿REAL O ESTAFA?" : "VER SIGUE EL DINERO" }, { texto: "VOLVER" }], { cancelable: true });
+    await m.fundirA(true);
+    if (i !== 0) return;
+    modo = otro;
+  }
 }
 
 /** Abre el iris desde negro (sirve tanto tras un fundido como tras otro iris). */

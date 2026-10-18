@@ -358,3 +358,44 @@ Fuentes de contexto por país (prensa, verificar antes de citar en el pitch):
 - Colombia: SMS de «pago pendiente» con el nombre de Bre-B ([Vanguardia](https://www.vanguardia.com/colombia/2026/08/05/no-caiga-en-la-trampa-asi-estan-usando-el-nombre-de-bre-b-para-estafar-a-usuarios/)); +64,000 denuncias por estafas digitales en 2025 ([Diario del Sur](https://www.diariodelsur.com.co/mas-del-36-de-los-colombianos-ha-sido-victima-de-fraude-digital-las-formas-mas-comunes-y-como-protegerse-en-2026/)).
 - México: 35,762 reclamaciones por posible fraude ene–may 2026, +18% en la banca; llamadas como vía principal ([El Imparcial](https://www.elimparcial.com/dinero/2026/08/27/fraude-bancario-en-mexico-aumenta-18-y-las-llamadas-siguen-siendo-una-de-las-principales-vias-de-engano-alerta-la-condusef/)).
 - Argentina: falsos operadores de billeteras y cuentas mula ([iProfesional](https://www.iprofesional.com/tecnologia/453048-tu-cuenta-de-mercado-pago-puede-estar-en-peligro-5-tips-para-protegerla), [El Ancasti](https://www.elancasti.com.ar/policiales/imputaron-tres-personas-el-uso-cuentas-mulas-la-venta-cubiertas-n606988)); UFECI 2024: 34,468 denuncias, 63% fraude en línea (según prensa).
+
+## 12. Versión 3: que enganche y que deje datos
+
+**Por qué.** La v2 se sentía como una app educativa: mucho texto, ritmo lento y poca mecánica. Además, la ronda B podía leerse como «un sistema que detecta patrones de comportamiento», que es la solución básica. Lo nuestro es otra cosa: **pausar sin depender del cliente, preguntar, investigar la cuenta que recibe y aprender para la siguiente víctima**. La v3 convierte eso en juego.
+
+**Menú principal** (`guion.ts`). La primera partida arranca directo en el arcade, sin tutorial:
+
+| Modo | Qué es | Qué demuestra | Qué dato deja |
+|---|---|---|---|
+| **¿REAL O ESTAFA?** (`realOEstafa.ts`) | Arcade de 45 s: llegan SMS, WhatsApp, llamadas, correos y capturas, y el jugador toca ESTAFA o REAL. Tiene combo, 3 vidas y bonus por rapidez. Un error muestra la pista. | Que cualquiera cae con prisa, y que desconfiar de todo también cuesta. Por eso la protección no puede depender del cliente. | En qué estafa cae la gente (por categoría) y cuántos mensajes reales rechaza |
+| **SIGUE EL DINERO** (`sigueElDinero.ts`) | Eres el Detective. El dinero de 14 víctimas salta de mula en mula (4471 → 8820 → 1093 → retiro) y hay que congelarlas antes de que salga. Si congelas una bodega, un hotel o un mayorista, es un falso positivo. | **Investiga**: mirar el otro lado de la transferencia. Ver que muchos remitentes (fan-in) no bastan para llamar mula a una cuenta: hay que mirar adónde va el dinero. **Aprende**: el Auditor confirma, la Memoria la conoce y la siguiente víctima queda en pausa con 0 IA. | % recuperado, mulas, falsos positivos y tiempo |
+| HISTORIAS | Las 4 rutas de la v2 (la llamada, sin señal, el familiar, el comprobante) | Pausa y Pregunta con el motor real | Partidas (`/api/juego/partidas`) |
+| LA BANDA | El atacante (v2) | Red-teaming contra el motor real | Partidas |
+| RANKING | Top del evento por modo, con bandera del país | Tracción en vivo | — |
+
+**Casuísticas del arcade** (16 estafas y 8 mensajes reales): link falso (bloqueo, clave, multa), falso banco que pide el código, falso familiar (número nuevo o accidente), comprobante falso, premio falso, trabajo falso por likes, inversión milagro, préstamo con cobro adelantado, comprador falso de marketplace que pide el código, robo de WhatsApp, extorsión de cobranza, falso soporte que pide instalar una app y amor por internet. Son modalidades públicas, sin guiones operativos. Los bancos y billeteras que aparecen son los ficticios del país.
+
+**La red de SIGUE EL DINERO sale del seed:** M-01 recibe de 14 remitentes nuevos (S/ 42,477) y reenvía a M-02 y M-03; M-02 reenvía a M-03. La bodega recibe de 35 clientes de años y solo le paga a su proveedor.
+
+**La encuesta como bonus.** Al terminar cada modo, una pregunta de un toque que suma +100 puntos. No se repite en la sesión.
+
+| Pregunta | Para qué |
+|---|---|
+| `vivido`: ¿a ti o a alguien cercano le pasó de verdad? | Tamaño del problema |
+| `protege_hoy`: ¿tu banco hoy te protege? | El gap |
+| `espera`: si tu banco pausa un pago raro, ¿cuánto esperarías? | Tolerancia a la pausa |
+| `activaria`: ¿activarías esta protección? | Disposición a adoptar |
+| `recomendaria`: ¿le pasarías el juego a un familiar? | Tracción |
+
+**API** (`app/api/juego/arcade`, `lib/juego/arcade.ts`). Va aparte de las partidas de Ale y no las toca.
+
+- `POST` registra una jugada y devuelve `{ id, posicion }`.
+- `GET` devuelve: jugadores, partidas, por país, ranking por modo, `caidas` por categoría, `% de reales rechazados` y la encuesta. Con `?crudo=1` también entrega todas las jugadas, que son anónimas.
+- `DELETE` exige el token del operador.
+
+Reglas:
+- El alias pasa por el mismo filtro que las partidas.
+- Sin texto libre; solo valores cerrados.
+- La persistencia es opcional con `ARCADE_ARCHIVO`. No se borra con el reset del demo.
+
+El monitor muestra el panel **«Tracción y encuesta»** con todo esto en vivo.
