@@ -115,7 +115,7 @@
       <p class="lead rise" style="--d:.3s">Cuatro agentes de IA investigan la cuenta que recibe. Una regla auditable decide. Un analista confirma, y lo aprendido protege al siguiente.</p>
     </div>
     <div class="viz">
-      <svg id="viz-solucion" data-smil viewBox="0 0 1600 650" role="img" aria-label="Diagrama de flujo. Frenar: las reglas, sin IA, retienen el dinero de Rosa. Investigar: el Coordinador, un agente de IA, llama a dos agentes; el Guardián habla con Rosa y detecta que la guían por teléfono; el Detective revisa la cuenta que recibe: 14 personas le envían y reenvía en 2 horas. Decidir: la Política, una regla fija sin IA, decide escalar; el Auditor, de IA, arma el expediente con pruebas. Recordar: un analista humano confirma que es mula y la Memoria marca la cuenta. Cuando Jorge paga a la misma cuenta, se le frena en el paso 1 sin IA.">
+      <svg id="viz-solucion" data-smil viewBox="0 0 1600 650" role="img" aria-label="Diagrama de flujo. Frenar: las reglas, sin IA, ven una cuenta nueva, un monto 11 veces mayor y una llamada en curso, y retienen el dinero de Rosa. Investigar: el Coordinador, un agente de IA, llama a dos agentes; el Guardián le escribe a Rosa por la app y ella responde que la guían por teléfono; el Detective revisa la cuenta que recibe: 14 personas le envían y reenvía en 2 horas. Decidir: la Política, una regla fija sin IA, decide escalar; el Auditor, de IA, arma el expediente con pruebas. Recordar: un analista humano confirma que es mula y la Memoria marca la cuenta. Después, cuando Jorge paga a la misma cuenta, la Memoria ya la conoce y se le frena al instante sin IA.">
         <defs>
           <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#56657a"/></marker>
         </defs>
@@ -144,28 +144,26 @@
           <path d="M1358 270 H1458"/>
         </g>
 
-        <!-- Vuelta de la memoria (Jorge) -->
-        <path id="loop" d="M1510 392 C 1510 640 290 640 290 392" fill="none" stroke="#5cc8a8" stroke-width="3" stroke-dasharray="6 8" opacity="0">
-          <set attributeName="opacity" to="0.85" begin="7.6s"/>
-        </path>
-
         <!-- Persona que paga -->
         <circle cx="90" cy="270" r="46" fill="#111a2b" stroke="#7cc4e6" stroke-width="3"/>
         <circle cx="90" cy="257" r="11" fill="#7cc4e6"/>
         <path d="M70 292 a20 18 0 0 1 40 0 z" fill="#7cc4e6"/>
-        <text class="sx" x="90" y="348" text-anchor="middle" font-size="20" font-weight="700" fill="#e8edf3">Rosa<set attributeName="opacity" to="0" begin="7.5s"/></text>
-        <text class="sx" x="90" y="348" text-anchor="middle" font-size="20" font-weight="700" fill="#e8edf3" opacity="0"><set attributeName="opacity" to="1" begin="7.5s"/>Jorge</text>
-        <text class="sx" x="90" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">quiere pagar</text>
+        <text class="sx" x="90" y="348" text-anchor="middle" font-size="20" font-weight="700" fill="#e8edf3">Rosa</text>
+        <text class="sx" x="90" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">envía S/4,800</text>
 
         <!-- 1 · Reglas (sin IA) -->
         <circle cx="290" cy="270" r="46" fill="#0a0f1a" stroke="#8a99ad" stroke-width="3">
           <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="0.9s" fill="freeze"/>
-          <set attributeName="stroke" to="#5cc8a8" begin="8.4s"/>
         </circle>
         <polygon points="310.3,261.6 298.4,249.7 281.6,249.7 269.7,261.6 269.7,278.4 281.6,290.3 298.4,290.3 310.3,278.4" fill="#e3b25a"/>
         <text class="px" x="290" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">REGLAS</text>
         <text class="sx" x="290" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">retienen el dinero</text>
-        <text class="px" x="290" y="200" text-anchor="middle" font-size="12" fill="#e3b25a" opacity="0"><set attributeName="opacity" to="1" begin="1s"/>RETENIDO</text>
+        <g class="mx" font-size="14" fill="#8a99ad" text-anchor="middle" opacity="0"><set attributeName="opacity" to="1" begin="0.9s"/>
+          <text x="290" y="132">cuenta nueva</text>
+          <text x="290" y="154">monto 11×</text>
+          <text x="290" y="176">llamada en curso</text>
+        </g>
+        <text class="px" x="290" y="206" text-anchor="middle" font-size="14" fill="#e3b25a" opacity="0"><set attributeName="opacity" to="1" begin="1.1s"/>→ RETENIDO</text>
 
         <!-- 2 · Coordinador (IA) -->
         <circle cx="490" cy="270" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
@@ -182,8 +180,8 @@
         </circle>
         <path d="M700 127 l19 7 v15 c0 12 -8 20 -19 25 c-11 -5 -19 -13 -19 -25 v-15 z" fill="#e8edf3"/>
         <text class="px" x="700" y="228" text-anchor="middle" font-size="15" fill="#e8edf3">GUARDIÁN</text>
-        <text class="sx" x="700" y="254" text-anchor="middle" font-size="17" fill="#8a99ad">habla con Rosa</text>
-        <text class="mx" x="700" y="84" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="2.7s"/>«me guían por teléfono»</text>
+        <text class="sx" x="700" y="254" text-anchor="middle" font-size="17" fill="#8a99ad">le escribe a Rosa</text>
+        <text class="mx" x="700" y="84" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="2.7s"/>Rosa: «me guían por teléfono»</text>
 
         <!-- 2 · Detective (IA) -->
         <circle cx="700" cy="390" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
@@ -255,22 +253,25 @@
           <animateMotion path="M958 270 H1052 M1168 270 H1252 M1368 270 H1452" dur="2.5s" begin="4.3s" fill="freeze" calcMode="linear" keyPoints="0;0.359;0.359;0.679;0.679;1" keyTimes="0;0.2;0.4;0.6;0.8;1"/>
         </circle>
 
-        <!-- Jorge: la Memoria lo frena en el paso 1 -->
-        <circle r="12" fill="#7cc4e6" stroke="#0a0f1a" stroke-width="2" opacity="0">
-          <set attributeName="opacity" to="1" begin="7.5s"/>
-          <animateMotion path="M150 270 H232" dur="0.5s" begin="7.5s" fill="freeze"/>
-        </circle>
-        <circle r="10" fill="#5cc8a8" opacity="0">
-          <set attributeName="opacity" to="1" begin="7.6s"/><set attributeName="opacity" to="0" begin="8.4s"/>
-          <animateMotion dur="0.8s" begin="7.6s" fill="freeze"><mpath href="#loop"/></animateMotion>
-        </circle>
-        <text class="sx" x="900" y="628" text-anchor="middle" font-size="20" font-weight="800" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="8.5s"/>Jorge, misma cuenta: frenado en el paso 1 · 0 IA</text>
+        <!-- Después: Jorge, en su propio carril -->
+        <g opacity="0"><set attributeName="opacity" to="1" begin="7.4s"/>
+          <line x1="470" y1="566" x2="1560" y2="566" stroke="#24324a" stroke-width="1.5"/>
+          <text class="mx" x="470" y="606" font-size="14" fill="#5cc8a8">DESPUÉS</text>
+          <circle cx="600" cy="600" r="24" fill="#111a2b" stroke="#7cc4e6" stroke-width="2.5"/>
+          <circle cx="600" cy="593" r="6" fill="#7cc4e6"/>
+          <path d="M589 613 a11 10 0 0 1 22 0 z" fill="#7cc4e6"/>
+          <path d="M630 600 H690" stroke="#56657a" stroke-width="3" marker-end="url(#ah)"/>
+          <circle cx="720" cy="600" r="24" fill="#0a0f1a" stroke="#5cc8a8" stroke-width="2.5"/>
+          <path d="M714 598 v-5 a6 6 0 0 1 12 0 v5" stroke="#5cc8a8" stroke-width="2.5" fill="none"/>
+          <rect x="710" y="598" width="20" height="14" rx="2" fill="#5cc8a8"/>
+          <text class="sx" x="764" y="607" font-size="20" fill="#e8edf3"><tspan font-weight="700">Jorge</tspan> paga a la misma cuenta: la Memoria ya la conoce. <tspan font-weight="700" fill="#5cc8a8">Frenado al instante · 0 IA</tspan></text>
+        </g>
 
         <!-- Leyenda -->
         <g class="sx" font-size="16" fill="#8a99ad">
-          <circle cx="40" cy="622" r="8" fill="none" stroke="#7cc4e6" stroke-width="3"/><text x="56" y="628">agente de IA</text>
-          <circle cx="190" cy="622" r="8" fill="none" stroke="#8a99ad" stroke-width="3"/><text x="206" y="628">sin IA</text>
-          <circle cx="290" cy="622" r="8" fill="none" stroke="#5cc8a8" stroke-width="3"/><text x="306" y="628">humano</text>
+          <circle cx="40" cy="600" r="8" fill="none" stroke="#7cc4e6" stroke-width="3"/><text x="56" y="606">agente de IA</text>
+          <circle cx="190" cy="600" r="8" fill="none" stroke="#8a99ad" stroke-width="3"/><text x="206" y="606">sin IA</text>
+          <circle cx="290" cy="600" r="8" fill="none" stroke="#5cc8a8" stroke-width="3"/><text x="306" y="606">humano</text>
         </g>
       </svg>
     </div>
