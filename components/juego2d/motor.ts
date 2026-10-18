@@ -1,6 +1,6 @@
 import { Audio } from "./audio";
 import { Explorador, TILE, type ConfigMundo } from "./mundo";
-import { CARACTER, PAL, Pincel, W, envolver, facil, limpiar, type Caja } from "./pincel";
+import { CARACTER, PAL, Pincel, W, dibujarBandera, envolver, facil, limpiar, type Bandera, type Caja } from "./pincel";
 import { cara } from "./sprites";
 import type { Direccion } from "./sprites";
 
@@ -32,7 +32,7 @@ export type Opcion = {
   color?: string;
   /** Solo estilo «tarjetas»: segunda línea, bandera e insignia. */
   sub?: string;
-  bandera?: { colores: string[]; vertical: boolean };
+  bandera?: Bandera;
   marca?: { texto: string; color: string };
   /** Solo «tarjetas»: 0..3 estrellas ganadas (se dibujan en vez de la marca). */
   estrellas?: number;
@@ -56,8 +56,17 @@ const ALTO_DIALOGO = 82;
 const LETRAS = ["ABCDEFG", "HIJKLMN", "ÑOPQRST", "UVWXYZ-"];
 const MAX_NOMBRE = 10;
 /** Botón de pausa (≡), siempre arriba a la derecha. */
+/** Color de las opciones riesgosas (TRANSFERIR, CONTINUAR, ENTREGAR…). */
+export const COLOR_PELIGRO = "#f4c7c3";
 const BOTON_PAUSA: Caja = { x: W - 20, y: 2, w: 18, h: 16 };
 const AVISO_CUADROS = 105;
+/**
+ * Cuadros en que un menú recién abierto ignora el botón A del teclado: quien
+ * pasa el diálogo a Espacio no elige sin querer la primera opción.
+ */
+const BLOQUEO_MENU = 40;
+/** Letras que aparecen por cuadro en los diálogos. */
+const LETRAS_POR_CUADRO = 2;
 
 type Dialogo = {
   paginas: string[][];
@@ -97,7 +106,7 @@ type Teclado = {
 type Particula = { x: number; y: number; vx: number; vy: number; vida: number; max: number; color: string; tam: number; g: number };
 type Flotante = { texto: string; x: number; y: number; vida: number; color: string };
 type Sello = { texto: string; sub?: string; color: string; cuadro: number };
-type Comentario = { texto: string[]; y: number; color: string; cuadro: number };
+type Comentario = { texto: string[]; y: number; color: string; cuadro: number; dura: number };
 type Aviso = { titulo: string; sub: string; color: string; cuadro: number };
 type Cortina = { tipo: "barras" | "iris"; k: number; cx: number; cy: number };
 
@@ -348,8 +357,10 @@ export class Motor {
 
   private escribir(texto: string, quien: string | undefined, esperarFinal: boolean): Promise<void> {
     const lineas = envolver(texto, COLUMNAS);
+    // Páginas parejas: 6 líneas son 3 + 3, no 5 y una palabra sola.
+    const porPagina = Math.ceil(lineas.length / Math.ceil(lineas.length / LINEAS));
     const paginas: string[][] = [];
-    for (let i = 0; i < lineas.length; i += LINEAS) paginas.push(lineas.slice(i, i + LINEAS));
+    for (let i = 0; i < lineas.length; i += porPagina) paginas.push(lineas.slice(i, i + porPagina));
     const entrada = this.dialogo ? this.t - 20 : this.t;
     return this.prometer<void>((resolver) => {
       this.dialogo = { paginas, pagina: 0, mostrados: 0, quien: quien ? limpiar(quien) : undefined, esperarFinal, entrada, resolver };
@@ -365,8 +376,9 @@ export class Motor {
     if (this.t - d.entrada < 6) return;
     const total = this.total(d);
     if (d.mostrados < total) {
-      d.mostrados = Math.min(total, d.mostrados + 1);
-      if (d.mostrados % 3 === 0) this.audio.blip();
+      const antes = d.mostrados;
+      d.mostrados = Math.min(total, d.mostrados + LETRAS_POR_CUADRO);
+      if (Math.floor(d.mostrados / 4) > Math.floor(antes / 4)) this.audio.blip();
     } else if (!d.esperarFinal && d.pagina === d.paginas.length - 1) {
       d.resolver();
     }
@@ -400,10 +412,15 @@ export class Motor {
     o: { estilo?: EstiloMenu; titulo?: string; cancelable?: boolean; limiteCuadros?: number; inicial?: number } = {},
   ): Promise<number> {
     this.armado = null;
+    this.cola.length = 0;
+    // En los combates y cuando la primera opción es la peligrosa, nada viene
+    // marcado: con el teclado hay que elegir a propósito.
+    const peligrosa = opciones[0]?.color === COLOR_PELIGRO;
+    const inicial = o.inicial ?? (o.estilo === "combate" || peligrosa ? -1 : 0);
     return this.prometer<number>((resolver) => {
       this.menuActivo = {
         opciones,
-        idx: o.inicial ?? 0,
+        idx: inicial,
         estilo: o.estilo ?? "lista",
         titulo: o.titulo,
         cancelable: o.cancelable ?? false,
@@ -437,6 +454,7 @@ export class Motor {
   }
 
   private elegir(m: Menu) {
+    if (m.idx < 0) return;
     m.elegido = { idx: m.idx, cuadros: 7 };
     this.audio.confirmar();
     this.vibrar(12);
@@ -451,11 +469,21 @@ export class Motor {
         this.audio.mover();
       }
     };
+    if (m.idx < 0) {
+      // Sin opción marcada: la primera flecha marca la primera opción.
+      if (b === "arriba" || b === "abajo" || b === "izq" || b === "der") mover(0);
+      else if (b === "b" && m.cancelable) {
+        this.menuActivo = null;
+        this.dialogo = null;
+        m.resolver(-1);
+      }
+      return;
+    }
     if (b === "arriba") mover(m.idx - cols);
     if (b === "abajo") mover(m.idx + cols);
     if (b === "izq" && cols > 1) mover(m.idx - 1);
     if (b === "der" && cols > 1) mover(m.idx + 1);
-    if (b === "a") this.elegir(m);
+    if (b === "a" && this.t - m.entrada >= BLOQUEO_MENU) this.elegir(m);
     if (b === "b" && m.cancelable) {
       this.menuActivo = null;
       this.dialogo = null;
@@ -474,11 +502,13 @@ export class Motor {
       const fila = Math.floor(i / 2);
       return { x: d.x + 6 + col * 89, y: d.y + 22 + fila * 29, w: 84, h: 25 };
     }
+    // Si el diálogo tiene nombre (quién habla), las opciones van más arriba para no taparlo.
+    const nombre = this.dialogo?.quien ? 14 : 0;
     if (m.estilo === "caras") {
-      return { x: 14 + i * 34, y: d.y - 46, w: 30, h: 30 };
+      return { x: 14 + i * 34, y: d.y - 46 - nombre, w: 30, h: 30 };
     }
     const n = m.opciones.length;
-    const base = this.dialogo ? d.y - 8 : this.h - 10;
+    const base = this.dialogo ? d.y - 8 - nombre : this.h - 10;
     if (m.estilo === "tarjetas") {
       const sep = 4;
       const disponible = base - 44;
@@ -486,8 +516,9 @@ export class Motor {
       const arriba = base - n * alto - (n - 1) * sep;
       return { x: 8, y: arriba + i * (alto + sep), w: W - 16, h: alto };
     }
-    const alto = 22;
-    const sep = 5;
+    // Con nombre, opciones algo más compactas: no suben tanto sobre la escena.
+    const alto = nombre ? 20 : 22;
+    const sep = nombre ? 3 : 5;
     const arriba = base - n * alto - (n - 1) * sep;
     return { x: 10, y: arriba + i * (alto + sep), w: W - 20, h: alto };
   }
@@ -505,15 +536,11 @@ export class Motor {
     }
     let tx = r.x + 12;
     if (op.bandera) {
-      const { colores, vertical } = op.bandera;
       const bw = 18;
       const bh = 12;
       const by = y + Math.round((r.h - bh) / 2);
       p.rect(PAL.tinta, tx - 1, by - 1, bw + 2, bh + 2);
-      colores.forEach((c, i) => {
-        if (vertical) p.rect(c, tx + Math.round((i * bw) / colores.length), by, Math.ceil(bw / colores.length), bh);
-        else p.rect(c, tx, by + Math.round((i * bh) / colores.length), bw, Math.ceil(bh / colores.length));
-      });
+      dibujarBandera(p, op.bandera, tx, by, bw, bh);
       tx += bw + 7;
     }
     const maxChars = Math.floor((r.x + r.w - 6 - tx) / 8) - (op.estrellas !== undefined ? 3 : op.marca ? op.marca.texto.length + 1 : 0);
@@ -719,8 +746,11 @@ export class Motor {
    * El comentarista: un globo corto (jerga del país) que aparece en `y` y se
    * va solo. Reemplaza al anterior; no bloquea el juego.
    */
-  comentar(texto: string, o: { y?: number; color?: string } = {}) {
-    this.comentario = { texto: envolver(texto, 21).slice(0, 3), y: o.y ?? 40, color: o.color ?? PAL.ambar, cuadro: 0 };
+  comentar(texto: string, o: { y?: number; color?: string; hastaY?: number; lineas?: number; cuadros?: number } = {}) {
+    const lineas = envolver(texto, 21).slice(0, o.lineas ?? 3);
+    // `hastaY`: el globo (con su colita) termina ahí, para no tapar los botones.
+    const y = o.hastaY !== undefined ? o.hastaY - (lineas.length * 11 + 8) - 3 : (o.y ?? 40);
+    this.comentario = { texto: lineas, y, color: o.color ?? PAL.ambar, cuadro: 0, dura: o.cuadros ?? 80 + lineas.join("").length * 2 };
   }
 
   /** Cuadros que faltan para que se vean todos los avisos en cola. */
@@ -937,7 +967,7 @@ export class Motor {
 
   private dibujarComentario(p: Pincel, c: Comentario) {
     c.cuadro++;
-    const dura = 80 + c.texto.join("").length * 2;
+    const dura = c.dura;
     if (c.cuadro > dura) {
       this.comentario = null;
       return;

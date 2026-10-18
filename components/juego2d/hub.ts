@@ -1,5 +1,5 @@
 import type { Boton, Motor } from "./motor";
-import { PAL, Pincel, W, facil, type Caja } from "./pincel";
+import { PAL, Pincel, W, dibujarBandera, facil, type Bandera, type Caja } from "./pincel";
 import type { Icono } from "./tutorial";
 
 /**
@@ -124,7 +124,8 @@ export function menuHub(m: Motor, d: DatosHub): Promise<string> {
     // ── Rango ──
     const r = d.rango;
     p.textoSombra(r.nombre, 6, 5, PAL.verde, PAL.tinta);
-    const tot = `${r.total} pts`;
+    // XP: todo lo que jugaste suma (no es el puntaje del ranking, que es tu mejor partida).
+    const tot = `${r.total} XP`;
     p.texto(tot, 166 - p.ancho(tot), 5, PAL.ambar);
     p.rect(PAL.tinta, 6, 16, 160, 6);
     p.rect("#3a3560", 7, 17, 158, 4);
@@ -195,7 +196,7 @@ export function menuHub(m: Motor, d: DatosHub): Promise<string> {
 /** Elegir país: grilla de 2 columnas con bandera grande (caben los 9). */
 export function menuPaises(
   m: Motor,
-  lista: Array<{ id: string; nombre: string; bandera: { colores: string[]; vertical: boolean } }>,
+  lista: Array<{ id: string; nombre: string; bandera: Bandera }>,
   conVolver = false,
 ): Promise<string> {
   // «VOLVER» como una casilla más (cuando se cambia de país desde MÁS).
@@ -274,11 +275,7 @@ export function menuPaises(
         const by = y + Math.max(3, Math.round((c.h - bh - 12) / 2));
         const bx = c.x + Math.round((c.w - bw) / 2);
         p.rect(PAL.tinta, bx - 1, by - 1, bw + 2, bh + 2);
-        const { colores, vertical } = pa.bandera;
-        colores.forEach((col, j) => {
-          if (vertical) p.rect(col, bx + Math.round((j * bw) / colores.length), by, Math.ceil(bw / colores.length), bh);
-          else p.rect(col, bx, by + Math.round((j * bh) / colores.length), bw, Math.ceil(bh / colores.length));
-        });
+        dibujarBandera(p, pa.bandera, bx, by, bw, bh);
         p.centrado(pa.nombre.slice(0, 10), by + bh + 4, PAL.tinta, 8, undefined, c.x, c.w);
       });
     });

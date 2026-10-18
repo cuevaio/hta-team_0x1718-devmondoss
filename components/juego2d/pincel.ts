@@ -44,11 +44,14 @@ export function limpiar(texto: string): string {
     .replace(/[“”]/g, '"')
     .replace(/[‘’]/g, "'")
     .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, "")
-    .replace(/ /g, " ")
-    // En 8 px la fuente dibuja las mayúsculas con tilde como minúsculas:
-    // como en los juegos clásicos, van sin tilde.
-    .replace(/[ÁÉÍÓÚ]/g, (c) => ({ Á: "A", É: "E", Í: "I", Ó: "O", Ú: "U" })[c] ?? c);
+    .replace(/ /g, " ");
 }
+
+/**
+ * En 8 px la fuente dibuja las mayúsculas con tilde como minúsculas: se
+ * escribe la letra sin tilde y `Pincel.texto` le pinta la tilde encima.
+ */
+const SIN_TILDE: Record<string, string> = { Á: "A", É: "E", Í: "I", Ó: "O", Ú: "U" };
 
 /** Parte un texto en líneas de como mucho `max` caracteres (respeta `\n`). */
 export function envolver(texto: string, max: number): string[] {
@@ -86,6 +89,68 @@ export function mezclar(a: string, b: string, k: number): string {
   const g = canal(ca, 8);
   const bl = canal(ca, 0);
   return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
+}
+
+/**
+ * Bandera: franjas de colores y, si hace falta para reconocerla, un detalle
+ * (la estrella de Chile, el escudo de Ecuador, las estrellas de Venezuela…).
+ */
+export type Bandera = {
+  colores: string[];
+  vertical: boolean;
+  detalle?: "chile" | "ecuador" | "venezuela" | "argentina" | "mexico" | "bolivia";
+};
+
+/** Dibuja una bandera en la caja (x, y, w, h), sin borde. */
+export function dibujarBandera(p: Pincel, b: Bandera, x: number, y: number, w: number, h: number) {
+  const n = b.colores.length;
+  b.colores.forEach((c, i) => {
+    if (b.vertical) p.rect(c, x + Math.round((i * w) / n), y, Math.ceil(w / n), h);
+    else p.rect(c, x, y + Math.round((i * h) / n), w, Math.ceil(h / n));
+  });
+  const cx = x + Math.floor(w / 2);
+  const cy = y + Math.floor(h / 2);
+  const u = Math.max(1, Math.round(h / 7));
+  switch (b.detalle) {
+    case "chile": {
+      // Cuadro azul arriba a la izquierda con la estrella blanca.
+      const lado = Math.ceil(h / 2);
+      p.rect("#0039a6", x, y, lado, lado);
+      p.rect(PAL.blanco, x + Math.floor(lado / 2) - Math.floor(u / 2), y + Math.floor(lado / 2) - Math.floor(u / 2), u, u);
+      if (lado >= 6) {
+        p.rect(PAL.blanco, x + Math.floor(lado / 2) - u, y + Math.floor(lado / 2), u * 2 + (u > 1 ? 0 : 1), 1);
+      }
+      break;
+    }
+    case "ecuador":
+      // Escudo al centro (lo que la distingue de Colombia).
+      p.rect("#6b4a1f", cx - u, cy - u - 1, u * 2 + 1, u * 2 + 2);
+      p.rect("#3aa0d8", cx - u + 1, cy - u, Math.max(1, u * 2 - 1), u);
+      p.rect("#2f8a3a", cx - u + 1, cy, Math.max(1, u * 2 - 1), u);
+      break;
+    case "venezuela": {
+      // Arco de estrellas blancas en la franja azul.
+      const fy = y + Math.floor(h / 3);
+      const fh = Math.max(1, Math.round(h / 3));
+      const k = Math.max(3, Math.min(8, Math.floor(w / 3)));
+      for (let i = 0; i < k; i++) {
+        const t = i / (k - 1);
+        const sx = x + Math.round(w * 0.2 + t * w * 0.6);
+        const arco = Math.round(Math.abs(t - 0.5) * 2 * (fh - 1));
+        p.rect(PAL.blanco, sx, fy + Math.max(0, fh - 1 - arco), 1, 1);
+      }
+      break;
+    }
+    case "argentina":
+      p.rect("#f6b40e", cx - u, cy - u, u * 2, u * 2);
+      break;
+    case "mexico":
+      p.rect("#8c5a2b", cx - u, cy - u, u * 2, u * 2);
+      break;
+    case "bolivia":
+      if (h >= 9) p.rect("#8c5a2b", cx - u, cy - u, u * 2, u * 2);
+      break;
+  }
 }
 
 export type Grilla = string[];
@@ -127,7 +192,15 @@ export class Pincel {
     c.font = `${tam}px ${this.fuente}`;
     c.textBaseline = "top";
     c.fillStyle = color;
-    c.fillText(limpiar(texto), Math.round(x), Math.round(y));
+    const limpio = limpiar(texto);
+    c.fillText(limpio.replace(/[ÁÉÍÓÚ]/g, (l) => SIN_TILDE[l]), Math.round(x), Math.round(y));
+    const s = tam / CARACTER;
+    for (let i = 0; i < limpio.length; i++) {
+      if (!SIN_TILDE[limpio[i]]) continue;
+      const lx = Math.round(x) + i * tam;
+      c.fillRect(lx + 4 * s, Math.round(y) - 2 * s, 2 * s, s);
+      c.fillRect(lx + 3 * s, Math.round(y) - s, 2 * s, s);
+    }
   }
 
   textoSombra(texto: string, x: number, y: number, color: string, sombra: string, tam = CARACTER) {

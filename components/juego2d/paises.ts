@@ -11,14 +11,15 @@
 
 export type { PaisJuego as PaisId } from "@/lib/juego/arcade";
 import type { PaisJuego as PaisId } from "@/lib/juego/arcade";
+import type { Bandera } from "./pincel";
 
 export type Dato = { cifra: string; texto: string; fuente: string };
 
 export type Pais = {
   id: PaisId;
   nombre: string;
-  /** Franjas de la bandera (colores) y su orientación. */
-  bandera: { colores: string[]; vertical: boolean };
+  /** Franjas de la bandera (colores), su orientación y su detalle. */
+  bandera: Bandera;
   /** Montos del juego en PEN (lo que ve el motor) → moneda local. */
   factor: number;
   simbolo: string;
@@ -104,7 +105,7 @@ export const PAISES: Record<PaisId, Pais> = {
   mx: {
     id: "mx",
     nombre: "MÉXICO",
-    bandera: { colores: ["#006847", "#ffffff", "#ce1126"], vertical: true },
+    bandera: { colores: ["#006847", "#ffffff", "#ce1126"], vertical: true, detalle: "mexico" },
     factor: 5,
     simbolo: "$",
     miles: ",",
@@ -129,7 +130,7 @@ export const PAISES: Record<PaisId, Pais> = {
   ar: {
     id: "ar",
     nombre: "ARGENTINA",
-    bandera: { colores: ["#74acdf", "#ffffff", "#74acdf"], vertical: false },
+    bandera: { colores: ["#74acdf", "#ffffff", "#74acdf"], vertical: false, detalle: "argentina" },
     factor: 1000,
     simbolo: "$",
     miles: ".",
@@ -154,7 +155,7 @@ export const PAISES: Record<PaisId, Pais> = {
   cl: {
     id: "cl",
     nombre: "CHILE",
-    bandera: { colores: ["#ffffff", "#d52b1e"], vertical: false },
+    bandera: { colores: ["#ffffff", "#d52b1e"], vertical: false, detalle: "chile" },
     factor: 250,
     simbolo: "$",
     miles: ".",
@@ -179,7 +180,7 @@ export const PAISES: Record<PaisId, Pais> = {
   ec: {
     id: "ec",
     nombre: "ECUADOR",
-    bandera: { colores: ["#ffdd00", "#ffdd00", "#034ea2", "#ed1c24"], vertical: false },
+    bandera: { colores: ["#ffdd00", "#ffdd00", "#034ea2", "#ed1c24"], vertical: false, detalle: "ecuador" },
     factor: 0.27,
     simbolo: "$",
     miles: ",",
@@ -204,7 +205,7 @@ export const PAISES: Record<PaisId, Pais> = {
   bo: {
     id: "bo",
     nombre: "BOLIVIA",
-    bandera: { colores: ["#d52b1e", "#f9e300", "#007934"], vertical: false },
+    bandera: { colores: ["#d52b1e", "#f9e300", "#007934"], vertical: false, detalle: "bolivia" },
     factor: 1.85,
     simbolo: "Bs",
     miles: ".",
@@ -229,7 +230,7 @@ export const PAISES: Record<PaisId, Pais> = {
   ve: {
     id: "ve",
     nombre: "VENEZUELA",
-    bandera: { colores: ["#ffcc00", "#00247d", "#cf142b"], vertical: false },
+    bandera: { colores: ["#ffcc00", "#00247d", "#cf142b"], vertical: false, detalle: "venezuela" },
     factor: 0.27,
     simbolo: "$",
     miles: ",",

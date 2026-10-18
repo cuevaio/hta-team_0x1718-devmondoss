@@ -1,6 +1,6 @@
 import type { FilaRanking } from "@/components/juego/api";
 import { PAISES, type PaisId } from "./paises";
-import { PAL, Pincel, W, facil } from "./pincel";
+import { PAL, Pincel, W, dibujarBandera, facil } from "./pincel";
 
 /** Pantallas de puntaje: resultado de una partida y ranking del evento. */
 
@@ -86,7 +86,7 @@ export function escenaResultado(inicio: number, d: DatosResultado): Escena {
       const kk = Math.min(1, Math.max(0, (f - 150) / 14));
       p.alfa(kk, () => {
         p.texto(d.rango!.nombre, 10, y, PAL.verde);
-        const tot = `${d.rango!.total} pts`;
+        const tot = `${d.rango!.total} XP`;
         p.texto(tot, W - 10 - p.ancho(tot), y, PAL.grisClaro);
         p.barra(10, y + 11, W - 20, d.rango!.k * Math.min(1, kk * 1.2), PAL.verde);
         if (d.rango!.siguiente) p.texto(`> ${d.rango!.siguiente}`, 10, y + 20, PAL.gris);
@@ -119,13 +119,7 @@ export function escenaRanking(inicio: number, titulo: string, filas: FilaRanking
       p.rect(mio ? "#4a3a12" : "#1f2650", x + 1, y + 1, W - 18, 15);
       p.texto(String(i + 1).padStart(2, " "), x + 4, y + 5, i < 3 ? MEDALLAS[i] : PAL.grisClaro);
       const bandera = PAISES[fila.pais as PaisId]?.bandera;
-      if (bandera) {
-        bandera.colores.forEach((c, j) => {
-          const n = bandera.colores.length;
-          if (bandera.vertical) p.rect(c, x + 24 + Math.round((j * 12) / n), y + 4, Math.ceil(12 / n), 9);
-          else p.rect(c, x + 24, y + 4 + Math.round((j * 9) / n), 12, Math.ceil(9 / n));
-        });
-      }
+      if (bandera) dibujarBandera(p, bandera, x + 24, y + 4, 12, 9);
       p.texto(fila.alias.toUpperCase().slice(0, 10), x + 42, y + 5, mio ? PAL.ambar : PAL.crema);
       const pts = String(fila.puntaje);
       p.texto(pts, x + W - 20 - p.ancho(pts), y + 5, PAL.ambar);
