@@ -27,30 +27,8 @@ import { datoCorto, duracion, lineasDe, type Linea, type Nota } from "./narrador
 type Prueba = { id: string; titulo: string; demuestra: string };
 type Agentes = { modo: "claude" | "ollama" | "simulado"; modelo: string | null };
 
-const CLAVE_TOKEN = "afs-demo-token";
 /** Lo que se espera en pantalla con el resultado completo antes de pasar a la prueba siguiente. */
 const RESPIRO_MS = 1800;
-
-/** Token del operador: llega como `?token=`, se quita de la URL y queda en la pestaña. */
-function tokenOperador(): string | null {
-  try {
-    const url = new URL(window.location.href);
-    const t = url.searchParams.get("token");
-    if (t) {
-      url.searchParams.delete("token");
-      window.history.replaceState(null, "", url.toString());
-      try {
-        sessionStorage.setItem(CLAVE_TOKEN, t);
-      } catch {
-        // sin almacenamiento: vale solo para esta carga
-      }
-      return t;
-    }
-    return sessionStorage.getItem(CLAVE_TOKEN);
-  } catch {
-    return null;
-  }
-}
 
 export default function PanelBackend() {
   const [pruebas, setPruebas] = useState<Prueba[]>([]);
@@ -61,14 +39,12 @@ export default function PanelBackend() {
   const [error, setError] = useState<string | null>(null);
   const [velocidad, setVelocidad] = useState(1);
   const [explicar, setExplicar] = useState(true);
-  const token = useRef<string | null>(null);
   const vel = useRef(1);
   vel.current = velocidad;
   /** Lo resuelve la vista cuando terminó de reproducir la prueba en curso. */
   const fin = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    token.current = tokenOperador();
     fetch("/api/demo/suite")
       .then((r) => r.json())
       .then((d: { pruebas: Prueba[]; agentes: Agentes }) => {
@@ -86,13 +62,10 @@ export default function PanelBackend() {
     setCorriendo(pruebas[0].id);
     setElegida(pruebas[0].id);
     try {
-      const res = await fetch("/api/demo/suite", {
-        method: "POST",
-        headers: token.current ? { "x-demo-token": token.current } : {},
-      });
+      const res = await fetch("/api/demo/suite", { method: "POST" });
       if (!res.ok || !res.body) {
         const b = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(res.status === 401 || res.status === 403 ? "Falta el token: abre /demo?token=…" : (b?.error ?? `error ${res.status}`));
+        throw new Error(res.status === 409 ? "La suite ya está corriendo en otra pestaña." : (b?.error ?? `error ${res.status}`));
       }
       const lector = res.body.getReader();
       const dec = new TextDecoder();
