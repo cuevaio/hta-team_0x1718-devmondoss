@@ -26,6 +26,15 @@ export type Opcion = {
 };
 type EstiloMenu = "lista" | "combate" | "caras" | "tarjetas";
 
+/** Escena con reglas propias en tiempo real (minijuegos). */
+export type Minijuego = {
+  dibujar: Dibujo;
+  tocar?: (x: number, y: number) => void;
+  tecla?: (b: Boton) => void;
+  /** Estado para pruebas end-to-end (`/play?depurar`). */
+  info?: () => unknown;
+};
+
 const COLUMNAS = 20;
 const LINEAS = 5;
 const ALTO_DIALOGO = 82;
@@ -79,6 +88,7 @@ export class Motor {
   private resolverExplorar: ((id: string) => void) | null = null;
   private resolverToque: (() => void) | null = null;
   private hablandoEnMundo = false;
+  private mini: Minijuego | null = null;
   private particulas: Particula[] = [];
   private flotantes: Flotante[] = [];
   private sello: Sello | null = null;
@@ -168,6 +178,7 @@ export class Motor {
     if (this.teclado) return this.toqueTeclado(x, y);
     if (this.dialogo) return this.avanzarDialogo();
     if (this.resolverToque) return this.cumplirToque();
+    if (this.mini) return this.mini.tocar?.(x, y);
     if (this.explorador && !this.hablandoEnMundo) {
       this.explorador.irA(Math.floor(x / TILE), Math.floor((y + this.explorador.camY) / TILE));
     }
@@ -226,6 +237,10 @@ export class Motor {
     if (this.teclado) return;
     if (this.resolverToque) {
       if (b === "a") this.cumplirToque();
+      return;
+    }
+    if (this.mini) {
+      if (b) this.mini.tecla?.(b);
       return;
     }
     if (this.explorador && !this.hablandoEnMundo) {
@@ -489,6 +504,14 @@ export class Motor {
     this.teclado = null;
     this.audio.confirmar();
     k.resolver(k.nombre.trim());
+  }
+
+  // ── Minijuegos ───────────────────────────────────────────
+
+  /** Pone un minijuego en pantalla: recibe toques y teclas mientras no haya diálogo ni menú. */
+  minijuego(mj: Minijuego | null) {
+    this.mini = mj;
+    if (mj) this.escena = mj.dibujar;
   }
 
   // ── Exploración ──────────────────────────────────────────
@@ -868,6 +891,7 @@ export class Motor {
       esperandoToque: this.resolverToque !== null,
       barra: this.barraSuperior?.texto ?? null,
       cortina: this.cortina !== null,
+      minijuego: this.mini ? (this.mini.info?.() ?? true) : null,
     };
   }
 }

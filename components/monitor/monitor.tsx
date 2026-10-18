@@ -289,12 +289,138 @@ function Detalle({ resumen, caso, onVeredicto }: {
   );
 }
 
+type Arcade = {
+  jugadas: number;
+  jugadores: number;
+  por_pais: Record<string, number>;
+  ranking: Record<"real_o_estafa" | "sigue_el_dinero", Array<{ alias: string; pais: string; puntaje: number }>>;
+  caidas: Array<{ categoria: string; vistas: number; cayeron: number; pct: number }>;
+  reales_rechazados_pct: number | null;
+  encuesta: Record<string, Record<string, number>>;
+};
+
+const BANDERAS: Record<string, string> = { pe: "🇵🇪", co: "🇨🇴", mx: "🇲🇽", ar: "🇦🇷" };
+
+const CATEGORIAS: Record<string, string> = {
+  link_falso: "Link falso",
+  falso_banco: "Falso banco",
+  falso_familiar: "Falso familiar",
+  comprobante_falso: "Comprobante falso",
+  premio_falso: "Premio falso",
+  empleo_falso: "Trabajo falso",
+  inversion_falsa: "Inversión milagro",
+  prestamo_falso: "Préstamo falso",
+  marketplace: "Comprador falso",
+  robo_cuenta: "Código de WhatsApp",
+  extorsion: "Extorsión",
+  soporte_falso: "Falso soporte",
+  romance: "Amor por internet",
+};
+
+/** Porcentaje de respuestas de una pregunta que cumplen `ok`. */
+function cuota(r: Record<string, number> | undefined, ok: (k: string) => boolean): { pct: number | null; n: number } {
+  const n = Object.values(r ?? {}).reduce((a, b) => a + b, 0);
+  if (n === 0) return { pct: null, n };
+  const si = Object.entries(r ?? {}).reduce((a, [k, v]) => a + (ok(k) ? v : 0), 0);
+  return { pct: Math.round((si / n) * 100), n };
+}
+
+function PanelTraccion({ a }: { a: Arcade | null }) {
+  if (!a) return null;
+  const vivido = cuota(a.encuesta.vivido, (k) => k !== "no");
+  const activaria = cuota(a.encuesta.activaria, (k) => k === "si");
+  const protege = cuota(a.encuesta.protege_hoy, (k) => k === "no");
+  const espera = cuota(a.encuesta.espera, (k) => k !== "nada");
+  const recomienda = cuota(a.encuesta.recomendaria, (k) => k === "si");
+  const v = (c: { pct: number | null; n: number }) => (c.pct === null ? "—" : `${c.pct}%`);
+  return (
+    <section className={s.panel}>
+      <h2>Tracción y encuesta (arcade)</h2>
+      <div className={s.marcador}>
+        <div className={s.kpi}>
+          <span>Jugadores</span>
+          <strong>{a.jugadores}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Partidas</span>
+          <strong>{a.jugadas}</strong>
+        </div>
+        <div className={`${s.kpi} ${s.kpiAncho}`}>
+          <span>Por país</span>
+          <strong>
+            {Object.entries(a.por_pais)
+              .map(([k, n]) => `${BANDERAS[k] ?? k} ${n}`)
+              .join("  ") || "—"}
+          </strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Les pasó (a ellos o alguien cercano) · n={vivido.n}</span>
+          <strong>{v(vivido)}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Su banco hoy NO los protege · n={protege.n}</span>
+          <strong>{v(protege)}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Esperarían una pausa · n={espera.n}</span>
+          <strong>{v(espera)}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Activarían la capa · n={activaria.n}</span>
+          <strong>{v(activaria)}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Lo pasarían a un familiar · n={recomienda.n}</span>
+          <strong>{v(recomienda)}</strong>
+        </div>
+        <div className={s.kpi}>
+          <span>Mensajes reales marcados como estafa</span>
+          <strong>{a.reales_rechazados_pct === null ? "—" : `${a.reales_rechazados_pct}%`}</strong>
+        </div>
+      </div>
+      {a.caidas.length > 0 && (
+        <>
+          <p className={s.nota}>¿En qué estafa cae más la gente? (¿REAL O ESTAFA?)</p>
+          <ul className={s.lista}>
+            {a.caidas.slice(0, 6).map((c) => (
+              <li key={c.categoria}>
+                <span>{c.pct}%</span>
+                <span>
+                  {CATEGORIAS[c.categoria] ?? c.categoria} · {c.cayeron}/{c.vistas}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {(["real_o_estafa", "sigue_el_dinero"] as const).map((modo) =>
+        a.ranking[modo].length > 0 ? (
+          <div key={modo}>
+            <p className={s.nota}>🏆 {modo === "real_o_estafa" ? "¿REAL O ESTAFA?" : "SIGUE EL DINERO"}</p>
+            <ul className={s.lista}>
+              {a.ranking[modo].slice(0, 5).map((f, i) => (
+                <li key={f.alias}>
+                  <span>#{i + 1}</span>
+                  <span>
+                    {BANDERAS[f.pais] ?? ""} {f.alias} · {f.puntaje}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null,
+      )}
+    </section>
+  );
+}
+
 export default function Monitor() {
   const [casos, setCasos] = useState<ResumenCaso[]>([]);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<Stats | null>(null);
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
+  const [arcade, setArcade] = useState<Arcade | null>(null);
   const [seleccion, setSeleccion] = useState<string | null>(null);
   const [fijo, setFijo] = useState(false);
   const [detalle, setDetalle] = useState<Caso | null>(null);
@@ -317,6 +443,7 @@ export default function Monitor() {
       setStats(st);
       setResumen(r);
       setError(null);
+      api<Arcade>("/api/juego/arcade").then(setArcade).catch(() => undefined);
     } catch (e) {
       setError(e instanceof Error ? `Sin conexión con el sistema: ${e.message}` : "Sin conexión con el sistema.");
     }
@@ -547,6 +674,8 @@ export default function Monitor() {
               <p className={s.vacio}>Sin partidas todavía.</p>
             )}
           </section>
+
+          <PanelTraccion a={arcade} />
 
           <section className={s.panel}>
             <h2>Operador</h2>

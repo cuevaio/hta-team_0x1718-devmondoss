@@ -45,6 +45,18 @@ const PISTAS: Record<string, Pista> = {
     bajo: "D3 - - - A2 - - - A#2 - - - A2 - - - D3 - - - A#2 - - - G2 - - - A2 - - -",
     tipo: "triangle",
   },
+  arcade: {
+    bpm: 168,
+    melodia: "E5 . E5 G5 . E5 A5 . G5 . E5 . D5 . C5 . D5 . D5 F5 . D5 G5 . F5 . D5 . C5 . B4 . C5 . E5 . G5 . C6 . B5 . A5 . G5 . A5 . G5 . E5 . D5 - - - . .",
+    bajo: "C3 C3 . C3 G2 . C3 . A2 A2 . A2 E2 . A2 . F2 F2 . F2 C3 . F2 . G2 G2 . G2 D3 . G2 .",
+    tipo: "square",
+  },
+  detective: {
+    bpm: 120,
+    melodia: "A4 . . C5 . . B4 . G#4 - - . E4 . . . A4 . . C5 . . E5 . D5 - - . B4 . . . F5 . . E5 . . D5 . C5 - - . B4 . . . A4 . C5 . B4 . G#4 . A4 - - - . . . .",
+    bajo: "A2 . A2 . A2 . A2 . E2 . E2 . E2 . E2 . F2 . F2 . F2 . F2 . E2 . E2 . G#2 . E2 .",
+    tipo: "square",
+  },
   noche: {
     bpm: 96,
     melodia: "E4 . G4 . B4 . A4 . G4 . F#4 . E4 - - . B3 . E4 . G4 . F#4 . D4 . E4 - - - . .",
@@ -191,6 +203,18 @@ export class Audio {
   sello() {
     this.tono(220, 0.08, 0.06, 0, "square");
     this.tono(440, 0.12, 0.04, 0.05, "square");
+  }
+  acierto(combo = 0) {
+    const base = 660 + Math.min(combo, 8) * 60;
+    this.tono(base, 0.05, 0.03);
+    this.tono(base * 1.5, 0.08, 0.03, 0.05);
+  }
+  error() {
+    this.tono(160, 0.18, 0.05, 0, "sawtooth");
+    this.tono(110, 0.22, 0.04, 0.08, "square");
+  }
+  tic() {
+    this.tono(1200, 0.02, 0.015);
   }
   pisada() {
     this.tono(180, 0.02, 0.01, 0, "triangle");
