@@ -14,6 +14,7 @@ import { exigirToken } from '@/lib/seguridad/token';
  * Como las partidas, no se borra con `POST /api/demo/reset`.
  */
 export async function POST(req: Request) {
+  await arcade.listo;
   const parsed = EntradaArcade.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'cuerpo inválido', detalle: parsed.error.issues }, { status: 400 });
@@ -24,11 +25,13 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  await arcade.listo;
   const crudo = new URL(req.url).searchParams.get('crudo') === '1';
   return NextResponse.json({ ...arcade.resumen(), ...(crudo ? { todas: arcade.todas() } : {}) });
 }
 
 export async function DELETE(req: Request) {
+  await arcade.listo;
   const denegado = exigirToken(req);
   if (denegado) return denegado;
   arcade.limpiar();

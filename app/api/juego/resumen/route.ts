@@ -4,5 +4,6 @@ import { resumenPartidas } from '@/lib/juego/resumen';
 
 /** GET /api/juego/resumen — la tabla de validación de DEMO_JUEGO §6. */
 export async function GET() {
+  await partidas.listo;
   return NextResponse.json(resumenPartidas(partidas.todas()));
 }

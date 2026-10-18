@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { z } from 'zod';
+import { borrarFilas, cargarFilas, guardarFila, supabaseActivo } from '@/lib/persistencia/supabase';
 import { Alias } from './alias';
 
 /**
@@ -13,7 +14,8 @@ import { Alias } from './alias';
  *  - **Tracción**: cuántas personas jugaron, desde qué país, y el ranking.
  *
  * Mismos principios que las partidas: anónimo (alias filtrado), sin texto
- * libre, y persistencia opcional con `ARCADE_ARCHIVO`.
+ * libre, y persistencia opcional con `ARCADE_ARCHIVO` y/o Supabase
+ * (misma configuración que `partidas.ts`).
  *
  * Dueño: Tony_dev (demo jugable).
  */
@@ -102,9 +104,25 @@ const pct = (a: number, b: number) => (b === 0 ? 0 : Math.round((a / b) * 100));
 
 export class RegistroArcade {
   private jugadas: JugadaArcade[] = [];
+  /** Se resuelve cuando terminó de cargar de Supabase (si está configurado). */
+  readonly listo: Promise<void>;
 
-  constructor(private readonly archivo?: string) {
+  constructor(
+    private readonly archivo?: string,
+    nube = supabaseActivo(),
+  ) {
     if (archivo) this.cargar(archivo);
+    this.listo = nube ? this.hidratar() : Promise.resolve();
+  }
+
+  private async hidratar(): Promise<void> {
+    try {
+      const nube = await cargarFilas<JugadaArcade>('jugadas_arcade');
+      const ids = new Set(nube.map((j) => j.id));
+      this.jugadas = [...nube, ...this.jugadas.filter((j) => !ids.has(j.id))];
+    } catch (e) {
+      console.error(`Arcade: no se pudo cargar de Supabase; sigo con lo local. ${(e as Error).message}`);
+    }
   }
 
   registrar(entrada: EntradaArcade): JugadaArcade {
@@ -115,6 +133,9 @@ export class RegistroArcade {
     };
     this.jugadas.push(jugada);
     this.guardar();
+    void guardarFila('jugadas_arcade', { id: jugada.id, t: jugada.t, alias: jugada.alias, tipo: jugada.modo, data: jugada }).catch(
+      (e: Error) => console.error(`Arcade: no se guardó ${jugada.id} en Supabase. ${e.message}`),
+    );
     return jugada;
   }
 
@@ -125,6 +146,7 @@ export class RegistroArcade {
   limpiar(): void {
     this.jugadas = [];
     this.guardar();
+    void borrarFilas('jugadas_arcade').catch((e: Error) => console.error(`Arcade: no se borró en Supabase. ${e.message}`));
   }
 
   get cantidad(): number {
