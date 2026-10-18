@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Circle, CircleCheck, CircleX, Loader2, Play, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, Circle, CircleCheck, CircleX, Gauge, Loader2, Play, X } from "lucide-react";
 import type { Caso, EventoTimeline } from "@/lib/contracts";
 import type { ResultadoPrueba } from "@/lib/demo/suite";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +13,10 @@ import { cn } from "@/lib/utils";
 
 /**
  * Panel del backend para presentar (`/demo`), con shadcn/ui: corre la suite en
- * vivo (lib/demo/suite.ts) contra el pipeline real y la dibuja como un flujo:
- * qué agentes actuaron, dónde quedó retenido el dinero y qué se verificó. La
- * traza, la evidencia y el expediente quedan en pestañas.
+ * vivo (lib/demo/suite.ts) contra el pipeline real y la dibuja como un flujo
+ * (qué agentes actuaron, dónde quedó retenido el dinero) junto a la terminal
+ * del backend, línea por línea. Las dos avanzan juntas y con pausas, para que
+ * se pueda seguir y contar en voz alta; el servidor ya resolvió todo antes.
  */
 
 type Prueba = { id: string; titulo: string; demuestra: string };
@@ -23,7 +24,11 @@ type Agentes = { modo: "claude" | "ollama" | "simulado"; modelo: string | null }
 type Detalle = Record<string, unknown>;
 
 const CLAVE_TOKEN = "afs-demo-token";
-const PASO_MS = 140;
+
+/** Pausas de la reproducción (ms, a velocidad 1×). */
+const PAUSA = { comando: 500, evento: 750, tool: 320, decision: 1100, cierre: 700, lote: 320 };
+/** Lo que se espera en pantalla con el resultado completo antes de pasar a la prueba siguiente. */
+const RESPIRO_MS = 1800;
 
 /** Token del operador: llega como `?token=`, se quita de la URL y queda en la pestaña. */
 function tokenOperador(): string | null {
@@ -105,8 +110,18 @@ function linea(e: EventoTimeline): string {
   const d = (e.detalle ?? {}) as Detalle;
   const l = (v: unknown) => (Array.isArray(v) ? v.join(", ") : "");
   switch (e.evento) {
+    case "caso_creado":
+      return String(d.puerta ?? "");
     case "nivel0_evaluado":
       return `score ${d.score} · ${l(d.senales) || "sin señales"}`;
+    case "pausa_preventiva":
+      return `dinero retenido antes de consultar a ningún agente (score ${d.score})`;
+    case "expediente":
+      return `recomienda ${d.recomendacion} · ${d.afirmaciones} afirmaciones citadas`;
+    case "mula_confirmada":
+      return `${d.cuenta} ya confirmada por un analista`;
+    case "mula_confirmada_en_red":
+      return `${d.cuenta} confirmada por ${(d.emisor as { banco?: string } | undefined)?.banco ?? "otro banco"}`;
     case "plan":
       return `invoca ${l(d.invocar) || "—"} · ${d.motivo}`;
     case "riesgo_destino":
@@ -130,6 +145,100 @@ function linea(e: EventoTimeline): string {
   }
 }
 
+type Linea = {
+  t?: string;
+  tag: string;
+  texto: string;
+  tipo: "cmd" | "evento" | "tool" | "decision" | "error" | "ok";
+  /** Cuántos eventos del timeline quedan revelados cuando aparece esta línea. */
+  ev: number;
+  espera: number;
+};
+
+/** Un dato de tool en una línea: `remitentes_nuevos=14 ventana_horas=48`. */
+function datoCorto(v: unknown): string {
+  if (!v || typeof v !== "object") return String(v ?? "");
+  return Object.entries(v as Detalle)
+    .filter(([k]) => !["cuenta", "pregunta", "texto", "id"].includes(k))
+    .map(([k, x]) => `${k}=${typeof x === "object" ? JSON.stringify(x) : String(x)}`)
+    .join(" ")
+    .slice(0, 110);
+}
+
+/**
+ * La terminal del caso: cada evento del timeline y, antes del agente que las
+ * usó, las tools que corrió (con el id de evidencia que emitieron).
+ */
+function terminal(r: ResultadoPrueba, caso: Caso): Linea[] {
+  const t0 = caso.timeline[0]?.t ?? "";
+  const usadas = new Set<string>();
+  const cuenta = caso.transaccion.destino;
+  const tools = (ids: string[], ev: number): Linea[] =>
+    ids.flatMap((id) => {
+      const e = caso.evidencia.find((x) => x.id === id);
+      if (!e || usadas.has(id)) return [];
+      usadas.add(id);
+      return [{ tag: "tool", texto: `${e.fuente}(${cuenta}) → ${e.id}  ${datoCorto(e.dato)}`, tipo: "tool" as const, ev, espera: PAUSA.tool }];
+    });
+  const porFuente = (fuente: string) => caso.evidencia.filter((e) => e.fuente === fuente).map((e) => e.id);
+  const citas = (d: Detalle) => (Array.isArray(d.evidencia) ? (d.evidencia as string[]) : []);
+
+  const lineas: Linea[] = [
+    {
+      tag: "$",
+      texto:
+        caso.puerta === "alerta_aml"
+          ? `POST /api/alerts  cuenta=${cuenta}`
+          : `POST /api/transfers  ${caso.transaccion.origen} → ${cuenta}  S/ ${caso.transaccion.monto.toLocaleString("es-PE")}`,
+      tipo: "cmd",
+      ev: 0,
+      espera: PAUSA.comando,
+    },
+  ];
+  caso.timeline.forEach((e, i) => {
+    const d = (e.detalle ?? {}) as Detalle;
+    if (e.evento === "riesgo_destino" || e.evento === "estado_usuario") lineas.push(...tools(citas(d), i));
+    if (e.evento === "pregunta") lineas.push(...tools(porFuente("guardian_pregunta"), i));
+    if (e.evento === "expediente") lineas.push(...tools(caso.evidencia.map((x) => x.id), i));
+    const tipo = e.evento === "decision" ? "decision" : e.evento === "error_agentes" ? "error" : "evento";
+    lineas.push({ t: `+${ms(t0, e.t)}ms`, tag: e.actor, texto: `${e.evento}  ${linea(e)}`, tipo, ev: i + 1, espera: tipo === "decision" ? PAUSA.decision : PAUSA.evento });
+  });
+  const ok = r.chequeos.filter((c) => c.ok).length;
+  lineas.push({
+    tag: r.ok ? "✓" : "✗",
+    texto: `${ok}/${r.chequeos.length} chequeos · ${caso.ia.llamadas} llamadas de IA · ${duracion(r.ms)} en el servidor`,
+    tipo: r.ok ? "ok" : "error",
+    ev: caso.timeline.length,
+    espera: PAUSA.cierre,
+  });
+  return lineas;
+}
+
+/** La terminal de la matriz: un lote de 50 ataques por línea. */
+function terminalMatriz(r: ResultadoPrueba): Linea[] {
+  const m = r.matriz!;
+  const porTactica = m.celdas.length / m.tacticas.length;
+  const lotes = Math.ceil(m.celdas.length / 50);
+  const lineas: Linea[] = [{ tag: "$", texto: `matriz  ${m.combinaciones} ataques · agentes ${r.agentes}`, tipo: "cmd", ev: 0, espera: PAUSA.comando }];
+  for (let i = 0; i < lotes; i++) {
+    const lote = m.celdas.slice(i * 50, i * 50 + 50);
+    const cuenta = (a: string) => lote.filter((x) => x === a).length;
+    lineas.push({
+      tag: m.tacticas[Math.floor((i * 50) / porTactica)] ?? "",
+      texto: `lote ${String(i + 1).padStart(2, "0")}/${lotes}  escalar=${cuenta("ESCALAR")} pausar=${cuenta("PAUSAR")} verificar=${cuenta("VERIFICAR")} permitir=${cuenta("PERMITIR")}`,
+      tipo: "evento",
+      ev: i + 1,
+      espera: PAUSA.lote,
+    });
+  }
+  const huecos = m.invariantes.reduce((n, v) => n + v.violaciones, 0);
+  lineas.push({ tag: huecos ? "✗" : "✓", texto: `${m.invariantes.length} invariantes · ${huecos} violaciones · ${duracion(r.ms)} en el servidor`, tipo: huecos ? "error" : "ok", ev: lotes, espera: PAUSA.cierre });
+  return lineas;
+}
+
+const lineasDe = (r: ResultadoPrueba) => (r.matriz ? terminalMatriz(r) : r.casos[0] ? terminal(r, r.casos[0]) : []);
+const total = (lineas: Linea[], velocidad: number) => lineas.reduce((n, l) => n + l.espera, 0) / velocidad;
+
 const ms = (a: string, b: string) => Math.max(0, new Date(b).getTime() - new Date(a).getTime());
 const duracion = (t: number) => (t < 1000 ? `${t} ms` : `${(t / 1000).toFixed(1)} s`);
 
@@ -140,7 +249,10 @@ export default function PanelBackend() {
   const [corriendo, setCorriendo] = useState<string | null>(null);
   const [elegida, setElegida] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [velocidad, setVelocidad] = useState(1);
   const token = useRef<string | null>(null);
+  const vel = useRef(1);
+  vel.current = velocidad;
 
   useEffect(() => {
     token.current = tokenOperador();
@@ -182,8 +294,8 @@ export default function PanelBackend() {
           const r = JSON.parse(l) as ResultadoPrueba;
           setResultados((prev) => ({ ...prev, [r.id]: r }));
           setElegida(r.id);
-          // Que se vea el flujo completo antes de pasar a la siguiente.
-          await new Promise((ok) => setTimeout(ok, 900 + (r.casos[0]?.timeline.length ?? 10) * PASO_MS));
+          // Se reproduce entera (terminal + flujo) antes de pasar a la siguiente.
+          await new Promise((ok) => setTimeout(ok, total(lineasDe(r), vel.current) + RESPIRO_MS / vel.current));
           const i = pruebas.findIndex((p) => p.id === r.id);
           const siguiente = pruebas[i + 1]?.id ?? null;
           setCorriendo(siguiente);
@@ -201,8 +313,6 @@ export default function PanelBackend() {
   const ok = hechas.filter((r) => r.ok).length;
   const elegido = elegida ? resultados[elegida] : undefined;
   const prueba = pruebas.find((p) => p.id === elegida);
-  const caso = elegido?.casos.at(-1);
-  const matriz = elegido?.matriz;
 
   return (
     <div className="ui-oscuro dark bg-background text-foreground min-h-dvh font-sans antialiased">
@@ -224,6 +334,10 @@ export default function PanelBackend() {
                 {ok}/{pruebas.length}
               </Badge>
             )}
+            <Button variant="ghost" size="sm" className="text-muted-foreground font-mono" onClick={() => setVelocidad((v) => (v === 1 ? 2 : 1))} title="Velocidad de la reproducción">
+              <Gauge />
+              {velocidad}×
+            </Button>
             <Button onClick={correr} disabled={Boolean(corriendo) || !pruebas.length}>
               {corriendo ? <Loader2 className="animate-spin" /> : <Play />}
               {corriendo ? "Corriendo" : "Correr suite"}
@@ -238,7 +352,8 @@ export default function PanelBackend() {
           <nav className="grid content-start gap-0.5 self-start max-lg:grid-cols-2" aria-label="Pruebas">
             {pruebas.map((p, i) => {
               const r = resultados[p.id];
-              const Icono = r ? (r.ok ? CircleCheck : CircleX) : corriendo === p.id ? Loader2 : Circle;
+              // Mientras se reproduce, sigue «corriendo» aunque el servidor ya respondió.
+              const Icono = corriendo === p.id ? Loader2 : r ? (r.ok ? CircleCheck : CircleX) : Circle;
               return (
                 <Button
                   key={p.id}
@@ -250,7 +365,7 @@ export default function PanelBackend() {
                   <span className="flex-1 truncate text-left">{p.titulo}</span>
                   <Icono
                     className={cn(
-                      r ? (r.ok ? "text-emerald-400" : "text-rose-400") : corriendo === p.id ? "animate-spin text-amber-400" : "text-muted-foreground/30",
+                      corriendo === p.id ? "animate-spin text-amber-400" : r ? (r.ok ? "text-emerald-400" : "text-rose-400") : "text-muted-foreground/30",
                     )}
                   />
                 </Button>
@@ -258,59 +373,151 @@ export default function PanelBackend() {
             })}
           </nav>
 
-          <Card className="min-w-0 gap-8">
-            {prueba && (
-              <CardHeader>
-                <CardTitle className="text-2xl tracking-tight">{prueba.titulo}</CardTitle>
-                <CardDescription className="text-base">{prueba.demuestra}</CardDescription>
-                {(caso?.decision || matriz) && (
-                  <CardAction className="animate-entra text-right" style={{ animationDelay: `${(caso?.timeline.length ?? 0) * PASO_MS}ms` }}>
-                    <div
-                      className={cn(
-                        "font-mono text-2xl font-semibold tracking-tight",
-                        caso?.decision ? COLOR[caso.decision.accion] : elegido?.ok ? "text-emerald-400" : "text-rose-400",
-                      )}
-                    >
-                      {caso?.decision ? caso.decision.accion : `${matriz!.invariantes.reduce((n, v) => n + v.violaciones, 0)} huecos`}
-                    </div>
-                    <div className="text-muted-foreground font-mono text-xs">
-                      {caso?.decision ? `${caso.decision.regla} · ${caso.ia.llamadas} IA` : `${matriz!.combinaciones} ataques`} · {duracion(elegido!.ms)}
-                    </div>
-                  </CardAction>
-                )}
-              </CardHeader>
-            )}
-            <CardContent>
-              {elegido?.error && <p className="text-destructive text-sm">{elegido.error}</p>}
-              {matriz ? (
-                <Matriz r={elegido!} />
-              ) : elegido?.casos[0] ? (
-                <Detalle key={elegido.id} r={elegido} caso={elegido.casos[0]} />
-              ) : (
-                <Flujo key={`vacio-${elegida}`} esperando={corriendo === elegida} />
-              )}
-            </CardContent>
-          </Card>
+          {prueba && (
+            <Vista
+              key={`${prueba.id}-${elegido ? "listo" : corriendo === prueba.id ? "corriendo" : "vacio"}`}
+              prueba={prueba}
+              r={elegido}
+              esperando={corriendo === prueba.id && !elegido}
+              velocidad={velocidad}
+            />
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/** Revela de a uno, como si el caso corriera en ese momento. */
-function useRevelar(n: number) {
+/** Revela las líneas de a una, cada una con su pausa. */
+function useReproducir(esperas: number[], velocidad: number) {
   const [visibles, setVisibles] = useState(0);
+  const clave = esperas.join(",");
   useEffect(() => {
     setVisibles(0);
-    if (!n) return;
     let i = 0;
-    const t = setInterval(() => {
-      setVisibles(++i);
-      if (i >= n) clearInterval(t);
-    }, PASO_MS);
-    return () => clearInterval(t);
-  }, [n]);
+    let t: ReturnType<typeof setTimeout>;
+    const siguiente = () => {
+      if (i >= esperas.length) return;
+      t = setTimeout(() => {
+        setVisibles(++i);
+        siguiente();
+      }, esperas[i] / velocidad);
+    };
+    siguiente();
+    return () => clearTimeout(t);
+    // `clave` resume `esperas`; la velocidad nueva aplica desde la próxima prueba.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clave]);
   return visibles;
+}
+
+function Vista({ prueba, r, esperando, velocidad }: { prueba: Prueba; r?: ResultadoPrueba; esperando: boolean; velocidad: number }) {
+  const lineas = useMemo(() => (r ? lineasDe(r) : []), [r]);
+  const visibles = useReproducir(
+    lineas.map((l) => l.espera),
+    velocidad,
+  );
+  const terminado = Boolean(r) && visibles >= lineas.length;
+  const ev = lineas[visibles - 1]?.ev ?? 0;
+  const caso = r?.casos[0];
+  const m = r?.matriz;
+  const huecos = m ? m.invariantes.reduce((n, v) => n + v.violaciones, 0) : 0;
+
+  return (
+    <Card className="min-w-0 gap-6">
+      <CardHeader>
+        <CardTitle className="text-2xl tracking-tight">{prueba.titulo}</CardTitle>
+        <CardDescription className="text-base">{prueba.demuestra}</CardDescription>
+        {terminado && (caso?.decision || m) && (
+          <CardAction className="animate-entra text-right">
+            <div className={cn("font-mono text-2xl font-semibold tracking-tight", caso?.decision ? COLOR[caso.decision.accion] : huecos ? "text-rose-400" : "text-emerald-400")}>
+              {caso?.decision ? caso.decision.accion : `${huecos} huecos`}
+            </div>
+            <div className="text-muted-foreground font-mono text-xs">
+              {caso?.decision ? `${caso.decision.regla} · ${caso.ia.llamadas} IA` : `${m!.combinaciones} ataques`} · {duracion(r!.ms)}
+            </div>
+          </CardAction>
+        )}
+      </CardHeader>
+      <CardContent className="flex flex-col gap-6">
+        {r?.error && <p className="text-destructive text-sm">{r.error}</p>}
+        {m ? (
+          <Matriz r={r!} lotes={ev} terminado={terminado} />
+        ) : (
+          <Tabs defaultValue="flujo" className="gap-6">
+            <TabsList className="self-center">
+              <TabsTrigger value="flujo">Flujo</TabsTrigger>
+              <TabsTrigger value="evidencia" disabled={!terminado || !caso?.evidencia.length}>
+                Evidencia
+              </TabsTrigger>
+              <TabsTrigger value="expediente" disabled={!terminado || !caso?.salidas.auditor}>
+                Expediente
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="flujo" className="flex flex-col gap-6">
+              <Flujo caso={caso} eventos={ev} terminado={terminado} esperando={esperando} />
+            </TabsContent>
+            <TabsContent value="evidencia">
+              <Tabla filas={(caso?.evidencia ?? []).map((e) => [e.id, e.fuente, datoCorto(e.dato)])} />
+            </TabsContent>
+            <TabsContent value="expediente">
+              <Tabla filas={(caso?.salidas.auditor?.afirmaciones ?? []).map((a) => [a.evidencia.join(" "), "", a.texto])} />
+            </TabsContent>
+          </Tabs>
+        )}
+        <Terminal lineas={lineas.slice(0, visibles)} esperando={esperando} activo={Boolean(r) && !terminado} />
+        {/* Debajo de la terminal, para que no la empujen al aparecer. */}
+        {!m && terminado && r && <Chequeos items={r.chequeos} />}
+        {m && terminado && (
+          <Chequeos items={m.invariantes.map((v) => ({ texto: v.texto, ok: v.violaciones === 0, valor: `${v.violaciones} violaciones` }))} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+const COLOR_TAG: Record<Linea["tipo"], string> = {
+  cmd: "text-amber-300",
+  evento: "text-sky-400",
+  tool: "text-violet-300/80",
+  decision: "text-amber-300",
+  error: "text-rose-400",
+  ok: "text-emerald-400",
+};
+
+/** La terminal del backend: lo que el servidor fue haciendo, en orden. */
+function Terminal({ lineas, esperando, activo }: { lineas: Linea[]; esperando: boolean; activo: boolean }) {
+  const caja = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = caja.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, [lineas.length]);
+  return (
+    <div className="overflow-hidden rounded-lg border bg-black/40">
+      <div className="text-muted-foreground flex items-center gap-1.5 border-b px-3 py-2 font-mono text-[11px]">
+        <i className="size-2.5 rounded-full bg-rose-400/70" />
+        <i className="size-2.5 rounded-full bg-amber-400/70" />
+        <i className="size-2.5 rounded-full bg-emerald-400/70" />
+        <span className="ml-2">backend · pipeline</span>
+        {(esperando || activo) && <Loader2 className="ml-auto size-3 animate-spin" />}
+      </div>
+      <div ref={caja} className="h-56 overflow-y-auto px-3 py-2 font-mono text-xs leading-6">
+        {esperando && (
+          <div className="text-muted-foreground animate-entra">
+            <span className="text-amber-300">$</span> esperando al pipeline…
+          </div>
+        )}
+        {lineas.map((l, i) => (
+          <div key={i} className={cn("animate-entra grid grid-cols-[64px_116px_minmax(0,1fr)] gap-3 max-md:grid-cols-[48px_minmax(0,1fr)]", l.tipo === "tool" && "text-muted-foreground")}>
+            <span className="text-muted-foreground/60 text-right max-md:hidden">{l.t ?? ""}</span>
+            <span className={cn("truncate", COLOR_TAG[l.tipo])}>{l.tag}</span>
+            <span className={cn("break-words", l.tipo === "decision" && "text-amber-200", l.tipo === "ok" && "text-emerald-300", l.tipo === "error" && "text-rose-300")}>{l.texto}</span>
+          </div>
+        ))}
+        {(activo || esperando) && <span className="bg-foreground/70 inline-block h-3.5 w-1.5 animate-pulse align-middle" />}
+      </div>
+    </div>
+  );
 }
 
 function Chequeos({ items }: { items: Array<{ texto: string; ok: boolean; valor?: string }> }) {
@@ -322,45 +529,13 @@ function Chequeos({ items }: { items: Array<{ texto: string; ok: boolean; valor?
           variant="secondary"
           title={c.valor}
           className={cn("animate-entra h-7 gap-1.5 px-3 text-[13px] font-normal", c.ok ? "bg-emerald-400/10 text-emerald-300" : "bg-rose-400/10 text-rose-300")}
-          style={{ animationDelay: `${i * 70}ms` }}
+          style={{ animationDelay: `${i * 90}ms` }}
         >
           {c.ok ? <Check /> : <X />}
           {c.texto}
         </Badge>
       ))}
     </div>
-  );
-}
-
-function Detalle({ r, caso }: { r: ResultadoPrueba; caso: Caso }) {
-  const terminado = useRevelar(caso.timeline.length) >= caso.timeline.length;
-  const t0 = caso.timeline[0]?.t ?? "";
-  return (
-    <Tabs defaultValue="flujo" className="gap-8">
-      <TabsList className="self-center">
-        <TabsTrigger value="flujo">Flujo</TabsTrigger>
-        <TabsTrigger value="traza">Traza</TabsTrigger>
-        <TabsTrigger value="evidencia" disabled={!caso.evidencia.length}>
-          Evidencia
-        </TabsTrigger>
-        <TabsTrigger value="expediente" disabled={!caso.salidas.auditor}>
-          Expediente
-        </TabsTrigger>
-      </TabsList>
-      <TabsContent value="flujo" className="flex flex-col gap-10">
-        <Flujo caso={caso} />
-        {terminado && <Chequeos items={r.chequeos} />}
-      </TabsContent>
-      <TabsContent value="traza">
-        <Tabla filas={caso.timeline.map((e) => [`+${ms(t0, e.t)}ms`, e.actor, linea(e)])} />
-      </TabsContent>
-      <TabsContent value="evidencia">
-        <Tabla filas={caso.evidencia.map((e) => [e.id, e.fuente, JSON.stringify(e.dato)])} />
-      </TabsContent>
-      <TabsContent value="expediente">
-        <Tabla filas={(caso.salidas.auditor?.afirmaciones ?? []).map((a) => [a.evidencia.join(" "), "", a.texto])} />
-      </TabsContent>
-    </Tabs>
   );
 }
 
@@ -378,11 +553,8 @@ function Tabla({ filas }: { filas: string[][] }) {
   );
 }
 
-function Flujo({ caso, esperando }: { caso?: Caso; esperando?: boolean }) {
-  const total = caso?.timeline.length ?? 0;
-  const visibles = useRevelar(total);
-  const vistos = caso?.timeline.slice(0, visibles) ?? [];
-  const terminado = caso !== undefined && visibles >= total;
+function Flujo({ caso, eventos, terminado, esperando }: { caso?: Caso; eventos: number; terminado: boolean; esperando: boolean }) {
+  const vistos = caso?.timeline.slice(0, eventos) ?? [];
 
   const fallidos = new Set(vistos.filter((e) => e.evento === "error_agentes").map((e) => String((e.detalle as Detalle)?.agente)));
   const nodos = NODOS.map((n) => {
@@ -401,74 +573,67 @@ function Flujo({ caso, esperando }: { caso?: Caso; esperando?: boolean }) {
   const mitad = 100 / NODOS.length / 2;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="relative grid grid-cols-9 pt-14 max-md:grid-cols-3 max-md:gap-y-6 max-md:pt-0">
+    <div className="relative grid grid-cols-9 pt-14 max-md:grid-cols-3 max-md:gap-y-6 max-md:pt-0">
+      <div
+        className={cn("bg-border absolute top-[63px] h-0.5 rounded-full max-md:hidden", esperando && "bg-muted-foreground/40 animate-pulse")}
+        style={{ left: `${mitad}%`, right: `${mitad}%` }}
+      />
+      <div
+        className="to-foreground absolute top-[63px] h-0.5 rounded-full bg-gradient-to-r from-sky-400 transition-[width] duration-500 max-md:hidden"
+        style={{ left: `${mitad}%`, width: `${(Math.max(0, ultimo) / NODOS.length) * 100}%` }}
+      />
+      {caso?.puerta === "transferencia" && (
         <div
-          className={cn("bg-border absolute top-[63px] h-0.5 rounded-full max-md:hidden", esperando && "animate-pulse bg-muted-foreground/40")}
-          style={{ left: `${mitad}%`, right: `${mitad}%` }}
-        />
-        <div
-          className="to-foreground absolute top-[63px] h-0.5 rounded-full bg-gradient-to-r from-sky-400 transition-[width] duration-300 max-md:hidden"
-          style={{ left: `${mitad}%`, width: `${(Math.max(0, ultimo) / NODOS.length) * 100}%` }}
-        />
-        {caso?.puerta === "transferencia" && (
-          <div
-            className={cn("absolute top-0 flex -translate-x-1/2 flex-col items-center transition-[left,color] duration-500 max-md:hidden", colorDinero)}
-            style={{ left: `${((pos + 0.5) / NODOS.length) * 100}%` }}
-          >
-            <Badge variant="outline" className="bg-background border-current font-mono text-current">
-              S/ {caso.transaccion.monto.toLocaleString("es-PE")}
-              {accion && <span className="opacity-70">· {accion === "PERMITIR" ? "pagado" : "retenido"}</span>}
-            </Badge>
-            <span className="mt-1 h-3 w-px bg-current opacity-50" />
-          </div>
-        )}
-        {nodos.map((n) => (
-          <div key={n.id} className="flex flex-col items-center gap-1.5 text-center">
-            <span
-              className={cn(
-                "z-10 size-4 rounded-full border-2 transition-all duration-300",
-                n.falla
-                  ? "border-rose-400 bg-rose-400 ring-4 ring-rose-400/15"
-                  : n.activo
-                    ? "border-foreground bg-foreground ring-foreground/10 ring-4"
-                    : "border-muted bg-background",
-              )}
-            />
-            <span className={cn("mt-2 text-sm transition-colors", n.activo ? "text-foreground font-medium" : "text-muted-foreground/40")}>{n.nombre}</span>
-            <span className={cn("min-h-4 font-mono text-[11px]", n.falla ? "text-rose-400" : "text-muted-foreground")}>{n.texto}</span>
-          </div>
-        ))}
-      </div>
-      {caso && (
-        <p className="text-muted-foreground/70 text-center font-mono text-xs">
-          {caso.puerta === "alerta_aml" ? `alerta sobre ${caso.transaccion.destino}` : `${caso.transaccion.origen} → ${caso.transaccion.destino}`}
-        </p>
+          className={cn("absolute top-0 flex -translate-x-1/2 flex-col items-center transition-[left,color] duration-700 max-md:hidden", colorDinero)}
+          style={{ left: `${((pos + 0.5) / NODOS.length) * 100}%` }}
+        >
+          <Badge variant="outline" className="bg-background border-current font-mono text-current">
+            S/ {caso.transaccion.monto.toLocaleString("es-PE")}
+            {(accion || retenidoEn >= 0) && <span className="opacity-70">· {accion === "PERMITIR" ? "pagado" : "retenido"}</span>}
+          </Badge>
+          <span className="mt-1 h-3 w-px bg-current opacity-50" />
+        </div>
       )}
+      {nodos.map((n) => (
+        <div key={n.id} className="flex flex-col items-center gap-1.5 text-center">
+          <span
+            className={cn(
+              "z-10 size-4 rounded-full border-2 transition-all duration-500",
+              n.falla
+                ? "border-rose-400 bg-rose-400 ring-4 ring-rose-400/15"
+                : n.activo
+                  ? "border-foreground bg-foreground ring-foreground/10 ring-4"
+                  : "border-muted bg-background",
+            )}
+          />
+          <span className={cn("mt-2 text-sm transition-colors duration-500", n.activo ? "text-foreground font-medium" : "text-muted-foreground/40")}>{n.nombre}</span>
+          <span className={cn("min-h-4 font-mono text-[11px]", n.falla ? "text-rose-400" : "text-muted-foreground")}>{n.texto}</span>
+        </div>
+      ))}
     </div>
   );
 }
 
-function Matriz({ r }: { r: ResultadoPrueba }) {
+function Matriz({ r, lotes, terminado }: { r: ResultadoPrueba; lotes: number; terminado: boolean }) {
   const m = r.matriz!;
-  const filas = Math.ceil(m.celdas.length / 50);
-  const visibles = useRevelar(filas);
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       <div className="grid grid-cols-[repeat(50,minmax(0,1fr))] gap-[3px]" aria-label={`${m.combinaciones} ataques`}>
-        {m.celdas.slice(0, visibles * 50).map((d, i) => (
-          <i key={i} className={cn("animate-entra aspect-square rounded-[2px] bg-current", COLOR[d])} />
+        {m.celdas.map((d, i) => (
+          <i
+            key={i}
+            className={cn("aspect-square rounded-[2px] transition-colors duration-300", i < lotes * 50 ? cn("bg-current", COLOR[d]) : "bg-muted/40")}
+          />
         ))}
       </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        {Object.entries(m.por_decision).map(([d, n]) => (
-          <Badge key={d} variant="outline" className={cn("gap-1.5 font-mono", COLOR[d])}>
-            <i className="size-2 rounded-[2px] bg-current" /> {d.toLowerCase()} {n}
-          </Badge>
-        ))}
-      </div>
-      {visibles >= filas && (
-        <Chequeos items={m.invariantes.map((v) => ({ texto: v.texto, ok: v.violaciones === 0, valor: `${v.violaciones} violaciones` }))} />
+      {terminado && (
+        <div className="flex flex-wrap justify-center gap-2">
+          {Object.entries(m.por_decision).map(([d, n]) => (
+            <Badge key={d} variant="outline" className={cn("animate-entra gap-1.5 font-mono", COLOR[d])}>
+              <i className="size-2 rounded-[2px] bg-current" /> {d.toLowerCase()} {n}
+            </Badge>
+          ))}
+        </div>
       )}
     </div>
   );

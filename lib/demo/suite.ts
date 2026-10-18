@@ -34,6 +34,8 @@ export interface ResultadoMatriz {
   combinaciones: number;
   /** Decisión final de cada combinación, en orden (el panel las dibuja como grilla). */
   celdas: string[];
+  /** Tácticas en el orden de las celdas: cada una ocupa un bloque contiguo del mismo tamaño. */
+  tacticas: string[];
   por_decision: Record<string, number>;
   invariantes: Array<{ id: string; texto: string; violaciones: number }>;
 }
@@ -355,6 +357,7 @@ async function matriz(agentes: AgentsApi): Promise<ResultadoMatriz> {
   return {
     combinaciones: filas.length,
     celdas: filas.map((f) => f.final),
+    tacticas: Object.keys(TACTICAS),
     por_decision: porDecision,
     invariantes: [
       { id: 'I1', texto: 'Pregunta pendiente → no libera', violaciones: cuenta((f) => f.pendiente && f.inicial === 'PERMITIR') },
