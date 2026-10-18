@@ -111,167 +111,118 @@
   <section class="slide" aria-label="La solución">
     <div class="head">
       <p class="kicker rise" style="--d:.05s">LA SOLUCIÓN</p>
-      <h2 class="rise" style="--d:.15s">Frenamos el dinero <em>antes</em> de que llegue a la mula.</h2>
-      <p class="lead rise" style="--d:.3s">Cuatro agentes de IA investigan la cuenta que recibe. Una regla auditable decide. Un analista confirma, y lo aprendido protege al siguiente.</p>
+      <h2 class="rise" style="--d:.15s">Dos preguntas en paralelo. <em>Una regla decide.</em></h2>
+      <p class="lead rise" style="--d:.3s">Mientras el dinero espera, un agente de IA le pregunta a la clienta y otro revisa la cuenta que recibe. Con las dos respuestas decide una regla fija: la IA nunca mueve el dinero.</p>
     </div>
     <div class="viz">
-      <svg id="viz-solucion" data-smil viewBox="0 0 1600 650" role="img" aria-label="Diagrama de flujo. Frenar: las reglas, sin IA, ven una cuenta nueva, un monto 11 veces mayor y una llamada en curso, y retienen el dinero de Rosa. Investigar: el Coordinador, un agente de IA, llama a dos agentes; el Guardián le escribe a Rosa por la app y ella responde que la guían por teléfono; el Detective revisa la cuenta que recibe: 14 personas le envían y reenvía en 2 horas. Decidir: la Política, una regla fija sin IA, decide escalar; el Auditor, de IA, arma el expediente con pruebas. Recordar: un analista humano confirma que es mula y la Memoria marca la cuenta. Después, cuando Jorge paga a la misma cuenta, la Memoria ya la conoce y se le frena al instante sin IA.">
+      <svg id="viz-solucion" data-smil viewBox="0 0 1600 640" role="img" aria-label="El pago de Rosa queda retenido por reglas sin IA: cuenta nueva, monto 11 veces mayor y llamada en curso. Dos agentes de IA trabajan en paralelo. El Guardián le escribe por la app y pregunta si la están manipulando: responde que la guían por teléfono. El Detective revisa si la cuenta que recibe es una mula: 14 personas le envían y reenvía el 91 por ciento en 2 horas. Una regla fija combina las dos respuestas en una tabla: clienta manipulada y cuenta mula, escalar. Después, el Auditor arma el expediente con pruebas, un analista confirma y la Memoria marca la cuenta; cuando Jorge paga a la misma cuenta, se le frena al instante sin IA.">
         <defs>
           <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#56657a"/></marker>
         </defs>
 
-        <!-- Fases -->
-        <g stroke="#24324a" stroke-width="2" stroke-dasharray="4 10">
-          <line x1="390" y1="110" x2="390" y2="440"/>
-          <line x1="805" y1="110" x2="805" y2="440"/>
-          <line x1="1210" y1="110" x2="1210" y2="440"/>
-        </g>
-        <text class="px" x="290" y="34" text-anchor="middle" font-size="17" fill="#e3b25a">1 · FRENAR</text>
-        <text class="px" x="597" y="34" text-anchor="middle" font-size="17" fill="#7cc4e6">2 · INVESTIGAR</text>
-        <text class="px" x="1007" y="34" text-anchor="middle" font-size="17" fill="#e5645e">3 · DECIDIR</text>
-        <text class="px" x="1405" y="34" text-anchor="middle" font-size="17" fill="#5cc8a8">4 · RECORDAR</text>
+        <!-- 1 · El pago espera -->
+        <circle cx="120" cy="260" r="54" fill="#2a1f0e" stroke="#e3b25a" stroke-width="2.5">
+          <animate attributeName="stroke-width" values="2.5;8;3" dur="0.6s" begin="0.3s" fill="freeze"/>
+        </circle>
+        <polygon points="142.2,250.8 129.2,237.8 110.8,237.8 97.8,250.8 97.8,269.2 110.8,282.2 129.2,282.2 142.2,269.2" fill="#e3b25a"/>
+        <text class="mx" x="120" y="346" text-anchor="middle" font-size="16" fill="#e3b25a">PAGO RETENIDO</text>
+        <text class="sx" x="120" y="372" text-anchor="middle" font-size="18" fill="#e8edf3">Rosa · S/4,800</text>
+        <text class="mx" x="120" y="402" text-anchor="middle" font-size="13" fill="#8a99ad">cuenta nueva · monto 11×</text>
+        <text class="mx" x="120" y="422" text-anchor="middle" font-size="13" fill="#8a99ad">llamada en curso</text>
+        <text class="mx" x="120" y="452" text-anchor="middle" font-size="12" fill="#56657a">reglas · sin IA</text>
 
-        <!-- Flechas -->
-        <g stroke="#56657a" stroke-width="3" fill="none" marker-end="url(#ah)">
-          <path d="M138 270 H238"/>
-          <path d="M338 270 H438"/>
-          <path d="M530 247 L656 174"/>
-          <path d="M530 293 L656 366"/>
-          <path d="M744 174 L866 246"/>
-          <path d="M744 366 L866 294"/>
-          <path d="M958 270 H1058"/>
-          <path d="M1158 270 H1258"/>
-          <path d="M1358 270 H1458"/>
+        <!-- Se abren dos preguntas -->
+        <g stroke="#56657a" stroke-width="3" fill="none" marker-end="url(#ah)" opacity="0">
+          <set attributeName="opacity" to="1" begin="0.9s"/>
+          <path d="M176 248 C 260 200, 300 140, 384 132"/>
+          <path d="M176 272 C 260 320, 300 380, 384 388"/>
         </g>
 
-        <!-- Persona que paga -->
-        <circle cx="90" cy="270" r="46" fill="#111a2b" stroke="#7cc4e6" stroke-width="3"/>
-        <circle cx="90" cy="257" r="11" fill="#7cc4e6"/>
-        <path d="M70 292 a20 18 0 0 1 40 0 z" fill="#7cc4e6"/>
-        <text class="sx" x="90" y="348" text-anchor="middle" font-size="20" font-weight="700" fill="#e8edf3">Rosa</text>
-        <text class="sx" x="90" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">envía S/4,800</text>
-
-        <!-- 1 · Reglas (sin IA) -->
-        <circle cx="290" cy="270" r="46" fill="#0a0f1a" stroke="#8a99ad" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="0.9s" fill="freeze"/>
+        <!-- 2a · Guardián -->
+        <circle cx="440" cy="130" r="48" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
+          <animate attributeName="stroke-width" values="3;9;4" dur="0.6s" begin="1.3s" fill="freeze"/>
         </circle>
-        <polygon points="310.3,261.6 298.4,249.7 281.6,249.7 269.7,261.6 269.7,278.4 281.6,290.3 298.4,290.3 310.3,278.4" fill="#e3b25a"/>
-        <text class="px" x="290" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">REGLAS</text>
-        <text class="sx" x="290" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">retienen el dinero</text>
-        <g class="mx" font-size="14" fill="#8a99ad" text-anchor="middle" opacity="0"><set attributeName="opacity" to="1" begin="0.9s"/>
-          <text x="290" y="132">cuenta nueva</text>
-          <text x="290" y="154">monto 11×</text>
-          <text x="290" y="176">llamada en curso</text>
-        </g>
-        <text class="px" x="290" y="206" text-anchor="middle" font-size="14" fill="#e3b25a" opacity="0"><set attributeName="opacity" to="1" begin="1.1s"/>→ RETENIDO</text>
+        <path d="M440 106 l20 7 v16 c0 13 -9 21 -20 26 c-11 -5 -20 -13 -20 -26 v-16 z" fill="#e8edf3"/>
+        <text class="mx" x="440" y="202" text-anchor="middle" font-size="13" fill="#7cc4e6">GUARDIÁN · IA</text>
+        <text class="sx" x="512" y="116" font-size="25" font-weight="600" fill="#e8edf3">¿A Rosa la están manipulando?</text>
+        <text class="sx" x="512" y="146" font-size="18" fill="#8a99ad">Le escribe por la app, un canal que el estafador no controla.</text>
+        <text class="mx" x="512" y="182" font-size="17" fill="#e5645e" opacity="0"><set attributeName="opacity" to="1" begin="2.1s"/>→ Sí: «me guían por teléfono»</text>
 
-        <!-- 2 · Coordinador (IA) -->
-        <circle cx="490" cy="270" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="1.9s" fill="freeze"/>
+        <!-- 2b · Detective -->
+        <circle cx="440" cy="390" r="48" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
+          <animate attributeName="stroke-width" values="3;9;4" dur="0.6s" begin="1.3s" fill="freeze"/>
         </circle>
-        <path d="M490 247 L512 270 L490 293 L468 270 Z" fill="#e8edf3"/>
-        <text class="px" x="490" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">COORDINADOR</text>
-        <text class="sx" x="490" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">elige a quién llamar</text>
-        <text class="mx" x="490" y="200" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="2s"/>llama a 2 agentes</text>
+        <circle cx="433" cy="383" r="14" fill="none" stroke="#e8edf3" stroke-width="5"/>
+        <line x1="443" y1="393" x2="457" y2="407" stroke="#e8edf3" stroke-width="6" stroke-linecap="round"/>
+        <text class="mx" x="440" y="462" text-anchor="middle" font-size="13" fill="#7cc4e6">DETECTIVE · IA</text>
+        <text class="sx" x="512" y="376" font-size="25" font-weight="600" fill="#e8edf3">¿La cuenta que recibe es una mula?</text>
+        <text class="sx" x="512" y="406" font-size="18" fill="#8a99ad">Revisa quién le envía y a dónde manda el dinero.</text>
+        <text class="mx" x="512" y="442" font-size="17" fill="#e5645e" opacity="0"><set attributeName="opacity" to="1" begin="2.4s"/>→ Sí: 14 le envían · reenvía 91% en 2 h</text>
 
-        <!-- 2 · Guardián (IA) -->
-        <circle cx="700" cy="150" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="2.6s" fill="freeze"/>
-        </circle>
-        <path d="M700 127 l19 7 v15 c0 12 -8 20 -19 25 c-11 -5 -19 -13 -19 -25 v-15 z" fill="#e8edf3"/>
-        <text class="px" x="700" y="228" text-anchor="middle" font-size="15" fill="#e8edf3">GUARDIÁN</text>
-        <text class="sx" x="700" y="254" text-anchor="middle" font-size="17" fill="#8a99ad">le escribe a Rosa</text>
-        <text class="mx" x="700" y="84" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="2.7s"/>Rosa: «me guían por teléfono»</text>
-
-        <!-- 2 · Detective (IA) -->
-        <circle cx="700" cy="390" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="2.6s" fill="freeze"/>
-        </circle>
-        <circle cx="694" cy="384" r="13" fill="none" stroke="#e8edf3" stroke-width="5"/>
-        <line x1="703" y1="393" x2="716" y2="406" stroke="#e8edf3" stroke-width="6" stroke-linecap="round"/>
-        <text class="px" x="700" y="468" text-anchor="middle" font-size="15" fill="#e8edf3">DETECTIVE</text>
-        <text class="sx" x="700" y="494" text-anchor="middle" font-size="17" fill="#8a99ad">revisa quién recibe</text>
-        <text class="mx" x="700" y="530" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="2.7s"/>14 le envían · reenvía en 2 h</text>
-
-        <!-- 3 · Política (sin IA) -->
-        <circle cx="910" cy="270" r="46" fill="#0a0f1a" stroke="#8a99ad" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="3.6s" fill="freeze"/>
-        </circle>
-        <path d="M910 250 v40 M893 258 h34 M893 258 l-9 16 h18 z M927 258 l-9 16 h18 z M898 290 h24" stroke="#e8edf3" stroke-width="3" fill="none" stroke-linejoin="round"/>
-        <text class="px" x="910" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">POLÍTICA</text>
-        <text class="sx" x="910" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">una regla decide</text>
-        <g opacity="0" transform="rotate(-6 910 194)"><set attributeName="opacity" to="1" begin="3.7s"/>
-          <rect x="840" y="174" width="140" height="40" rx="6" fill="#2a0f14" stroke="#e5645e" stroke-width="3"/>
-          <text class="px" x="910" y="200" text-anchor="middle" font-size="13" fill="#e5645e">ESCALAR</text>
+        <!-- Las dos respuestas van a la regla -->
+        <g stroke="#56657a" stroke-width="3" fill="none" marker-end="url(#ah)" opacity="0">
+          <set attributeName="opacity" to="1" begin="2.9s"/>
+          <path d="M930 176 C 980 176, 990 250, 1036 252"/>
+          <path d="M960 436 C 1000 436, 1000 268, 1036 266"/>
         </g>
 
-        <!-- 3 · Auditor (IA) -->
-        <circle cx="1110" cy="270" r="46" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="4.8s" fill="freeze"/>
-        </circle>
-        <rect x="1096" y="250" width="28" height="38" rx="3" fill="#e8edf3"/>
-        <path d="M1102 262 h16 M1102 270 h16 M1102 278 h10" stroke="#0a0f1a" stroke-width="2.5"/>
-        <text class="px" x="1110" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">AUDITOR</text>
-        <text class="sx" x="1110" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">arma el expediente</text>
-        <text class="mx" x="1110" y="200" text-anchor="middle" font-size="16" fill="#7cc4e6" opacity="0"><set attributeName="opacity" to="1" begin="4.9s"/>cada dato con prueba</text>
-
-        <!-- 4 · Analista (humano) -->
-        <circle cx="1310" cy="270" r="46" fill="#0a0f1a" stroke="#5cc8a8" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="5.8s" fill="freeze"/>
-        </circle>
-        <circle cx="1310" cy="257" r="11" fill="#e8edf3"/>
-        <path d="M1290 292 a20 18 0 0 1 40 0 z" fill="#e8edf3"/>
-        <text class="px" x="1310" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">ANALISTA</text>
-        <text class="sx" x="1310" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">confirma</text>
-        <text class="sx" x="1310" y="200" text-anchor="middle" font-size="18" font-weight="700" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="5.9s"/>✓ es mula</text>
-
-        <!-- 4 · Memoria (sin IA) -->
-        <circle cx="1510" cy="270" r="46" fill="#0a0f1a" stroke="#8a99ad" stroke-width="3">
-          <animate attributeName="stroke-width" values="3;9;5" dur="0.6s" begin="6.8s" fill="freeze"/>
-        </circle>
-        <path d="M1500 266 v-8 a10 10 0 0 1 20 0 v8" stroke="#56657a" stroke-width="4" fill="none"><set attributeName="stroke" to="#5cc8a8" begin="6.8s"/></path>
-        <rect x="1494" y="266" width="32" height="24" rx="3" fill="#56657a"><set attributeName="fill" to="#5cc8a8" begin="6.8s"/></rect>
-        <text class="px" x="1510" y="348" text-anchor="middle" font-size="15" fill="#e8edf3">MEMORIA</text>
-        <text class="sx" x="1510" y="374" text-anchor="middle" font-size="17" fill="#8a99ad">marca la cuenta</text>
-        <text class="mx" x="1510" y="200" text-anchor="middle" font-size="16" fill="#5cc8a8" opacity="0"><set attributeName="opacity" to="1" begin="6.9s"/>cuenta marcada</text>
-
-        <!-- El dinero de Rosa recorre el flujo -->
-        <circle r="12" fill="#e3b25a" stroke="#0a0f1a" stroke-width="2">
-          <animateMotion path="M150 270 H432" dur="2s" begin="0s" fill="freeze" calcMode="linear" keyPoints="0;0;0.29;0.29;1;1" keyTimes="0;0.15;0.45;0.7;0.95;1"/>
-          <set attributeName="opacity" to="0" begin="2s"/>
-        </circle>
-        <circle r="10" fill="#7cc4e6" opacity="0">
-          <set attributeName="opacity" to="1" begin="2s"/><set attributeName="opacity" to="0" begin="3.6s"/>
-          <animateMotion path="M530 247 L656 174 M744 174 L866 246" dur="1.6s" begin="2s" fill="freeze" calcMode="linear" keyPoints="0;0.5;0.5;1" keyTimes="0;0.35;0.65;1"/>
-        </circle>
-        <circle r="10" fill="#7cc4e6" opacity="0">
-          <set attributeName="opacity" to="1" begin="2s"/><set attributeName="opacity" to="0" begin="3.6s"/>
-          <animateMotion path="M530 293 L656 366 M744 366 L866 294" dur="1.6s" begin="2s" fill="freeze" calcMode="linear" keyPoints="0;0.5;0.5;1" keyTimes="0;0.35;0.65;1"/>
-        </circle>
-        <circle r="12" fill="#e3b25a" stroke="#0a0f1a" stroke-width="2" opacity="0">
-          <set attributeName="opacity" to="1" begin="4.3s"/><set attributeName="opacity" to="0" begin="7.1s"/>
-          <animateMotion path="M958 270 H1052 M1168 270 H1252 M1368 270 H1452" dur="2.5s" begin="4.3s" fill="freeze" calcMode="linear" keyPoints="0;0.359;0.359;0.679;0.679;1" keyTimes="0;0.2;0.4;0.6;0.8;1"/>
-        </circle>
-
-        <!-- Después: Jorge, en su propio carril -->
-        <g opacity="0"><set attributeName="opacity" to="1" begin="7.4s"/>
-          <line x1="470" y1="566" x2="1560" y2="566" stroke="#24324a" stroke-width="1.5"/>
-          <text class="mx" x="470" y="606" font-size="14" fill="#5cc8a8">DESPUÉS</text>
-          <circle cx="600" cy="600" r="24" fill="#111a2b" stroke="#7cc4e6" stroke-width="2.5"/>
-          <circle cx="600" cy="593" r="6" fill="#7cc4e6"/>
-          <path d="M589 613 a11 10 0 0 1 22 0 z" fill="#7cc4e6"/>
-          <path d="M630 600 H690" stroke="#56657a" stroke-width="3" marker-end="url(#ah)"/>
-          <circle cx="720" cy="600" r="24" fill="#0a0f1a" stroke="#5cc8a8" stroke-width="2.5"/>
-          <path d="M714 598 v-5 a6 6 0 0 1 12 0 v5" stroke="#5cc8a8" stroke-width="2.5" fill="none"/>
-          <rect x="710" y="598" width="20" height="14" rx="2" fill="#5cc8a8"/>
-          <text class="sx" x="764" y="607" font-size="20" fill="#e8edf3"><tspan font-weight="700">Jorge</tspan> paga a la misma cuenta: la Memoria ya la conoce. <tspan font-weight="700" fill="#5cc8a8">Frenado al instante · 0 IA</tspan></text>
+        <!-- 3 · La regla fija -->
+        <text class="mx" x="1210" y="62" text-anchor="middle" font-size="15" fill="#e3b25a">UNA REGLA FIJA DECIDE · SIN IA</text>
+        <text class="sx" x="1125" y="112" text-anchor="middle" font-size="16" fill="#8a99ad">cuenta normal</text>
+        <text class="sx" x="1295" y="112" text-anchor="middle" font-size="16" fill="#8a99ad">cuenta mula</text>
+        <text class="sx" x="1396" y="190" font-size="16" fill="#8a99ad">Rosa tranquila</text>
+        <text class="sx" x="1396" y="315" font-size="16" fill="#8a99ad">Rosa manipulada</text>
+        <g>
+          <animate attributeName="opacity" values="1;0.35" dur="0.5s" begin="3.4s" fill="freeze"/>
+          <rect x="1040" y="128" width="170" height="118" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
+          <text class="mx" x="1125" y="194" text-anchor="middle" font-size="17" fill="#5cc8a8">PERMITIR</text>
+          <rect x="1210" y="128" width="170" height="118" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
+          <text class="mx" x="1295" y="194" text-anchor="middle" font-size="17" fill="#e5645e">ESCALAR</text>
+          <rect x="1040" y="246" width="170" height="118" fill="#111a2b" stroke="#24324a" stroke-width="2"/>
+          <text class="mx" x="1125" y="312" text-anchor="middle" font-size="17" fill="#e3b25a">VERIFICAR</text>
         </g>
+        <rect x="1210" y="246" width="170" height="118" fill="#111a2b" stroke="#24324a" stroke-width="2">
+          <set attributeName="fill" to="#2a0f14" begin="3.4s"/>
+          <set attributeName="stroke" to="#e5645e" begin="3.4s"/>
+          <animate attributeName="stroke-width" values="2;9;4" dur="0.6s" begin="3.4s" fill="freeze"/>
+        </rect>
+        <text class="mx" x="1295" y="312" text-anchor="middle" font-size="19" fill="#e5645e">ESCALAR</text>
+        <text class="sx" x="1210" y="402" text-anchor="middle" font-size="16" fill="#8a99ad" opacity="0"><set attributeName="opacity" to="1" begin="3.6s"/>el dinero sigue retenido</text>
 
-        <!-- Leyenda -->
-        <g class="sx" font-size="16" fill="#8a99ad">
-          <circle cx="40" cy="600" r="8" fill="none" stroke="#7cc4e6" stroke-width="3"/><text x="56" y="606">agente de IA</text>
-          <circle cx="190" cy="600" r="8" fill="none" stroke="#8a99ad" stroke-width="3"/><text x="206" y="606">sin IA</text>
-          <circle cx="290" cy="600" r="8" fill="none" stroke="#5cc8a8" stroke-width="3"/><text x="306" y="606">humano</text>
+        <!-- 4 · Después -->
+        <line x1="40" y1="500" x2="1560" y2="500" stroke="#24324a" stroke-width="1.5"/>
+        <text class="mx" x="40" y="566" font-size="14" fill="#5cc8a8">DESPUÉS</text>
+        <g opacity="0.3">
+          <animate attributeName="opacity" values="0.3;1" dur="0.4s" begin="4.3s" fill="freeze"/>
+          <circle cx="200" cy="560" r="26" fill="#0a0f1a" stroke="#7cc4e6" stroke-width="2.5"/>
+          <rect x="190" y="546" width="20" height="28" rx="2" fill="#e8edf3"/>
+          <path d="M194 556 h12 M194 562 h12 M194 568 h8" stroke="#0a0f1a" stroke-width="2"/>
+          <text class="sx" x="238" y="555" font-size="18" font-weight="600" fill="#e8edf3">Auditor · IA</text>
+          <text class="sx" x="238" y="578" font-size="16" fill="#8a99ad">expediente con pruebas</text>
+        </g>
+        <path d="M450 560 H500" stroke="#56657a" stroke-width="3" marker-end="url(#ah)"/>
+        <g opacity="0.3">
+          <animate attributeName="opacity" values="0.3;1" dur="0.4s" begin="4.9s" fill="freeze"/>
+          <circle cx="540" cy="560" r="26" fill="#0a0f1a" stroke="#5cc8a8" stroke-width="2.5"/>
+          <circle cx="540" cy="552" r="7" fill="#e8edf3"/>
+          <path d="M528 574 a12 11 0 0 1 24 0 z" fill="#e8edf3"/>
+          <text class="sx" x="578" y="555" font-size="18" font-weight="600" fill="#e8edf3">Analista · humano</text>
+          <text class="sx" x="578" y="578" font-size="16" fill="#8a99ad">confirma: es una mula</text>
+        </g>
+        <path d="M790 560 H840" stroke="#56657a" stroke-width="3" marker-end="url(#ah)"/>
+        <g opacity="0.3">
+          <animate attributeName="opacity" values="0.3;1" dur="0.4s" begin="5.5s" fill="freeze"/>
+          <circle cx="880" cy="560" r="26" fill="#0a0f1a" stroke="#8a99ad" stroke-width="2.5"/>
+          <path d="M874 558 v-5 a6 6 0 0 1 12 0 v5" stroke="#5cc8a8" stroke-width="2.5" fill="none"/>
+          <rect x="870" y="558" width="20" height="14" rx="2" fill="#5cc8a8"/>
+          <text class="sx" x="918" y="555" font-size="18" font-weight="600" fill="#e8edf3">Memoria · sin IA</text>
+          <text class="sx" x="918" y="578" font-size="16" fill="#8a99ad">marca la cuenta en la red</text>
+        </g>
+        <path d="M1140 560 H1190" stroke="#56657a" stroke-width="3" marker-end="url(#ah)"/>
+        <g opacity="0.3">
+          <animate attributeName="opacity" values="0.3;1" dur="0.4s" begin="6.1s" fill="freeze"/>
+          <text class="sx" x="1206" y="555" font-size="18" font-weight="600" fill="#5cc8a8">Jorge paga a la misma cuenta</text>
+          <text class="sx" x="1206" y="578" font-size="16" fill="#8a99ad">frenado al instante · 0 IA</text>
         </g>
       </svg>
     </div>
