@@ -1,6 +1,11 @@
 # Pitch · Mule Zero
 
-Presentación de 7 diapositivas con animaciones, en HTML. No necesita build.
+Portada y 3 diapositivas con animaciones, en HTML. No necesita build.
+
+1. **Portada**: Mule Zero, el equipo y el QR del juego.
+2. **El problema**: muchas víctimas, una sola cuenta.
+3. **La solución**: frenar, investigar, recordar.
+4. **La oportunidad**: una mula confirmada en un país, frenada en todos.
 
 ## Ejecutarla
 
@@ -32,4 +37,4 @@ En el celular se desliza. Las animaciones se reinician al entrar a cada diaposit
 - `presentacion.js`: navegación y animaciones.
 - `servir.mjs`: servidor local sin dependencias.
 
-Las cifras de la diapositiva 3 tienen su fuente al pie. La escena de la diapositiva 2 es una simulación con los datos sintéticos del demo.
+Las cifras del problema tienen su fuente al pie; la escena es una simulación con los datos sintéticos del demo.
