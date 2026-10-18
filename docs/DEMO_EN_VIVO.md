@@ -13,11 +13,11 @@ Son **tres pantallas en el proyector, en este orden**. Conviene abrirlas antes e
 | # | Pantalla | URL | Tiempo |
 |---|---|---|---|
 | 1 | **Slides** (portada, problema, solución) | `npm run pitch` → http://localhost:4000 | ~1:30 |
-| 2 | **Backend en vivo**: la suite corre por el pipeline real y se ve qué hizo cada agente | En la Mac: `http://localhost:3200/demo?token=TOKEN` (en Railway, el mismo `/demo`) | ~2:00 |
+| 2 | **Backend en vivo**: la suite corre por el pipeline real y se ve qué hizo cada agente | En la Mac: `http://localhost:3200/demo` (en Railway, el mismo `/demo`). No pide token | ~2:00 |
 | 3 | **Juego + monitor**: el público ataca | QR de la portada (`/play`) y `/monitor?token=TOKEN` | ~3:00 |
 | 4 | **Slides**: la oportunidad (última diapositiva) | pestaña 1 | ~0:30 |
 
-El token es el `DEMO_TOKEN` del servidor y se borra de la barra de direcciones al cargar. Sin token, el panel muestra la lista pero no corre la suite.
+El token (`DEMO_TOKEN`) solo lo pide el monitor. `/demo` no lo necesita: la suite no deja rastro (repone la Memoria) y corre una sola vez a la vez.
 
 ### `/demo`: el backend en vivo (2 minutos)
 

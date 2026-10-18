@@ -43,10 +43,23 @@ describe('suite en vivo (/demo)', () => {
     expect(memoria.esMulaConfirmada('M-03', repo.ahora())).toBe(true);
   });
 
+  it('la ruta no pide token aunque el servidor tenga DEMO_TOKEN', async () => {
+    const previo = process.env.DEMO_TOKEN;
+    process.env.DEMO_TOKEN = 'secreto-de-prueba';
+    try {
+      const res = await POST();
+      expect(res.status).toBe(200);
+      await res.text();
+    } finally {
+      if (previo === undefined) delete process.env.DEMO_TOKEN;
+      else process.env.DEMO_TOKEN = previo;
+    }
+  });
+
   it('la ruta lista las pruebas y entrega un resultado por línea', async () => {
     const lista = (await (await GET()).json()) as { pruebas: unknown[] };
     expect(lista.pruebas).toHaveLength(11);
-    const res = await POST(new Request('http://test/api/demo/suite', { method: 'POST' }));
+    const res = await POST();
     const lineas = (await res.text()).trim().split('\n').map((l) => JSON.parse(l) as ResultadoPrueba);
     expect(lineas).toHaveLength(11);
     expect(lineas.every((l) => l.ok)).toBe(true);

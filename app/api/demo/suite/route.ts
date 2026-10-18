@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { LISTA_PRUEBAS, correrSuite } from '@/lib/demo/suite';
 import { modoAgentes, modelosOllama } from '@/lib/agents';
-import { exigirToken } from '@/lib/seguridad/token';
 
 /**
  * Suite en vivo del backend (lib/demo/suite.ts), para el panel `/demo`.
  *
  * GET  la lista de pruebas y con qué agentes correrían. Público.
  * POST corre la suite y entrega un resultado por línea (NDJSON) apenas
- *      termina cada prueba. Exige token de operador si hay `DEMO_TOKEN`: toca
- *      la Memoria (la guarda y la repone) y una sola corrida a la vez (409).
+ *      termina cada prueba. Público, sin token: no deja rastro (la Memoria
+ *      se guarda y se repone, la matriz no queda en el store) y hay una sola
+ *      corrida a la vez (409).
  */
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +24,7 @@ export async function GET() {
   return NextResponse.json({ pruebas: LISTA_PRUEBAS, agentes: agentes() });
 }
 
-export async function POST(req: Request) {
-  const denegado = exigirToken(req);
-  if (denegado) return denegado;
+export async function POST() {
   if (g.__suiteCorriendo) return NextResponse.json({ error: 'la suite ya está corriendo' }, { status: 409 });
   g.__suiteCorriendo = true;
 
