@@ -7,6 +7,8 @@ import {
   COLORES_ATACANTE_ESPALDA,
   COLORES_ESTAFADOR,
   COLORES_GUARDIAN,
+  COLORES_JORGE_ESPALDA,
+  COLORES_LUCIA_ESPALDA,
   COLORES_ROSA_ESPALDA,
   COLORES_ROSA_FRENTE,
   ESTAFADOR,
@@ -168,7 +170,16 @@ export function laboratorio(p: Pincel, t: number) {
 // ── Bodega de Rosa (interior) ─────────────────────────────────
 
 /** `cliente`: 0 = no hay, 0..1 = entrando, 1 = pidiendo su vuelto. */
-export type EstadoBodega = { telefono: "normal" | "llamada" | "perdio" | "protegido"; cliente: number };
+export type EstadoBodega = {
+  telefono: "normal" | "llamada" | "perdio" | "protegido";
+  cliente: number;
+  /** Texto del cliente (por defecto, «¡Mi vuelto!»). */
+  pedido?: string;
+  /** Captura de pago que muestra el cliente (ruta «el comprobante»). */
+  captura?: { monto: string; billetera: string; k: number };
+  /** Nombre en el letrero. */
+  letrero?: string;
+};
 
 const PRODUCTOS = [PAL.rojo, PAL.ambar, PAL.azul, PAL.verde, PAL.crema, PAL.celeste];
 
@@ -195,7 +206,7 @@ export function bodega(estado: EstadoBodega): Escena {
     for (let x = 0; x < W; x += 20) p.rect("#d8c29c", x, 0, 1, pared);
     p.rect(PAL.verdeOscuro, 46, 24, 100, 14);
     p.rect(PAL.verde, 47, 25, 98, 12);
-    p.centrado("BODEGA ROSA", 28, PAL.crema);
+    p.centrado(estado.letrero ?? "BODEGA ROSA", 28, PAL.crema);
     estante(p, 4, 44, 50, mostrador - 44, 0);
     estante(p, 138, 44, 50, mostrador - 44, 3);
     for (let y = pared; y < h; y += 16) for (let x = 0; x < W; x += 16) p.rect(((x + y) / 16) % 2 ? "#e8c79f" : "#ddb68a", x, y, 16, 16);
@@ -251,18 +262,83 @@ export function bodega(estado: EstadoBodega): Escena {
       const y = pared + 28;
       p.sprite(persona("izq", estado.cliente < 1 ? paso : 0), PALETAS.vecina, x, y, 3, true);
       if (estado.cliente >= 1) {
-        p.caja(x - 98, y - 10, 98, 20, PAL.blanco, PAL.tinta, PAL.crema, false);
-        p.texto("¡Mi vuelto!", x - 91, y - 4, PAL.tinta);
+        const pedido = estado.pedido ?? "¡Mi vuelto!";
+        const ancho = p.ancho(pedido) + 14;
+        const bx = Math.max(4, Math.min(W - ancho - 4, x + 24 - ancho));
+        p.caja(bx, y - 26, ancho, 20, PAL.blanco, PAL.tinta, PAL.crema, false);
+        p.texto(pedido, bx + 7, y - 20, PAL.tinta);
       }
     }
+    if (estado.captura && estado.captura.k > 0) {
+      const c = estado.captura;
+      const k = facil.salida(Math.min(1, c.k));
+      const cy = Math.round(pared - 60 + (1 - k) * 120);
+      p.alfa(k, () => {
+        p.alfa(0.5, () => p.rect(PAL.negro, 0, 0, W, h));
+        p.rect(PAL.tinta, 46, cy, 100, 150);
+        p.rect("#6b3fa0", 50, cy + 6, 92, 138);
+        p.circulo(96, cy + 40, 16, PAL.verde);
+        p.rect(PAL.blanco, 88, cy + 40, 6, 3);
+        p.rect(PAL.blanco, 92, cy + 34, 3, 9);
+        p.centrado("¡PAGO", cy + 64, PAL.blanco, 8, undefined, 50, 92);
+        p.centrado("EXITOSO!", cy + 76, PAL.blanco, 8, undefined, 50, 92);
+        p.centrado(c.monto, cy + 96, PAL.ambar, 8, undefined, 50, 92);
+        p.centrado(c.billetera.slice(0, 11), cy + 116, PAL.crema, 8, undefined, 50, 92);
+      });
+    }
+  };
+}
+
+// ── La sierra, sin señal (ruta «sin señal») ──────────────────
+
+export type EstadoSierra = { lugar: string; caminando: boolean };
+
+export function sierra(estado: EstadoSierra): Escena {
+  return (p, t) => {
+    const h = p.h;
+    p.degradado(0, h, "#7ec8f0", "#e8f4fb");
+    p.circulo(150, 40, 12, "#fff2b0");
+    const capas: Array<[string, number, number]> = [
+      ["#8fa6b8", 0.45, 0.08],
+      ["#6d8a76", 0.58, 0.16],
+      ["#4f6f52", 0.7, 0.3],
+    ];
+    capas.forEach(([color, base, vel], ci) => {
+      const y0 = Math.round(h * base);
+      for (let x = -40; x < W + 40; x += 2) {
+        const xx = x + ((estado.caminando ? t * vel : 0) % 80);
+        const alto = 30 + Math.abs(Math.sin((xx + ci * 37) / 23)) * 40 + Math.abs(Math.sin((xx + ci * 11) / 9)) * 10;
+        p.rect(color, x, y0 - alto, 2, h - y0 + alto);
+      }
+      if (ci === 0) {
+        for (let x = 0; x < W; x += 2) {
+          const xx = x + ((estado.caminando ? t * vel : 0) % 80);
+          const alto = 30 + Math.abs(Math.sin((xx + ci * 37) / 23)) * 40 + Math.abs(Math.sin((xx + ci * 11) / 9)) * 10;
+          if (alto > 60) p.rect(PAL.blanco, x, y0 - alto, 2, 5);
+        }
+      }
+    });
+    const camino = Math.round(h * 0.78);
+    p.rect("#b49a6e", 0, camino, W, h - camino);
+    p.rect("#9c8460", 0, camino, W, 2);
+    const paso = (estado.caminando ? Math.floor(t / 10) % 2 : 0) as 0 | 1;
+    p.sprite(persona("der", paso), PALETAS.lucia, 70, camino - 46, 3);
+    // celular sin señal
+    const cx = 128;
+    const cy = camino - 70;
+    p.caja(cx, cy, 52, 40, PAL.blanco, PAL.tinta, PAL.rojo, true);
+    for (let i = 0; i < 4; i++) p.rect(PAL.grisClaro, cx + 10 + i * 6, cy + 24 - i * 4, 4, 6 + i * 4);
+    p.rect(PAL.rojo, cx + 8, cy + 8, 28, 2);
+    if (t % 40 < 28) p.texto("SIN", cx + 28, cy + 10, PAL.rojo);
+    p.centrado(estado.lugar.slice(0, 22), camino + 18, PAL.tinta);
   };
 }
 
 // ── Combate ───────────────────────────────────────────────────
 
 export type EstadoBatalla = {
-  fondo: "bodega" | "sistema";
-  rival: "estafador" | "banco";
+  fondo: "bodega" | "sistema" | "casa";
+  rival: "estafador" | "banco" | "misterio";
   rivalNombre: string;
   rivalEtiqueta: string;
   rivalBarra: number;
@@ -271,7 +347,7 @@ export type EstadoBatalla = {
   rivalDX: number;
   rivalGolpe: number;
   agentes: Array<{ inicial: string; color: string; nace: number }>;
-  aliado: "rosa" | "atacante" | "guardian";
+  aliado: "rosa" | "atacante" | "guardian" | "lucia" | "jorge";
   aliadoDX: number;
   aliadoGolpe: number;
   aliadoNombre: string;
@@ -285,6 +361,8 @@ export type EstadoBatalla = {
   congelado: boolean;
   /** Valor mostrado de la barra del rival (persigue a `rivalBarra`). */
   barraVisible: number;
+  /** Símbolo de la moneda en el edificio del banco. */
+  simbolo: string;
 };
 
 export function nuevaBatalla(parcial: Partial<EstadoBatalla>): EstadoBatalla {
@@ -311,6 +389,7 @@ export function nuevaBatalla(parcial: Partial<EstadoBatalla>): EstadoBatalla {
     tiempoRestante: 0,
     congelado: false,
     barraVisible: 0,
+    simbolo: "S/",
     ...parcial,
   };
 }
@@ -341,6 +420,18 @@ export function batalla(b: EstadoBatalla, m: Motor): Escena {
       p.rect("#d9b98e", 0, baseRival + 14, W, h - baseRival - 14);
       p.rect("#cfae82", 0, baseRival + 14, W, 2);
       for (let y = baseRival + 30; y < h; y += 18) p.rect("#cfae82", 0, y, W, 1);
+    } else if (b.fondo === "casa") {
+      p.rect("#cfe0e8", 0, 0, W, baseRival + 14);
+      for (let x = 0; x < W; x += 12) p.rect("#c2d6e0", x, 0, 6, baseRival + 14);
+      p.rect(PAL.tinta, 12, baseRival - 70, 44, 36);
+      p.rect("#ffd77a", 14, baseRival - 68, 40, 32);
+      p.rect(PAL.tinta, 33, baseRival - 68, 2, 32);
+      p.rect(PAL.madera, 66, baseRival - 60, 22, 16);
+      p.rect(PAL.crema, 68, baseRival - 58, 18, 12);
+      p.rect(PAL.piel, 74, baseRival - 55, 6, 6);
+      p.rect("#c28d6b", 0, baseRival + 14, W, h - baseRival - 14);
+      for (let y = baseRival + 14; y < h; y += 10) p.rect("#b07a58", 0, y, W, 1);
+      for (let y = baseRival + 14, f = 0; y < h; y += 10, f++) for (let x = (f % 2) * 24; x < W; x += 48) p.rect("#b07a58", x, y, 1, 10);
     } else {
       p.degradado(0, h, "#0a1430", "#16285a");
       for (let x = 0; x < W; x += 16) p.rect("#1b3166", x, 0, 1, h);
@@ -352,18 +443,22 @@ export function batalla(b: EstadoBatalla, m: Motor): Escena {
         p.rect(i % 2 ? PAL.celeste : PAL.ambar, x, y, 1, 1);
       }
     }
-    const plataforma = b.fondo === "bodega" ? "#c49e70" : "#24406c";
+    const plataforma = b.fondo === "bodega" ? "#c49e70" : b.fondo === "casa" ? "#a8714f" : "#24406c";
 
     // Rival
     p.elipse(152 + b.rivalDX, baseRival, 40, 8, plataforma);
     if (b.rivalVisible > 0) {
       const rx = 116 + b.rivalDX;
-      const ry = baseRival - (b.rival === "estafador" ? 70 : 64) + (b.rival === "estafador" ? Math.floor(t / 30) % 2 : 0);
+      const persona_ = b.rival !== "banco";
+      const ry = baseRival - (persona_ ? 70 : 64) + (persona_ ? Math.floor(t / 30) % 2 : 0);
       p.alfa(b.rivalVisible, () => {
-        if (b.rival === "estafador") {
+        if (b.rival === "misterio") {
+          p.silueta(ESTAFADOR, b.rivalGolpe > 0 && b.rivalGolpe % 4 < 2 ? PAL.blanco : "#232a4a", rx, ry, 3);
+          if (t % 60 < 45) p.texto("?", rx + 32, ry + 20, PAL.ambar, 16);
+        } else if (b.rival === "estafador") {
           if (b.rivalGolpe > 0 && b.rivalGolpe % 4 < 2) p.silueta(ESTAFADOR, PAL.blanco, rx, ry, 3);
           else p.sprite(ESTAFADOR, COLORES_ESTAFADOR, rx, ry, 3);
-        } else p.escalado(rx + 36, ry + 64, 1.5, () => banco(p, rx + 12, ry + 20));
+        } else p.escalado(rx + 36, ry + 64, 1.5, () => banco(p, rx + 12, ry + 20, b.simbolo));
       });
     }
     if (b.rivalGolpe > 0) b.rivalGolpe--;
@@ -387,6 +482,8 @@ export function batalla(b: EstadoBatalla, m: Motor): Escena {
     if (b.aliadoGolpe > 0) b.aliadoGolpe--;
     if (!parpadeo) {
       if (b.aliado === "rosa") p.sprite(ROSA_ESPALDA, COLORES_ROSA_ESPALDA, ax, baseAliado - 68, 4);
+      else if (b.aliado === "lucia") p.sprite(ROSA_ESPALDA, COLORES_LUCIA_ESPALDA, ax, baseAliado - 68, 4);
+      else if (b.aliado === "jorge") p.sprite(ATACANTE_ESPALDA, COLORES_JORGE_ESPALDA, ax, baseAliado - 52, 4);
       else if (b.aliado === "atacante") p.sprite(ATACANTE_ESPALDA, COLORES_ATACANTE_ESPALDA, ax, baseAliado - 52, 4);
       else {
         p.sprite(GUARDIAN, COLORES_GUARDIAN, ax, baseAliado - 66 + (Math.floor(t / 20) % 2), 4);

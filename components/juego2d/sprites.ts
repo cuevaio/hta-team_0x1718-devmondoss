@@ -64,6 +64,8 @@ export const PALETAS: Record<string, Colores> = {
   pepe: { h: "#b9b9b9", s: "#b8794c", e: PAL.tinta, m: "#4a2c1a", c: PAL.blanco, p: PAL.madera, d: PAL.maderaOscura },
   vecina: { h: "#6b3f7a", s: "#d6a07a", e: PAL.tinta, m: PAL.rojo, c: PAL.rojo, p: PAL.azul, d: PAL.tinta },
   vigilante: { h: PAL.tinta, s: PAL.piel, e: PAL.tinta, m: PAL.rojoOscuro, c: PAL.azul, p: PAL.navy, d: PAL.negro },
+  lucia: { h: "#5a3825", s: "#d6a07a", e: PAL.tinta, m: PAL.rojo, c: "#c84b4b", p: "#33384d", d: PAL.maderaOscura },
+  jorge: { h: PAL.pelo, s: "#b8794c", e: PAL.tinta, m: "#7a3b3b", c: PAL.azul, p: "#4a4f63", d: PAL.tinta },
 };
 
 // ── Combate ───────────────────────────────────────────────────
@@ -127,6 +129,21 @@ export const ROSA_ESPALDA: Grilla = [
   "......kkkkkkkkkkk.......",
   "......kkkkkkkkkkk.......",
 ];
+
+export const COLORES_LUCIA_ESPALDA: Colores = {
+  h: "#5a3825",
+  s: "#d6a07a",
+  b: "#c84b4b",
+  a: "#7a2f2f",
+  k: "#33384d",
+};
+
+export const COLORES_JORGE_ESPALDA: Colores = {
+  h: PAL.pelo,
+  j: PAL.azul,
+  s: "#b8794c",
+  n: "#4a4f63",
+};
 
 export const COLORES_ROSA_ESPALDA: Colores = {
   h: PAL.pelo,
@@ -261,7 +278,7 @@ export const COLORES_ROSA_FRENTE: Colores = {
 // ── Dibujos procedurales ──────────────────────────────────────
 
 /** Edificio de Banco Andino (ficticio), rival del atacante. 48×44. */
-export function banco(p: Pincel, x: number, y: number) {
+export function banco(p: Pincel, x: number, y: number, simbolo = "S/") {
   p.rect(PAL.navy, x, y + 8, 48, 6);
   for (let i = 0; i < 6; i++) p.rect(PAL.navy, x + 24 - i * 4, y + 8 - i, i * 8, 1);
   p.rect(PAL.grisClaro, x + 2, y + 14, 44, 28);
@@ -270,7 +287,7 @@ export function banco(p: Pincel, x: number, y: number) {
     p.rect(PAL.gris, x + 9 + c * 11, y + 15, 1, 26);
   }
   p.rect(PAL.navy, x, y + 42, 48, 2);
-  p.texto("S/", x + 16, y + 3, PAL.ambar);
+  p.texto(simbolo, x + 24 - simbolo.length * 4, y + 3, PAL.ambar);
 }
 
 /** Cara de encuesta (14×14): 0 = tranquilo … 4 = muy frustrado. */

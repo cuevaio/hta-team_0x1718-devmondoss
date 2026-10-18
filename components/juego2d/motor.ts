@@ -15,8 +15,16 @@ import type { Direccion } from "./sprites";
 
 export type Boton = "arriba" | "abajo" | "izq" | "der" | "a" | "b";
 export type Dibujo = (p: Pincel, t: number) => void;
-export type Opcion = { texto: string; info?: string; color?: string };
-type EstiloMenu = "lista" | "combate" | "caras";
+export type Opcion = {
+  texto: string;
+  info?: string;
+  color?: string;
+  /** Solo estilo «tarjetas»: segunda línea, bandera e insignia. */
+  sub?: string;
+  bandera?: { colores: string[]; vertical: boolean };
+  marca?: { texto: string; color: string };
+};
+type EstiloMenu = "lista" | "combate" | "caras" | "tarjetas";
 
 const COLUMNAS = 20;
 const LINEAS = 5;
@@ -374,11 +382,53 @@ export class Motor {
       return { x: 14 + i * 34, y: d.y - 46, w: 30, h: 30 };
     }
     const n = m.opciones.length;
+    const base = this.dialogo ? d.y - 8 : this.h - 10;
+    if (m.estilo === "tarjetas") {
+      const sep = 4;
+      const disponible = base - 44;
+      const alto = Math.min(32, Math.floor((disponible - (n - 1) * sep) / n));
+      const arriba = base - n * alto - (n - 1) * sep;
+      return { x: 8, y: arriba + i * (alto + sep), w: W - 16, h: alto };
+    }
     const alto = 22;
     const sep = 5;
-    const base = this.dialogo ? d.y - 8 : this.h - 10;
     const arriba = base - n * alto - (n - 1) * sep;
     return { x: 10, y: arriba + i * (alto + sep), w: W - 20, h: alto };
+  }
+
+  private dibujarTarjeta(p: Pincel, r: Caja, op: Opcion, activo: boolean, presionado: boolean) {
+    const hundido = presionado ? 2 : 0;
+    const y = r.y + hundido;
+    p.alfa(0.35, () => p.rect(PAL.negro, r.x + 1, r.y + 3, r.w, r.h));
+    p.rect(PAL.tinta, r.x, y, r.w, r.h);
+    p.rect(activo ? "#fff4dc" : PAL.crema, r.x + 1, y + 1, r.w - 2, r.h - 2);
+    p.rect(op.color ?? PAL.azul, r.x + 1, y + 1, 5, r.h - 2);
+    if (activo) {
+      p.rect(PAL.ambar, r.x + 1, y + 1, r.w - 2, 2);
+      p.rect(PAL.ambar, r.x + 1, y + r.h - 3, r.w - 2, 2);
+    }
+    let tx = r.x + 12;
+    if (op.bandera) {
+      const { colores, vertical } = op.bandera;
+      const bw = 18;
+      const bh = 12;
+      const by = y + Math.round((r.h - bh) / 2);
+      p.rect(PAL.tinta, tx - 1, by - 1, bw + 2, bh + 2);
+      colores.forEach((c, i) => {
+        if (vertical) p.rect(c, tx + Math.round((i * bw) / colores.length), by, Math.ceil(bw / colores.length), bh);
+        else p.rect(c, tx, by + Math.round((i * bh) / colores.length), bw, Math.ceil(bh / colores.length));
+      });
+      tx += bw + 7;
+    }
+    const maxChars = Math.floor((r.x + r.w - 6 - tx) / 8) - (op.marca ? op.marca.texto.length + 1 : 0);
+    const dosLineas = op.sub && r.h >= 26;
+    p.texto(limpiar(op.texto).slice(0, maxChars), tx, y + (dosLineas ? 5 : Math.round((r.h - 8) / 2)), PAL.tinta);
+    if (dosLineas) p.texto(limpiar(op.sub!).slice(0, Math.floor((r.x + r.w - 6 - tx) / 8)), tx, y + r.h - 13, PAL.gris);
+    if (op.marca) {
+      const mw = op.marca.texto.length * 8 + 6;
+      p.rect(op.marca.color, r.x + r.w - mw - 4, y + 4, mw, 12);
+      p.texto(op.marca.texto, r.x + r.w - mw - 1, y + 6, PAL.blanco);
+    }
   }
 
   // ── Teclado de nombre ────────────────────────────────────
@@ -729,7 +779,7 @@ export class Motor {
       const r0 = this.rectOpcion(m, 0);
       p.caja(6, r0.y - 8, W - 12, 46);
     }
-    if (m.titulo && m.estilo === "lista") {
+    if (m.titulo && (m.estilo === "lista" || m.estilo === "tarjetas")) {
       const r0 = this.rectOpcion(m, 0);
       const ancho = p.ancho(m.titulo) + 12;
       p.caja(10, r0.y - 20, ancho, 17, PAL.navy, PAL.tinta, PAL.ambar);
@@ -745,8 +795,9 @@ export class Motor {
         p.escalado(r.x + 15, r.y + 15, presionado ? 1.8 : 2, () => cara(p, r.x + 8, r.y + 8, i));
         return;
       }
-      const caja = { ...r, x: r.x + (m.estilo === "lista" ? desfase : 0) };
-      p.boton(caja, op.texto, { activo, presionado, color: op.color });
+      const caja = { ...r, x: r.x + (m.estilo === "lista" || m.estilo === "tarjetas" ? desfase : 0) };
+      if (m.estilo === "tarjetas") this.dibujarTarjeta(p, caja, op, activo, presionado);
+      else p.boton(caja, op.texto, { activo, presionado, color: op.color });
     });
     const info = m.opciones[m.idx]?.info;
     if (info) {
@@ -815,6 +866,7 @@ export class Motor {
       teclado: this.teclado ? { nombre: this.teclado.nombre } : null,
       explorando: this.explorador ? { x: this.explorador.x, y: this.explorador.y, quieto: this.explorador.quieto, camY: this.explorador.camY } : null,
       esperandoToque: this.resolverToque !== null,
+      barra: this.barraSuperior?.texto ?? null,
       cortina: this.cortina !== null,
     };
   }
