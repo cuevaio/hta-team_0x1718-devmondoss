@@ -116,3 +116,8 @@
   - `scripts/demo.ts`: imprime el modelo local.
   - `scripts/servidor.ts`: verifica y precarga Ollama, `--tunel` abre cloudflared solo e imprime la URL pública, y `--persistir` también guarda el arcade.
 - [x] **Resistencia bajo carga** ([DEMO_EN_VIVO](../../DEMO_EN_VIVO.md)): limitador y cortacircuitos del modelo (`lib/agents/limitador.ts`), ola de ataques del presentador (`lib/juego/ola.ts`, `app/api/carga`) y panel *Resistencia* en el monitor. Medido: 500 ataques + 60 jugadores en sala, 0 errores
+- [x] **Persistencia revisada (18/10)**:
+  - Los ids de jugadas y partidas eran un contador por proceso. Con varios servidores sobre el mismo Supabase, dos generaban el mismo id y el `upsert` de uno borraba la fila del otro. Ahora el id es hora + azar (`lib/persistencia/id.ts`).
+  - Reintentos al escribir en Supabase (1 s, 4 s y 15 s).
+  - El arcade se resincroniza con Supabase cada 20 s, para que dos servidores encendidos no muestren rankings distintos.
+  - ⚠️ Para Ale: toqué `lib/juego/partidas.ts` (id) y `tests/juego/partidas.test.ts`, que era el test intermitente: se esperan 5 ms entre el caso viejo y el nuevo. Las partidas todavía no se resincronizan entre servidores en caliente; conviene un solo servidor por evento.
