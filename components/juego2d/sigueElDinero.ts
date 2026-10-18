@@ -69,7 +69,7 @@ function nodos(): Record<IdNodo, Nodo> {
     m3: n("m3", "1093", 0.68, 0.6, { mula: true, ritmo: 22, destinos: ["salida"], pistas: [["Abierta hace 7 días", "r"], ["Recibe de 2 cuentas", "a"], ["Lo retira TODO", "r"]] }),
     salida: n("salida", "RETIRO", 0.88, 0.92, { cuenta: false }),
     vecinos: n("vecinos", "VECINOS", 0.1, 0.55, { cuenta: false }),
-    bodega: n("bodega", "5128", 0.26, 0.75, { ritmo: 200, destinos: ["prov"], pistas: [["Bodega, hace 9 años", "v"], ["Le pagan 35 vecinos", "a"], ["Solo paga a su", "v"], ["proveedor", "v"]] }),
+    bodega: n("bodega", "5128", 0.26, 0.75, { ritmo: 200, destinos: ["prov"], pistas: [["Bodega, hace 9 años", "v"], ["Le pagan 35 vecinos", "a"], ["Paga a su proveedor", "v"]] }),
     prov: n("prov", "6642", 0.5, 0.94, { ritmo: 0, pistas: [["Mayorista, 6 años", "v"], ["Le pagan 6 bodegas", "a"], ["Paga sueldos", "v"]] }),
     hotel: n("hotel", "3307", 0.88, 0.42, { ritmo: 0, pistas: [["Hotel, hace 11 años", "v"], ["Pagos de huéspedes", "v"], ["No reenvía nada", "v"]] }),
     turistas: n("turistas", "", 1.08, 0.3, { cuenta: false }),
@@ -96,18 +96,23 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
   let resolver: (r: ResultadoSED) => void = () => {};
   const terminado = new Promise<ResultadoSED>((r) => (resolver = r));
 
-  const area = (h: number) => ({ top: 40, bottom: h - 136 });
+  // En pantallas bajas el panel se achica para dejarle más alto al mapa.
+  const chico = (h: number) => h < 340;
+  const area = (h: number) => ({ top: chico(h) ? 36 : 40, bottom: h - panel(h).h - 26 });
   const pos = (id: IdNodo, h: number) => {
     const a = area(h);
     const nd = red[id];
     return { x: Math.round(14 + nd.fx * (W - 28)), y: Math.round(a.top + nd.fy * (a.bottom - a.top)) };
   };
-  const panel = (h: number): Caja => ({ x: 4, y: h - 114, w: W - 8, h: 110 });
+  const panel = (h: number): Caja => {
+    const alto = chico(h) ? 98 : 110;
+    return { x: 4, y: h - alto - 4, w: W - 8, h: alto };
+  };
   const botones = (h: number) => {
     const p = panel(h);
     return {
-      congelar: { x: p.x + 8, y: p.y + p.h - 36, w: 96, h: 28 },
-      cerrar: { x: p.x + 110, y: p.y + p.h - 36, w: p.w - 118, h: 28 },
+      congelar: { x: p.x + 8, y: p.y + p.h - (chico(h) ? 31 : 36), w: 96, h: chico(h) ? 25 : 28 },
+      cerrar: { x: p.x + 110, y: p.y + p.h - (chico(h) ? 31 : 36), w: p.w - 118, h: chico(h) ? 25 : 28 },
     };
   };
 
@@ -364,7 +369,7 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
       const rebote = Math.floor(t / 10) % 2 ? 3 : 0;
       for (let i = 0; i < 6; i++) p.rect(PAL.ambar, q.x - 6 + i, q.y - 24 + i + rebote, 12 - i * 2, 1);
       p.rect(PAL.ambar, q.x - 2, q.y - 32 + rebote, 4, 8);
-      p.textoSombra("¡TOCA AQUÍ!", q.x - 44, q.y + 26, PAL.ambar, PAL.tinta);
+      if (!chico(h)) p.textoSombra("¡TOCA AQUÍ!", q.x - 44, q.y + 26, PAL.ambar, PAL.tinta);
     }
 
     // ── HUD ──
@@ -398,23 +403,24 @@ export function sigueElDinero(m: Motor, pais: Pais): Promise<ResultadoSED> {
       p.centrado(`Falsos positivos: ${falsos}`, pn.y + 62, falsos ? PAL.rojoOscuro : PAL.tinta);
     } else if (seleccion) {
       const nd = red[seleccion];
-      p.texto(`CUENTA ${nd.codigo}`, pn.x + 10, pn.y + 9, PAL.azul);
+      p.texto(`CUENTA ${nd.codigo}`, pn.x + 10, pn.y + (chico(h) ? 7 : 9), PAL.azul);
       const reveladas = Math.min(nd.pistas.length, Math.floor((t - abierta) / 12) + 1);
-      const sep = nd.pistas.length > 3 ? 11 : 13;
+      const sep = chico(h) ? 11 : 13;
+      const y0 = chico(h) ? 20 : 23;
       for (let i = 0; i < reveladas; i++) {
         const kk = Math.min(1, (t - abierta - i * 12) / 8);
         const [texto, tono] = nd.pistas[i];
         const color = tono === "r" ? PAL.rojo : tono === "a" ? PAL.ambar : PAL.verde;
         p.alfa(kk, () => {
-          p.rect(color, pn.x + 9, pn.y + 23 + i * sep, 5, 7);
-          p.texto(texto, pn.x + 17, pn.y + 23 + i * sep, tono === "r" ? PAL.rojoOscuro : PAL.tinta);
+          p.rect(color, pn.x + 9, pn.y + y0 + i * sep, 5, 7);
+          p.texto(texto, pn.x + 17, pn.y + y0 + i * sep, tono === "r" ? PAL.rojoOscuro : PAL.tinta);
         });
       }
       const listo = reveladas >= nd.pistas.length;
-      if (!listo && Math.floor(t / 10) % 2 === 0) p.texto("investigando...", pn.x + 17, pn.y + 23 + reveladas * sep, PAL.gris);
+      if (!listo && Math.floor(t / 10) % 2 === 0) p.texto("investigando...", pn.x + 17, pn.y + y0 + reveladas * sep, PAL.gris);
       const rojas = nd.pistas.filter(([, tono]) => tono === "r").length;
       if (listo && !nd.congelada && nd.error === 0) {
-        p.texto(rojas >= 2 ? `${rojas} rojas: ¡es MULA!` : "Parece normal.", pn.x + 10, pn.y + 23 + nd.pistas.length * sep + 2, rojas >= 2 ? PAL.rojoOscuro : PAL.verdeOscuro);
+        p.texto(rojas >= 2 ? `${rojas} rojas: ¡es MULA!` : "Parece normal.", pn.x + 10, pn.y + y0 + nd.pistas.length * sep + 2, rojas >= 2 ? PAL.rojoOscuro : PAL.verdeOscuro);
       }
       const b = botones(h);
       const bloqueada = nd.congelada || nd.error > 0;

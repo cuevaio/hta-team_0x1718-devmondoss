@@ -75,10 +75,18 @@ export function menuHub(m: Motor, d: DatosHub): Promise<string> {
     }, 140);
   };
 
+  // Tocar marca; se entra al soltar sobre la misma tarjeta (un roce no te manda a un juego).
+  let armado: number | null = null;
+  const bajo = (x: number, y: number) =>
+    cajas().findIndex((c) => x >= c.x - 2 && x < c.x + c.w + 2 && y >= c.y - 2 && y < c.y + c.h + 2);
   const tocar = (x: number, y: number) => {
-    cajas().forEach((c, i) => {
-      if (x >= c.x - 2 && x < c.x + c.w + 2 && y >= c.y - 2 && y < c.y + c.h + 2) elegir(i);
-    });
+    const i = bajo(x, y);
+    armado = i >= 0 ? i : null;
+    if (i >= 0) sel = i;
+  };
+  const soltar = (x: number, y: number) => {
+    if (armado !== null && bajo(x, y) === armado) elegir(armado);
+    armado = null;
   };
 
   const tecla = (b: Boton) => {
@@ -97,7 +105,7 @@ export function menuHub(m: Motor, d: DatosHub): Promise<string> {
     const f = t - inicio;
     const kk = facil.salida(Math.min(1, Math.max(0, (f - i * 3) / 12)));
     const dx = Math.round((1 - kk) * (i % 2 ? -W : W) * 0.6);
-    const hundido = elegido?.i === i ? 2 : 0;
+    const hundido = elegido?.i === i || armado === i ? 2 : 0;
     const activo = sel === i;
     const x = c.x + dx;
     const y = c.y + hundido;
@@ -151,15 +159,18 @@ export function menuHub(m: Motor, d: DatosHub): Promise<string> {
       const iy = y + Math.round((c.h - 32) / 2);
       p.rect("#1f2650", x + 7, iy, 32, 32);
       it.icono?.(p, x + 7, iy, t);
-      p.texto(it.nombre.slice(0, 17), x + 44, y + Math.round(c.h / 2) - 10, PAL.tinta);
-      p.texto(it.sub.slice(0, 11), x + 44, y + Math.round(c.h / 2) + 3, PAL.gris);
-      for (let s = 0; s < 3; s++) p.sprite(ESTRELLA, { X: s < (it.estrellas ?? 0) ? PAL.ambar : "#c9bfa9" }, x + c.w - 26 + s * 7, y + 5, 1);
+      // Línea 1: el nombre (ocupa todo el ancho). Línea 2: si es nuevo, de qué
+      // trata + NUEVO; si ya se jugó, estrellas + récord. Nada se pisa.
+      const y1 = y + Math.round(c.h / 2) - 10;
+      const y2 = y + Math.round(c.h / 2) + 3;
+      p.texto(it.nombre.slice(0, 17), x + 44, y1, PAL.tinta);
       if (it.nuevo) {
-        p.rect(PAL.rojo, x + c.w - 46, y + c.h - 14, 42, 11);
-        p.texto("NUEVO", x + c.w - 44, y + c.h - 13, PAL.blanco);
-      } else if (it.mejor !== undefined) {
-        const txt = String(it.mejor);
-        p.texto(txt, x + c.w - 6 - p.ancho(txt), y + c.h - 13, PAL.ambarOscuro);
+        p.texto(it.sub.slice(0, 11), x + 44, y2, PAL.gris);
+        p.rect(PAL.rojo, x + c.w - 46, y2 - 2, 42, 11);
+        p.texto("NUEVO", x + c.w - 44, y2 - 1, PAL.blanco);
+      } else {
+        for (let s = 0; s < 3; s++) p.sprite(ESTRELLA, { X: s < (it.estrellas ?? 0) ? PAL.ambar : "#c9bfa9" }, x + 44 + s * 7, y2 + 1, 1);
+        if (it.mejor !== undefined) p.texto(`récord ${it.mejor}`, x + 70, y2, PAL.ambarOscuro);
       }
     });
 
@@ -177,15 +188,18 @@ export function menuHub(m: Motor, d: DatosHub): Promise<string> {
   };
 
   const info = () => ({ hub: true, items: items.map((it, i) => ({ id: it.id, ...cajas()[i] })) });
-  m.minijuego({ dibujar, tocar, tecla, info });
+  m.minijuego({ dibujar, tocar, soltar, tecla, info });
   return listo;
 }
 
 /** Elegir país: grilla de 2 columnas con bandera grande (caben los 9). */
 export function menuPaises(
   m: Motor,
-  paises: Array<{ id: string; nombre: string; bandera: { colores: string[]; vertical: boolean } }>,
+  lista: Array<{ id: string; nombre: string; bandera: { colores: string[]; vertical: boolean } }>,
+  conVolver = false,
 ): Promise<string> {
+  // «VOLVER» como una casilla más (cuando se cambia de país desde MÁS).
+  const paises = conVolver ? [...lista, { id: "volver", nombre: "< VOLVER", bandera: { colores: ["#8c97a3"], vertical: false } }] : lista;
   const inicio = m.t;
   let sel = 0;
   let elegido: number | null = null;
@@ -214,11 +228,20 @@ export function menuPaises(
     }, 160);
   };
 
-  const tocar = (x: number, y: number) => {
-    paises.forEach((_, i) => {
+  let armado: number | null = null;
+  const bajo = (x: number, y: number) =>
+    paises.findIndex((_, i) => {
       const c = caja(i);
-      if (x >= c.x - 2 && x < c.x + c.w + 2 && y >= c.y - 2 && y < c.y + c.h + 2) elegir(i);
+      return x >= c.x - 2 && x < c.x + c.w + 2 && y >= c.y - 2 && y < c.y + c.h + 2;
     });
+  const tocar = (x: number, y: number) => {
+    const i = bajo(x, y);
+    armado = i >= 0 ? i : null;
+    if (i >= 0) sel = i;
+  };
+  const soltar = (x: number, y: number) => {
+    if (armado !== null && bajo(x, y) === armado) elegir(armado);
+    armado = null;
   };
 
   const tecla = (b: Boton) => {
@@ -240,7 +263,7 @@ export function menuPaises(
       const c = caja(i);
       const f = t - inicio;
       const k = facil.salida(Math.min(1, Math.max(0, (f - i * 3) / 12)));
-      const y = c.y + Math.round((1 - k) * 30) + (elegido === i ? 2 : 0);
+      const y = c.y + Math.round((1 - k) * 30) + (elegido === i || armado === i ? 2 : 0);
       p.alfa(k, () => {
         p.alfa(0.4, () => p.rect(PAL.negro, c.x + 1, y + 3, c.w, c.h));
         p.rect(sel === i ? PAL.ambar : PAL.tinta, c.x, y, c.w, c.h);
@@ -262,6 +285,6 @@ export function menuPaises(
   };
 
   const info = () => ({ paises: paises.map((pa, i) => ({ id: pa.id, nombre: pa.nombre, ...caja(i) })) });
-  m.minijuego({ dibujar, tocar, tecla, info });
+  m.minijuego({ dibujar, tocar, soltar, tecla, info });
   return listo;
 }

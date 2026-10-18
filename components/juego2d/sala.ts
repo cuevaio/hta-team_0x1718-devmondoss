@@ -99,8 +99,15 @@ export function pantallaSala(
     }
   };
 
+  // Si la pantalla deja de dibujarse (se salió por la pausa), se deja de consultar.
+  let ultimoDibujo = performance.now();
+  let detenido = false;
   const consultar = async () => {
     if (salir) return;
+    if (performance.now() - ultimoDibujo > 4000) {
+      detenido = true;
+      return;
+    }
     try {
       const v = await verSala(codigo, alias);
       vista = v;
@@ -147,10 +154,21 @@ export function pantallaSala(
     }
   };
 
+  let confirmando = false;
   const principal = async () => {
-    if (!token || !vista) return;
+    if (!token || !vista || confirmando) return;
     pulsar("principal");
     m.audio.confirmar();
+    const fin = vista.fase === "fin";
+    const solo = vista.jugadores.length < 2;
+    if (fin || solo) {
+      confirmando = true;
+      const ok = await m
+        .confirmar(fin ? "¿Otra ronda? Los puntajes vuelven a cero." : "Solo estás tú en la sala. ¿Empezar igual?", fin ? "¡OTRA RONDA!" : "EMPEZAR", "ESPERAR")
+        .catch(() => false);
+      confirmando = false;
+      if (!ok) return;
+    }
     try {
       vista = await accionSala(codigo, { accion: vista.fase === "fin" ? "reiniciar" : "iniciar", token });
       recibida = performance.now();
@@ -159,9 +177,17 @@ export function pantallaSala(
     }
   };
 
-  const irse = () => {
+  const irse = async () => {
+    if (confirmando) return;
     pulsar("salir");
     m.audio.mover();
+    // Si eres el anfitrión y hay gente esperando, salir deja la sala sin quien la empiece.
+    if (token && vista?.fase === "espera" && vista.jugadores.length > 1) {
+      confirmando = true;
+      const ok = await m.confirmar("Hay gente esperando y tú eres el anfitrión. ¿Salir igual?", "SALIR", "QUEDARME").catch(() => false);
+      confirmando = false;
+      if (!ok) return;
+    }
     salir = true;
     window.setTimeout(() => {
       m.minijuego(null);
@@ -175,14 +201,14 @@ export function pantallaSala(
     if (en(b.izq)) void responder(true);
     else if (en(b.der)) void responder(false);
     else if (en(b.principal)) void principal();
-    else if (en(b.salir)) irse();
+    else if (en(b.salir)) void irse();
   };
 
   const tecla = (bt: Boton) => {
     if (bt === "izq") void responder(true);
     if (bt === "der") void responder(false);
     if (bt === "a" && token && (vista?.fase === "espera" || vista?.fase === "fin")) void principal();
-    if (bt === "b" && (vista?.fase === "espera" || vista?.fase === "fin")) irse();
+    if (bt === "b" && (vista?.fase === "espera" || vista?.fase === "fin")) void irse();
   };
 
   const dibujarCartaSala = (p: Pincel, c: Caja, id: string, sello: "pausa" | "pasa" | null) => {
@@ -196,6 +222,11 @@ export function pantallaSala(
   };
 
   const dibujar = (p: Pincel, t: number) => {
+    ultimoDibujo = performance.now();
+    if (detenido && !salir) {
+      detenido = false;
+      void consultar();
+    }
     const h = p.h;
     const v = vista;
     const f = t - cambio;
@@ -244,7 +275,7 @@ export function pantallaSala(
         const puntos = ".".repeat(1 + (Math.floor(t / 20) % 3));
         p.centrado(`Esperando a ${v.host.toUpperCase().slice(0, 10)}${puntos}`, h - 64, PAL.grisClaro);
       } else {
-        p.centrado(v.jugadores.length < 2 ? "Dicta el código en voz alta" : "Cuando estén todos:", h - 64, PAL.grisClaro);
+        p.centrado(v.jugadores.length < 2 ? "Dicta el código" : "Cuando estén todos:", h - 64, PAL.grisClaro);
       }
     } else if (v.fase === "cuenta") {
       const n = Math.ceil(restante() / 1000);
