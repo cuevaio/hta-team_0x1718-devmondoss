@@ -63,7 +63,7 @@ type Resumen = {
   limites: string[];
 };
 
-type Health = { agentes: "claude" | "simulado" };
+type Health = { agentes: "claude" | "ollama" | "simulado" };
 
 const NODOS = [
   { id: "reglas", icono: "📏", nombre: "Reglas" },
@@ -658,7 +658,7 @@ export default function Monitor() {
           Juega desde tu celular: <strong>{origen ? `${origen}/play` : "/play"}</strong>
         </span>
         <span className={s.sello}>
-          Datos 100% sintéticos · agentes {health?.agentes === "claude" ? "con Claude" : "simulados"}
+          Datos 100% sintéticos · agentes {health?.agentes === "claude" ? "con Claude" : health?.agentes === "ollama" ? "con modelo local" : "simulados"}
         </span>
       </header>
 

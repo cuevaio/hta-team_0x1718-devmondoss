@@ -7,7 +7,7 @@ type ScenarioId = "rosa" | "alerta" | "jorge" | "bodega" | "lucia";
 
 type Health = {
   ok: boolean;
-  agentes: "claude" | "simulado";
+  agentes: "claude" | "ollama" | "simulado";
   datos: { nota: string };
   modos?: { token_operador: boolean };
 };
@@ -994,7 +994,7 @@ export default function DemoDashboard() {
           <span aria-hidden="true">SYN</span>
           <p>
             <strong>Datos 100% sintéticos</strong>
-            <small>{health?.agentes === "claude" ? "Agentes Claude" : "Agentes en modo simulado"}</small>
+            <small>{health?.agentes === "claude" ? "Agentes Claude" : health?.agentes === "ollama" ? "Agentes con modelo local" : "Agentes en modo simulado"}</small>
           </p>
         </div>
       </header>

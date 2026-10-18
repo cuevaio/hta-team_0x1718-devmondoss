@@ -95,7 +95,8 @@ const tx = (origen: string, destino: string, monto: number): Transaccion => ({
 
 async function main() {
   const agentes = obtenerAgentes();
-  console.log(`Agentes: ${modoAgentes() === 'claude' ? 'Claude (API real)' : 'simulados (sin API key)'}`);
+  const modo = modoAgentes();
+  console.log(`Agentes: ${modo === 'claude' ? 'Claude (API real)' : modo === 'ollama' ? `Ollama local (${process.env.OLLAMA_MODELO})` : 'simulados (sin API key)'}`);
   const resultados: boolean[] = [];
 
   console.log(`\n${C.bold}Adaptive Financial Security — demo de consola${C.reset}`);

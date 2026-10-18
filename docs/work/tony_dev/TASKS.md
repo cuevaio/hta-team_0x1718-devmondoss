@@ -110,3 +110,8 @@
   2. El Auditor ya no muestra un spinner eterno cuando la Memoria resolvió el caso.
   3. Modo público (servidor con `DEMO_TOKEN` y pestaña sin token): Reiniciar y Confirmar/Descartar quedan deshabilitados con explicación, en vez de fallar con 401.
   4. La decisión dice «Dinero retenido…», el encabezado dice «Te están robando» y hay enlaces a /play y /monitor. El pie de página está actualizado.
+- [x] **Modo `ollama`** (INFRA §6 y §8): `lib/agents/llm-ollama.ts`, `modoAgentes()` con `OLLAMA_MODELO`, demo 8/8 con qwen3.5:9b y qwen2.5:7b locales
+- ⚠️ Para Ale, toqué 3 archivos tuyos:
+  - `lib/diferir.ts`: el Auditor también se difiere con `ollama`, porque en la laptop tarda segundos.
+  - `scripts/demo.ts`: imprime el modelo local.
+  - `scripts/servidor.ts`: verifica y precarga Ollama, `--tunel` abre cloudflared solo e imprime la URL pública, y `--persistir` también guarda el arcade.

@@ -133,7 +133,23 @@ Correr `next start` en la laptop es un **servidor continuo**: resuelve el proble
 
 ---
 
-## 6. Plan: probar con un modelo local (Ollama) — *para después*
+## 6. Modelo local (Ollama) — ✅ hecho el 18/10/2026
+
+**Cómo se usa:** `OLLAMA_MODELO=qwen3.5:9b` y `OLLAMA_THINK=false` en `.env.local`. Con esa variable, `modoAgentes()` devuelve `ollama`. `lib/agents/llm-ollama.ts` pide JSON con el esquema zod del agente, a temperatura 0, y deja el modelo cargado (`keep_alive`). `npm run servidor` verifica Ollama y precarga el modelo.
+
+**Medido en un Apple M5 de 24 GB:**
+
+| Modelo | Llamada del Guardián (cargado) | `npm run demo` |
+|---|---|---|
+| qwen3.5:9b (`think:false`) | ~0,8 s | 8/8 |
+| qwen2.5:7b | ~0,8 s | 8/8 |
+| gpt-oss:20b (`think:low`) | expediente del Auditor: 11–16 s | — |
+
+**Lección:** usar **un solo modelo**. Con gpt-oss:20b (12 GB) cargado, Ollama no logró cargar un segundo modelo y los pedidos quedaron colgados en vez de reemplazarlo.
+
+Las decisiones no cambian con el modelo, porque las toma la Policy determinista. El modelo solo entra en lo ambiguo, como la respuesta libre del cliente al Guardián: las respuestas rápidas se clasifican sin IA.
+
+### Plan original
 
 **Objetivo:** probar los agentes con un LLM real sin API key ni costo, corriendo el modelo en la laptop.
 
@@ -183,3 +199,38 @@ LlmCaller ──┬── crearLlmAnthropic()   (hoy)
 | **Frontend (Fase 2)**: sin dueño; hoy el demo es por consola/API | ❌ |
 | ¿La entrega exige URL pública? | ❓ Confirmar |
 | Pitch: slides + video de respaldo | ⏳ |
+
+
+---
+
+## 8. Todo local (la Mac como servidor, con el modelo de Ollama)
+
+El modelo no se puede subir a Railway. Por eso el día del evento puede correr **todo en la Mac**: la app, los agentes con Ollama, las salas EN VIVO y los datos (Supabase y `.datos/`).
+
+```bash
+# 1. Ollama abierto, con el modelo descargado (ollama pull qwen3.5:9b)
+# 2. .env.local con OLLAMA_MODELO=qwen3.5:9b y OLLAMA_THINK=false (y Supabase si se quiere guardar en la nube)
+npm run servidor -- --red --juego --persistir --tunel
+```
+
+El script:
+- compila;
+- arranca en `0.0.0.0:3000`;
+- impide que la Mac se duerma (`caffeinate`);
+- verifica y precarga el modelo;
+- abre un **túnel de Cloudflare** e imprime la URL pública `https://….trycloudflare.com`. Los QR del juego y del monitor la usan solos.
+
+Ollama **no** se publica: queda en localhost, porque su API permite bajar y borrar modelos.
+
+**Probado de punta a punta por la URL pública:** salud en modo `ollama`, `/play`, una sala creada y el Guardián razonando una respuesta libre con el modelo local («mi sobrino me dijo… el banco lo llamó» → `manipulacion_probable` → P4), en unos 6 s por el túnel.
+
+**Railway queda de respaldo** siempre encendido, con agentes simulados: misma app, mismas decisiones, sin el modelo.
+
+**Riesgos y qué hacer:**
+
+| Riesgo | Qué hacer |
+|---|---|
+| La URL del túnel rápido cambia en cada arranque | Arrancar una vez antes de presentar y no cerrar la terminal. Para una URL fija, usar un túnel con nombre y dominio propio |
+| Wi-Fi del evento inestable | El túnel funciona por cualquier red de la Mac, también el hotspot del celular |
+| La Mac se queda sin batería | Enchufarla: `caffeinate` evita que se duerma, no que se apague |
+| Ollama cerrado o sin el modelo | El script avisa al arrancar. Mientras tanto, los agentes caen a su fallback y las decisiones siguen igual |
