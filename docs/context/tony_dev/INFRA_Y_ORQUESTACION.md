@@ -115,7 +115,9 @@ flowchart TD
 
 ---
 
-## 5. La laptop como servidor (sin pagar hosting)
+## 5. La laptop como servidor (sin pagar hosting) — ❌ DESCARTADO para la entrega
+
+> **No sirve para la evaluación.** La [guía oficial de Hack The Andes](https://hacktheandes.com/guide) dice que **no se conecta la laptop del equipo**: la organización abre los enlaces entregados desde su propio equipo, en ventana privada, sin depender de archivos locales ni sesiones. Hace falta una **URL pública** con `next start` en **un solo proceso** (p. ej. Railway; no serverless, por §4). Lo de abajo queda solo como opción para ensayos locales.
 
 Correr `next start` en la laptop es un **servidor continuo**: resuelve el problema de la RAM para el demo y no cuesta nada.
 
@@ -127,7 +129,7 @@ Correr `next start` en la laptop es un **servidor continuo**: resuelve el proble
 | Piden URL pública | Túnel gratuito (p. ej. Cloudflare Tunnel `cloudflared`), creado justo antes de presentar |
 | API abierta a internet (con túnel) | Proteger `/api/demo/reset` y `/api/cases/[id]/verdict` con un token simple |
 
-**Pendiente de confirmar:** si la entrega del hackathon exige URL pública. Si no, `localhost` es lo más seguro.
+**Confirmado (17/10/2026):** la entrega exige URL pública de despliegue que funcione en ventana privada desde el equipo de la organización. `localhost` y la laptop quedan descartados.
 
 ---
 
