@@ -99,6 +99,9 @@ describe('desactivada por defecto', () => {
   it('la key nunca viaja en claro fuera de localhost', () => {
     const env = { NODE_ENV: 'test' as const, ATOMICMEMORY_API_KEY: KEY, DEMO_TOKEN: TOKEN };
     expect(estadoNotas({ ...env, ATOMICMEMORY_API_URL: 'http://memoria.example.com' }).activa).toBe(false);
+    for (const url of ['https://usuario:clave@api.atomicstrata.ai', 'https://api.atomicstrata.ai?x=1', 'https://api.atomicstrata.ai#fragmento']) {
+      expect(estadoNotas({ ...env, ATOMICMEMORY_API_URL: url }).activa).toBe(false);
+    }
     expect(estadoNotas({ ...env, ATOMICMEMORY_API_URL: 'https://api.atomicstrata.ai' }).activa).toBe(true);
     expect(estadoNotas({ ...env, ATOMICMEMORY_API_URL: 'http://127.0.0.1:17350' }).activa).toBe(true);
   });
@@ -321,4 +324,17 @@ describe('la nota nunca decide', () => {
     // Una nota no es un veredicto: M-01 no entra a la Memoria de mulas.
     expect(memoria.cantidad).toBe(0);
   });
+});
+
+it('rechaza una fila que el proveedor atribuye explícitamente a otro operador', async () => {
+  activar();
+  const caso = await alertaM01();
+  expect((await nota('PUT', caso.id, { cuerpo: { texto: TEXTO } })).status).toBe(200);
+  fixture.modo = 'usuario_ajeno';
+  const lectura = await nota('GET', caso.id);
+  expect(lectura.status).toBe(502);
+  expect(lectura.body.nota).toBeUndefined();
+  const borrado = await nota('DELETE', caso.id);
+  expect(borrado.status).toBe(502);
+  expect(fixture.filas).toHaveLength(1);
 });

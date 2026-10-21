@@ -74,6 +74,9 @@ export function estadoNotas(env: NodeJS.ProcessEnv = process.env): EstadoNotas {
   } catch {
     return { activa: false, motivo: 'ATOMICMEMORY_API_URL no es una URL válida' };
   }
+  if (url.username || url.password || url.search || url.hash) {
+    return { activa: false, motivo: 'ATOMICMEMORY_API_URL debe ser una URL sin credenciales, consulta ni fragmento' };
+  }
   // La key viaja como Bearer: en claro solo hacia la misma máquina.
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && esLoopback(url.hostname))) {
     return { activa: false, motivo: 'ATOMICMEMORY_API_URL debe ser https (o http solo en localhost)' };
@@ -146,6 +149,7 @@ async function llamar(config: ConfigNotas, ruta: string, init: RequestInit = {})
  */
 const FilaMemoria = z.object({
   id: z.string().min(1),
+  user_id: z.string().optional(),
   content: z.string(),
   created_at: z.string().optional(),
   deleted_at: z.string().nullish(),
@@ -160,10 +164,11 @@ const FilaMemoria = z.object({
 
 const RespuestaBorrado = z.object({ success: z.literal(true) });
 
-function aNota(cuenta: string, cuerpo: unknown): Nota | null {
+function aNota(cuenta: string, cuerpo: unknown, sujeto: string): Nota | null {
   const fila = FilaMemoria.safeParse(cuerpo);
   if (!fila.success) throw new ErrorNotas('Atomic Memory devolvió una nota con formato inesperado');
-  const { id, content, created_at, deleted_at, metadata } = fila.data;
+  const { id, user_id, content, created_at, deleted_at, metadata } = fila.data;
+  if (user_id !== undefined && user_id !== sujeto) throw new ErrorNotas('Atomic Memory devolvió una nota de otro operador');
   // Solo es nuestra nota si el id externo coincide: nunca mostrar otra memoria del sujeto.
   if (deleted_at || metadata.externalId !== idExterno(cuenta)) return null;
   const prefijo = PREFIJO(cuenta);
@@ -179,7 +184,7 @@ function aNota(cuenta: string, cuerpo: unknown): Nota | null {
 export async function leerNota(config: ConfigNotas, cuenta: string): Promise<Nota | null> {
   const q = new URLSearchParams({ user_id: config.sujeto });
   const { status, cuerpo } = await llamar(config, `/v1/memories/by-external-id/${encodeURIComponent(idExterno(cuenta))}?${q}`);
-  return status === 404 ? null : aNota(cuenta, cuerpo);
+  return status === 404 ? null : aNota(cuenta, cuerpo, config.sujeto);
 }
 
 /** Normaliza el texto del analista; `null` si no es una nota válida. */

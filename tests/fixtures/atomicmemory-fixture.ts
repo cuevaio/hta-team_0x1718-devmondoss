@@ -27,6 +27,7 @@ export type ModoFixture =
   /** DELETE responde 200 con un cuerpo que no es el documentado, y no borra. */
   | 'borrado_malformado'
   /** by-external-id responde 200 con una fila sin `id`/`content`. */
+  | 'usuario_ajeno'
   | 'fila_rota'
   /** Responde 200 con un cuerpo de 1 MB. */
   | 'gigante'
@@ -124,6 +125,7 @@ export async function iniciarFixtureAtomicMemory(opciones: { apiKey: string; pue
     if (req.method === 'GET' && externo) {
       const id = decodeURIComponent(externo[1]);
       const fila = filas.find((f) => f.user_id === user && f.metadata.externalId === id);
+      if (fila && estado.modo === 'usuario_ajeno') return responder(res, 200, { ...fila, user_id: 'otro-operador' });
       if (fila && estado.modo === 'fila_rota') return responder(res, 200, { memory: { texto: fila.content } });
       return fila ? responder(res, 200, fila) : responder(res, 404, { error: 'Memory not found' });
     }
